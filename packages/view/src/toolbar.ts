@@ -142,8 +142,17 @@ export function createToolbar(onCommand: (command: ToolbarCommand) => void, onIm
     input.value = ''
     if (file) onImage(file)
   })
+  let group: HTMLElement | null = null
+  const sizeGroup = (current: HTMLElement | null) => {
+    if (current) current.style.setProperty('--v5-count', String(current.children.length))
+  }
   for (const item of ITEMS) {
-    if (item.gapBefore) bar.append(gap())
+    if (!group || item.gapBefore) {
+      sizeGroup(group)
+      group = document.createElement('div')
+      group.className = 'v5-toolbar-group'
+      bar.append(group)
+    }
     const button = document.createElement('button')
     button.type = 'button'
     button.tabIndex = -1
@@ -152,8 +161,9 @@ export function createToolbar(onCommand: (command: ToolbarCommand) => void, onIm
     button.dataset.label = item.label
     button.innerHTML = item.icon
     if (item.command === 'image') button.addEventListener('click', () => input.click())
-    bar.append(button)
+    group.append(button)
   }
+  sizeGroup(group)
   bar.append(input)
   bar.addEventListener('mousedown', (event) => event.preventDefault())
   bar.addEventListener('click', (event) => {
@@ -163,10 +173,4 @@ export function createToolbar(onCommand: (command: ToolbarCommand) => void, onIm
     onCommand(command as ToolbarCommand)
   })
   return bar
-}
-
-function gap(): HTMLElement {
-  const item = document.createElement('span')
-  item.className = 'v5-toolbar-gap'
-  return item
 }

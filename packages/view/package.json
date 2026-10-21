@@ -1,0 +1,25 @@
+{
+  "name": "@v5md/view",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./theme.css": "./dist/theme.css"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp src/theme.css dist/theme.css"
+  },
+  "dependencies": {
+    "@v5md/core": "0.0.1",
+    "katex": "^0.19.0",
+    "lowlight": "^3.3.0",
+    "mermaid": "^12.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

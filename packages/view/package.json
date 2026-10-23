@@ -1,17 +1,37 @@
 {
   "name": "@v5md/view",
   "version": "0.0.1",
-  "private": true,
+  "description": "基于 contenteditable 的所见即所得 Markdown 编辑器",
   "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/theme.css"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://onedev.v5ai.xin/v5md.git",
+    "directory": "packages/view"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js"
     },
     "./theme.css": "./dist/theme.css"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp src/theme.css dist/theme.css"
+    "build": "tsc -p tsconfig.json && cp src/theme.css dist/theme.css",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@v5md/core": "0.0.1",

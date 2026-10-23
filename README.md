@@ -32,6 +32,7 @@ npm run dev:react
 
 - `npm test` 用 Vitest 跑 `packages/*/test/**/*.test.ts`。
 - `npm run build` 按 core、view、vue、react 的顺序编译到各自的 `dist`。
+- `npm run publish:onedev` 发到 OneDev，`npm run publish:packages` 发到 npm 官方仓库。发布和使用步骤见 [发布教程](发布教程.md)。
 - 两个 playground 通过 Vite alias 直接引用各包的 `src`，改源码后刷新即可看到效果。
 
 ## 支持的内容

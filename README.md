@@ -284,3 +284,7 @@ const state = createState('# 标题\n')
 发布顺序是 `@v5md/core`、`@v5md/view`、`@v5md/vue`、`@v5md/react`。同一个版本不能发第二次。改完代码后，要把四个包自己的 `version`，以及 view 对 core、vue 和 react 对 view 的依赖版本，一起改成新号。
 
 准备令牌、演练上传文件、中断后续发，以及在业务项目里配置 registry，都写在 [发布教程](发布教程.md)。
+
+## 许可
+
+本仓库采用 [MIT License](LICENSE)。版权所有 (c) 2026 zhuyanwei。可以自由使用、修改和再分发，包括商用；再分发时保留版权声明和许可全文。软件按「原样」提供，不附带任何担保。

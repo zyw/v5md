@@ -2,6 +2,7 @@
   "name": "@v5md/view",
   "version": "0.0.1",
   "description": "基于 contenteditable 的所见即所得 Markdown 编辑器",
+  "license": "MIT",
   "type": "module",
   "files": [
     "dist",

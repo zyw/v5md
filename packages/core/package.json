@@ -2,6 +2,7 @@
   "name": "@v5md/core",
   "version": "0.0.1",
   "description": "Markdown 解析与编辑，不依赖 DOM",
+  "license": "MIT",
   "type": "module",
   "files": [
     "dist",

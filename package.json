@@ -1,6 +1,7 @@
 {
   "name": "v5md",
   "private": true,
+  "license": "MIT",
   "workspaces": [
     "packages/*",
     "playground-vue",

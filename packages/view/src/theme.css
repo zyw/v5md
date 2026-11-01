@@ -19,6 +19,57 @@
   caret-color: #2c2c2c;
 }
 
+.v5-slash-menu,
+.v5-block-menu {
+  position: absolute;
+  z-index: 20;
+  display: grid;
+  width: 180px;
+  max-height: 280px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid #dce5dc;
+  border-radius: 9px;
+  background: #fffefa;
+  box-shadow: 0 12px 30px #253b2b25;
+}
+
+.v5-slash-menu button,
+.v5-block-menu button {
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  text-align: left;
+  padding: 7px 10px;
+  color: #344b3a;
+  cursor: pointer;
+}
+
+.v5-slash-menu button:hover,
+.v5-slash-menu button.is-selected,
+.v5-block-menu button:hover { background: #e9f0e8; }
+
+.v5-block-handle {
+  position: absolute;
+  z-index: 10;
+  border: 0;
+  background: transparent;
+  color: #8ca296;
+  cursor: grab;
+  font-size: 20px;
+  line-height: 24px;
+}
+
+.v5-drop-line {
+  position: absolute;
+  z-index: 11;
+  left: 28px;
+  right: 28px;
+  height: 2px;
+  background: #3d8666;
+  pointer-events: none;
+}
+
 .v5-doc {
   position: relative;
   flex: 1 1 0;

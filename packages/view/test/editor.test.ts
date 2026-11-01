@@ -75,6 +75,115 @@ describe('render', () => {
   })
 })
 
+describe('block chrome', () => {
+  it('converts the selected heading to paragraph and an entire list to tasks', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '## Title\n\n- a\n- b' })
+    editor.focusAt(4)
+    element.querySelector<HTMLButtonElement>('.v5-block-handle')?.click()
+    element.querySelector<HTMLButtonElement>('[data-block-action="paragraph"]')?.click()
+    expect(editor.getMarkdown()).toBe('Title\n\n- a\n- b')
+    editor.focusAt(editor.getMarkdown().indexOf('a'))
+    element.querySelector<HTMLButtonElement>('.v5-block-handle')?.click()
+    element.querySelector<HTMLButtonElement>('[data-block-action="taskList"]')?.click()
+    expect(editor.getMarkdown()).toBe('Title\n\n- [ ] a\n- [ ] b')
+    editor.destroy()
+  })
+
+  it('shows a keyboard reachable handle for the focused top-level block', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '- a\n- b\n\nTail'
+    const editor = new Editor({ element, value: doc })
+    editor.focusAt(doc.indexOf('a'))
+    expect(element.querySelector('.v5-block-handle')).not.toBeNull()
+    editor.destroy()
+  })
+
+  it('moves the currently focused block after focus changes', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '- a\n- b\n\nTail'
+    const editor = new Editor({ element, value: doc })
+    editor.focusAt(doc.indexOf('a'))
+    editor.focusAt(doc.indexOf('Tail'))
+    element.querySelector<HTMLButtonElement>('.v5-block-handle')?.click()
+    element.querySelector<HTMLButtonElement>('[data-block-action="up"]')?.click()
+    expect(editor.getMarkdown()).toBe('Tail\n\n- a\n- b')
+    editor.destroy()
+  })
+
+  it('shows slash commands after line-start input and executes as one undo step', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element })
+    for (const char of '/h1') {
+      element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: char, bubbles: true, cancelable: true }))
+    }
+    expect(element.querySelector('.v5-slash-menu')).not.toBeNull()
+    const option = [...element.querySelectorAll<HTMLButtonElement>('.v5-slash-menu button')].find(button => button.textContent?.includes('标题 1'))
+    option?.click()
+    expect(editor.getMarkdown()).toBe('# ')
+    editor.undo()
+    expect(editor.getMarkdown()).toBe('/h1')
+    editor.destroy()
+  })
+
+  it('ignores slash inside a code fence and while composing', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '```\n\n```' })
+    editor.focusAt(4)
+    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: '/', bubbles: true, cancelable: true }))
+    expect(element.querySelector('.v5-slash-menu')).toBeNull()
+    editor.setMarkdown('')
+    element.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertCompositionText', data: '/', bubbles: true, cancelable: true }))
+    expect(element.querySelector('.v5-slash-menu')).toBeNull()
+    const committed = new CompositionEvent('compositionend', { bubbles: true })
+    Object.defineProperty(committed, 'data', { value: '/' })
+    element.dispatchEvent(committed)
+    expect(element.querySelector('.v5-slash-menu')).not.toBeNull()
+    editor.destroy()
+  })
+
+  it('moves the list as one block from the handle action and supports undo', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '- a\n- b\n\nTail' })
+    const list = element.querySelector('.v5-doc > ul')!
+    list.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    expect(element.querySelector('.v5-block-handle')).not.toBeNull()
+    element.querySelector<HTMLButtonElement>('.v5-block-handle')?.click()
+    element.querySelector<HTMLButtonElement>('[data-block-action="down"]')?.click()
+    expect(editor.getMarkdown()).toBe('Tail\n\n- a\n- b')
+    editor.undo()
+    expect(editor.getMarkdown()).toBe('- a\n- b\n\nTail')
+    editor.destroy()
+  })
+})
+
+describe('async uploads', () => {
+  it('ignores a completed upload after the editor was destroyed on note switch', async () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    let finish!: (url: string) => void
+    const seen: string[] = []
+    const editor = new Editor({
+      element, value: 'old note',
+      onUploadImage: () => new Promise(resolve => { finish = resolve }),
+      onChange: markdown => seen.push(markdown),
+    })
+    editor.insertImageFile(new File(['a'], 'picture.png', { type: 'image/png' }))
+    editor.destroy()
+    finish('https://example.test/picture.png')
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(seen).toEqual([])
+  })
+})
+
 describe('htmlToMarkdown', () => {
   it('converts headings, emphasis, lists and links', () => {
     const markdown = htmlToMarkdown(

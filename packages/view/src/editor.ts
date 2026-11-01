@@ -1,4 +1,6 @@
 import {
+  applySlashCommand,
+  convertTopLevelBlock,
   createState,
   deleteBackward,
   deleteForward,
@@ -9,6 +11,7 @@ import {
   editTable,
   formatBlock,
   moveTableCaret,
+  moveTopLevelBlock,
   outdent,
   outline,
   parse,
@@ -23,6 +26,8 @@ import {
   undo,
   type EditorState,
   type FormatCommand,
+  type SlashCommand,
+  type BlockType,
   type OutlineEntry,
   type TableCommand,
   type TextSelection,
@@ -65,6 +70,14 @@ export class Editor {
   private outlineVisible = true
   private findQuery: HTMLInputElement | null = null
   private replaceQuery: HTMLInputElement | null = null
+  private slashMenu: HTMLElement | null = null
+  private slashRange: { from: number; to: number } | null = null
+  private slashIndex = 0
+  private handle: HTMLButtonElement | null = null
+  private handleSource: number | null = null
+  private blockMenu: HTMLElement | null = null
+  private dragSource: { start: number; doc: string } | null = null
+  private dropLine: HTMLElement | null = null
 
   constructor(options: EditorOptions) {
     this.options = options
@@ -87,6 +100,8 @@ export class Editor {
     if (next.doc === this.state.doc) return
     const offset = Math.min(this.state.selection.head, next.doc.length)
     this.state = { doc: next.doc, selection: { anchor: offset, head: offset }, history: next.history }
+    this.hideSlash()
+    this.hideHandle()
     this.render()
   }
 
@@ -98,6 +113,7 @@ export class Editor {
   focusAt(offset: number): void {
     const clamped = Math.max(0, Math.min(offset, this.state.doc.length))
     this.state = { ...this.state, selection: { anchor: clamped, head: clamped } }
+    this.handleSource = null
     this.focused = true
     this.rendering = true
     this.element.focus()
@@ -163,6 +179,9 @@ export class Editor {
 
   destroy(): void {
     this.abort.abort()
+    this.hideSlash()
+    this.hideHandle()
+    this.dropLine?.remove()
     this.findBar?.remove()
     this.findBar = null
     this.element.replaceChildren()
@@ -228,6 +247,12 @@ export class Editor {
 
   redo(): void {
     this.commit(redo(this.state))
+  }
+
+  moveBlock(sourceStart: number, targetStart: number, side: 'before' | 'after'): void {
+    this.commit(moveTopLevelBlock(this.state, sourceStart, targetStart, side))
+    this.handleSource = null
+    this.hideHandle()
   }
 
   private prepare(): void {
@@ -334,6 +359,11 @@ export class Editor {
     this.element.addEventListener('compositionstart', this.onCompositionStart, { signal })
     this.element.addEventListener('compositionend', this.onCompositionEnd, { signal })
     this.element.addEventListener('mousedown', this.onMouseDown, { signal })
+    this.element.addEventListener('mouseover', this.onHoverBlock, { signal })
+    this.element.addEventListener('dragstart', this.onDragStart, { signal })
+    this.element.addEventListener('dragover', this.onDragOver, { signal })
+    this.element.addEventListener('drop', this.onDrop, { signal })
+    this.element.addEventListener('dragend', this.onDragEnd, { signal })
     this.element.addEventListener('click', this.onClick, { signal })
     this.element.addEventListener('input', this.onInput, { signal })
     this.element.addEventListener('focus', this.onFocus, { signal })
@@ -370,6 +400,8 @@ export class Editor {
       this.attachFindBar()
       this.outlinePanel?.update(this.getOutline())
       this.syncToolbarState()
+      this.updateSlash()
+      this.positionHandle()
       if (this.focused || active) this.syncChrome()
       if (active) this.element.focus()
       this.restoreSelection()
@@ -429,6 +461,25 @@ export class Editor {
 
   private onKeyDown = (event: KeyboardEvent) => {
     if (this.composing || event.isComposing) return
+    if (this.slashMenu?.isConnected) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        this.hideSlash()
+        return
+      }
+      const options = [...this.slashMenu.querySelectorAll<HTMLButtonElement>('button')]
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault()
+        this.slashIndex = (this.slashIndex + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length
+        options.forEach((option, index) => option.classList.toggle('is-selected', index === this.slashIndex))
+        return
+      }
+      if (event.key === 'Enter' && options.length > 0) {
+        event.preventDefault()
+        this.executeSlash(options[this.slashIndex].dataset.command as SlashCommand)
+        return
+      }
+    }
     const mod = event.metaKey || event.ctrlKey
     const key = event.key.toLowerCase()
     if (mod && !event.altKey && key === 'z') {
@@ -584,7 +635,7 @@ export class Editor {
     const upload = this.options.onUploadImage
     if (!upload) return
     const url = await upload(file)
-    if (!url) return
+    if (!url || this.abort.signal.aborted) return
     const alt = file.name.replace(/\.[^.]+$/, '')
     this.commit(insertText(this.state, `![${alt}](${url})`))
   }
@@ -613,6 +664,7 @@ export class Editor {
 
   private onCompositionStart = () => {
     this.composing = true
+    this.hideSlash()
     this.compositionSelection = this.state.selection
   }
 
@@ -646,6 +698,8 @@ export class Editor {
   private onBlur = () => {
     if (this.rendering) return
     this.focused = false
+    this.hideSlash()
+    this.blockMenu?.remove()
     this.clearChrome()
   }
 
@@ -653,6 +707,8 @@ export class Editor {
     applyChrome(this.element, this.state.selection.head, this.state.selection.anchor, this.state.doc.length)
     this.syncTableBar()
     this.syncToolbarState()
+    this.updateSlash()
+    this.positionHandle()
   }
 
   private clearChrome(): void {
@@ -703,7 +759,7 @@ export class Editor {
     const target = event.target
     if (!(target instanceof Element) || !this.element.contains(target)) return
     if (target.closest('.v5md-find')) return
-    if (target.closest('.v5-toolbar, .v5-outline, .v5-tablebar')) {
+    if (target.closest('.v5-toolbar, .v5-outline, .v5-tablebar, .v5-slash-menu, .v5-block-handle, .v5-block-menu')) {
       event.preventDefault()
       return
     }
@@ -767,6 +823,9 @@ export class Editor {
       this.findBar?.contains(selection.anchorNode) ||
       this.toolbar?.contains(selection.anchorNode) ||
       this.outlinePanel?.element.contains(selection.anchorNode)
+      || this.slashMenu?.contains(selection.anchorNode)
+      || this.blockMenu?.contains(selection.anchorNode)
+      || this.handle?.contains(selection.anchorNode)
     ) {
       return
     }
@@ -775,11 +834,222 @@ export class Editor {
     if (anchor == null || head == null) return
     if (anchor !== this.state.selection.anchor || head !== this.state.selection.head) {
       this.state = { ...this.state, selection: { anchor, head } }
+      this.handleSource = null
     }
     if (this.focused || document.activeElement === this.element) {
       this.focused = true
       this.syncChrome()
     }
+  }
+
+  private updateSlash(): void {
+    if (this.composing || this.sourceMode || this.state.selection.anchor !== this.state.selection.head) {
+      this.hideSlash()
+      return
+    }
+    const to = this.state.selection.head
+    const from = this.state.doc.lastIndexOf('\n', to - 1) + 1
+    const text = this.state.doc.slice(from, to)
+    const path = pathAt(parse(this.state.doc), Math.max(from, to - 1), this.state.doc.length)
+    if (!/^\/[^\n]*$/.test(text) || path.some(node =>
+      ['code', 'yaml', 'math', 'table', 'inlineCode'].includes(node.type))) {
+      this.hideSlash()
+      return
+    }
+    const query = text.slice(1).toLowerCase()
+    const options = SLASH_COMMANDS.filter(([command, title]) =>
+      command.toLowerCase().includes(query) || command.replace('heading', 'h').includes(query) || title.includes(query))
+    if (options.length === 0) {
+      this.hideSlash()
+      return
+    }
+    this.slashRange = { from, to }
+    this.slashIndex = 0
+    if (!this.slashMenu) {
+      this.slashMenu = document.createElement('div')
+      this.slashMenu.className = 'v5-slash-menu'
+      this.slashMenu.contentEditable = 'false'
+      this.slashMenu.setAttribute('role', 'listbox')
+    }
+    this.slashMenu.replaceChildren(...options.map(([command, title], index) => {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.dataset.command = command
+      button.textContent = title
+      button.className = index === 0 ? 'is-selected' : ''
+      button.addEventListener('click', () => this.executeSlash(command))
+      return button
+    }))
+    this.element.append(this.slashMenu)
+    const point = offsetToDomPoint(this.element, to)
+    if (point) {
+      const range = document.createRange()
+      range.setStart(point.node, point.offset)
+      range.collapse(true)
+      const rect = range.getBoundingClientRect()
+      const host = this.element.getBoundingClientRect()
+      this.slashMenu.style.left = `${Math.max(0, rect.left - host.left)}px`
+      this.slashMenu.style.top = `${Math.max(0, rect.bottom - host.top + 6)}px`
+    }
+  }
+
+  private executeSlash(command: SlashCommand): void {
+    const range = this.slashRange
+    if (!range) return
+    this.hideSlash()
+    this.focused = true
+    this.commit(applySlashCommand(this.state, range.from, range.to, command))
+    this.element.focus()
+  }
+
+  private hideSlash(): void {
+    this.slashMenu?.remove()
+    this.slashRange = null
+  }
+
+  private onHoverBlock = (event: MouseEvent) => {
+    if (this.sourceMode || this.dragSource) return
+    const target = event.target
+    if (!(target instanceof Element) || target.closest('.v5-block-handle, .v5-block-menu')) return
+    const block = target.closest<HTMLElement>('[data-block]')
+    if (!block || block.parentElement !== this.element.querySelector('.v5-doc') || block.dataset.block === 'yaml') return
+    this.handleSource = Number(block.dataset.start)
+    this.positionHandle()
+  }
+
+  private positionHandle(): void {
+    if (this.sourceMode) return
+    if (this.handleSource === null && this.focused) {
+      const offset = this.state.selection.head
+      const block = parse(this.state.doc).children.find(node =>
+        node.end > node.start && node.type !== 'yaml' && node.start <= offset && offset <= node.end)
+      this.handleSource = block?.start ?? null
+    }
+    if (this.handleSource === null) return
+    const block = [...this.element.querySelectorAll<HTMLElement>('.v5-doc > [data-block]')]
+      .find(node => Number(node.dataset.start) === this.handleSource && node.dataset.block !== 'yaml')
+    if (!block) {
+      this.hideHandle()
+      return
+    }
+    if (!this.handle) {
+      this.handle = document.createElement('button')
+      this.handle.type = 'button'
+      this.handle.className = 'v5-block-handle'
+      this.handle.contentEditable = 'false'
+      this.handle.draggable = true
+      this.handle.setAttribute('aria-label', '块操作')
+      this.handle.textContent = '⠿'
+      this.handle.addEventListener('click', () => this.openBlockMenu())
+    }
+    this.element.append(this.handle)
+    const rect = block.getBoundingClientRect()
+    const host = this.element.getBoundingClientRect()
+    this.handle.style.top = `${rect.top - host.top + this.element.scrollTop}px`
+    this.handle.style.left = `${rect.left - host.left - 28}px`
+  }
+
+  private openBlockMenu(): void {
+    if (this.handleSource === null) return
+    const node = parse(this.state.doc).children.find(child => child.start === this.handleSource)
+    if (!node) return
+    this.blockMenu?.remove()
+    const menu = document.createElement('div')
+    menu.className = 'v5-block-menu'
+    menu.contentEditable = 'false'
+    for (const [action, label] of [
+      ['up', '上移'], ['down', '下移'], ['before', '上方插入'], ['after', '下方插入'],
+      ['paragraph', '正文'], ['heading1', '标题 1'], ['heading2', '标题 2'], ['heading3', '标题 3'],
+      ['bulletList', '无序列表'], ['orderedList', '有序列表'], ['taskList', '待办列表'],
+      ['quote', '引用'], ['delete', '删除块'],
+    ]) {
+      if (['paragraph', 'heading1', 'heading2', 'heading3', 'bulletList', 'orderedList', 'taskList', 'quote'].includes(action)) {
+        if (!['paragraph', 'heading', 'blockquote', 'list'].includes(node.type)) continue
+        if (node.type === 'list' && (node.children.length !== 1 || this.state.doc.slice(node.start, node.end).includes('\n'))
+          && !['bulletList', 'orderedList', 'taskList'].includes(action)) continue
+      }
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.dataset.blockAction = action
+      button.textContent = label
+      button.addEventListener('click', () => this.runBlockAction(action))
+      menu.append(button)
+    }
+    this.blockMenu = menu
+    this.element.append(menu)
+    menu.style.top = `${parseFloat(this.handle?.style.top || '0') + 26}px`
+    menu.style.left = `${parseFloat(this.handle?.style.left || '0')}px`
+  }
+
+  private runBlockAction(action: string): void {
+    this.blockMenu?.remove()
+    const blocks = parse(this.state.doc).children.filter(node => node.end > node.start && node.type !== 'yaml')
+    const index = blocks.findIndex(node => node.start === this.handleSource)
+    if (index < 0) return
+    const block = blocks[index]
+    if (action === 'up' || action === 'down') {
+      const target = blocks[index + (action === 'up' ? -1 : 1)]
+      if (target) this.moveBlock(block.start, target.start, action === 'up' ? 'before' : 'after')
+      return
+    }
+    if (action === 'delete') {
+      const end = blocks[index + 1]?.start ?? this.state.doc.length
+      this.commit(insertText({ ...this.state, selection: { anchor: block.start, head: end } }, ''))
+    } else if (action === 'before' || action === 'after') {
+      const offset = action === 'before' ? block.start : block.end
+      this.commit(insertText({ ...this.state, selection: { anchor: offset, head: offset } }, '\n\n'))
+    } else {
+      this.commit(convertTopLevelBlock(this.state, block.start, action as BlockType))
+    }
+    this.hideHandle()
+  }
+
+  private hideHandle(): void {
+    this.handle?.remove()
+    this.blockMenu?.remove()
+    this.handleSource = null
+  }
+
+  private onDragStart = (event: DragEvent) => {
+    if (event.target !== this.handle || this.handleSource === null) return
+    this.dragSource = { start: this.handleSource, doc: this.state.doc }
+    event.dataTransfer?.setData('text/plain', '')
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+  }
+
+  private onDragOver = (event: DragEvent) => {
+    if (!this.dragSource || this.state.doc !== this.dragSource.doc) return
+    const target = event.target
+    const block = target instanceof Element ? target.closest<HTMLElement>('[data-block]') : null
+    if (!block || block.parentElement !== this.element.querySelector('.v5-doc')
+      || block.dataset.block === 'yaml' || Number(block.dataset.start) === this.dragSource.start) return
+    event.preventDefault()
+    if (!this.dropLine) {
+      this.dropLine = document.createElement('div')
+      this.dropLine.className = 'v5-drop-line'
+    }
+    this.element.append(this.dropLine)
+    const rect = block.getBoundingClientRect()
+    const host = this.element.getBoundingClientRect()
+    this.dropLine.style.top = `${(event.clientY >= (rect.top + rect.bottom) / 2 ? rect.bottom : rect.top) - host.top}px`
+  }
+
+  private onDrop = (event: DragEvent) => {
+    const source = this.dragSource
+    this.onDragEnd()
+    if (!source || source.doc !== this.state.doc) return
+    const target = event.target
+    const block = target instanceof Element ? target.closest<HTMLElement>('[data-block]') : null
+    if (!block || block.parentElement !== this.element.querySelector('.v5-doc') || block.dataset.block === 'yaml') return
+    event.preventDefault()
+    const rect = block.getBoundingClientRect()
+    this.moveBlock(source.start, Number(block.dataset.start),
+      event.clientY >= (rect.top + rect.bottom) / 2 ? 'after' : 'before')
+  }
+
+  private onDragEnd = () => {
+    this.dragSource = null
+    this.dropLine?.remove()
   }
 
   private ensureFindBar(): HTMLFormElement {
@@ -862,6 +1132,12 @@ export class Editor {
 }
 
 const diagramCache = new Map<string, string>()
+
+const SLASH_COMMANDS: Array<[SlashCommand, string]> = [
+  ['paragraph', '正文'], ['heading1', '标题 1'], ['heading2', '标题 2'], ['heading3', '标题 3'],
+  ['bulletList', '无序列表'], ['orderedList', '有序列表'], ['taskList', '待办列表'],
+  ['quote', '引用'], ['code', '代码块'], ['rule', '分割线'], ['image', '图片'],
+]
 
 function imageAltRange(doc: string, start: number, end: number): { anchor: number; head: number } {
   const match = /^!\[([^\]]*)\]/.exec(doc.slice(start, end))

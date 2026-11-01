@@ -23,6 +23,110 @@ export function createState(markdown = ''): EditorState {
   }
 }
 
+export function moveTopLevelBlock(
+  state: EditorState,
+  sourceStart: number,
+  targetStart: number,
+  side: 'before' | 'after',
+): EditorState {
+  const blocks = parse(state.doc).children.filter((node) => node.end > node.start)
+  const source = blocks.findIndex((node) => node.start === sourceStart)
+  const target = blocks.findIndex((node) => node.start === targetStart)
+  if (source < 0 || target < 0 || source === target) return state
+  if (blocks[source].type === 'yaml' || blocks[target].type === 'yaml') return state
+  const order = blocks.map((_, index) => index)
+  order.splice(source, 1)
+  const insertion = order.indexOf(target) + (side === 'after' ? 1 : 0)
+  order.splice(insertion, 0, source)
+  if (order.every((value, index) => value === index)) return state
+
+  // Separator slots stay at their original positions; only complete block source ranges move.
+  const prefix = state.doc.slice(0, blocks[0].start)
+  const separators = blocks.map((node, index) =>
+    state.doc.slice(node.end, blocks[index + 1]?.start ?? state.doc.length))
+  let doc = prefix
+  let movedStart = 0
+  for (let index = 0; index < order.length; index += 1) {
+    if (order[index] === source) movedStart = doc.length
+    const node = blocks[order[index]]
+    doc += state.doc.slice(node.start, node.end) + separators[index]
+  }
+  const sourceNode = blocks[source]
+  const map = (offset: number) => offset >= sourceNode.start && offset <= sourceNode.end
+    ? movedStart + offset - sourceNode.start
+    : movedStart
+  const selection = { anchor: map(state.selection.anchor), head: map(state.selection.head) }
+  return applyEdit(state, { from: 0, to: state.doc.length, insert: doc }, selection)
+}
+
+export type SlashCommand = FormatCommand | 'paragraph' | 'image'
+
+export function applySlashCommand(
+  state: EditorState, from: number, to: number, command: SlashCommand,
+): EditorState {
+  if (from !== (state.doc.lastIndexOf('\n', from - 1) + 1) || to !== state.selection.head) return state
+  if (!/^\/[^\n]*$/.test(state.doc.slice(from, to))) return state
+  const path = pathAt(parse(state.doc), from + 1, state.doc.length)
+  if (path.some((node) => ['code', 'yaml', 'math', 'table', 'inlineCode'].includes(node.type))) return state
+  const removed = {
+    ...state,
+    doc: state.doc.slice(0, from) + state.doc.slice(to),
+    selection: caret(from),
+  }
+  const formatted = command === 'paragraph' ? removed
+    : command === 'image' ? insertText(removed, '![]()')
+    : formatBlock(removed, command)
+  return applyEdit(state, { from: 0, to: state.doc.length, insert: formatted.doc }, formatted.selection)
+}
+
+export type BlockType =
+  | 'paragraph' | 'heading1' | 'heading2' | 'heading3'
+  | 'bulletList' | 'orderedList' | 'taskList' | 'quote'
+
+export function convertTopLevelBlock(state: EditorState, start: number, type: BlockType): EditorState {
+  const node = parse(state.doc).children.find(child => child.start === start && child.end > child.start)
+  if (!node || !['paragraph', 'heading', 'blockquote', 'list'].includes(node.type)) return state
+  const raw = state.doc.slice(node.start, node.end)
+  let replacement = raw
+  if (node.type === 'list' && ['bulletList', 'orderedList', 'taskList'].includes(type)) {
+    const edits: Array<{ start: number; end: number; text: string }> = []
+    const collect = (list: MdNode) => {
+      list.children.filter(item => item.type === 'listItem').forEach((item, index) => {
+        const marker = item.children.find(child => child.type === 'marker' && child.marker === 'block')
+        if (marker) {
+          const text = type === 'orderedList' ? `${index + 1}. `
+            : type === 'taskList' ? `- [${item.checked ? 'x' : ' '}] ` : '- '
+          edits.push({ start: marker.start - node.start, end: marker.end - node.start, text })
+        }
+        item.children.filter(child => child.type === 'list').forEach(collect)
+      })
+    }
+    collect(node)
+    for (const edit of edits.sort((a, b) => b.start - a.start)) {
+      replacement = replacement.slice(0, edit.start) + edit.text + replacement.slice(edit.end)
+    }
+  } else {
+    if (node.type === 'list' && (node.children.length !== 1 || raw.includes('\n'))) return state
+    if (node.type === 'blockquote' && raw.includes('\n')) return state
+    const prefix = type === 'paragraph' ? '' : type === 'heading1' ? '# '
+      : type === 'heading2' ? '## ' : type === 'heading3' ? '### '
+      : type === 'orderedList' ? '1. ' : type === 'bulletList' ? '- '
+      : type === 'taskList' ? '- [ ] ' : '> '
+    const listMarker = node.type === 'list'
+      ? node.children[0].children.find(child => child.type === 'marker') : undefined
+    if (node.type === 'list' && !listMarker) return state
+    const body = node.type === 'list'
+      ? raw.slice(listMarker!.end - node.start)
+      : node.type === 'heading' ? raw.replace(/^#{1,6}[ \t]+/, '')
+      : node.type === 'blockquote' ? raw.replace(/^>[ \t]?/, '') : raw
+    replacement = prefix + body
+  }
+  if (replacement === raw) return state
+  const caretOffset = Math.min(replacement.length, Math.max(0, state.selection.head - node.start))
+  return applyEdit(state, { from: node.start, to: node.end, insert: replacement },
+    caret(node.start + caretOffset))
+}
+
 export function insertText(state: EditorState, text: string): EditorState {
   const insert = normalizeNewlines(text)
   if (insert === '' && sortedRange(state.selection).from === sortedRange(state.selection).to) return state

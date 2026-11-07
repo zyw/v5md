@@ -10,6 +10,7 @@ import {
   parse,
   redo,
   replaceAllText,
+  resizeImage,
   splitBlock,
   toggleMark,
   toggleTask,
@@ -226,5 +227,17 @@ describe('edit', () => {
     const undone = undo(typed)
     expect(undone.doc).toBe('')
     expect(redo(undone).doc).toBe('ab')
+  })
+
+  it('records an image size change as one undo step', () => {
+    const initial = createState('![图](a.png "标题")\n')
+    const inside = { ...initial, selection: { anchor: 2, head: 3 } }
+    const width = resizeImage(inside, 240)
+    expect(width.doc).toBe('![图](a.png "标题" =240x)\n')
+    const both = resizeImage(width, 240, 160)
+    expect(both.doc).toBe('![图](a.png "标题" =240x160)\n')
+    expect(undo(both).doc).toBe('![图](a.png "标题" =240x)\n')
+    expect(resizeImage(initial, 0).doc).toBe(initial.doc)
+    expect(resizeImage({ ...createState('正文'), selection: { anchor: 0, head: 1 } }, 80).doc).toBe('正文')
   })
 })

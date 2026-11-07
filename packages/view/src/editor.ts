@@ -19,6 +19,7 @@ import {
   redo,
   replaceAllMatches as replaceEveryMatch,
   replaceCurrentMatch,
+  resizeImage,
   sortedRange,
   splitBlock,
   toggleMark,
@@ -88,6 +89,7 @@ export class Editor {
   private blockMenu: HTMLElement | null = null
   private dragSource: { start: number; doc: string } | null = null
   private dropLine: HTMLElement | null = null
+  private imageDrag: { pointerId: number; startX: number; width: number; height: number; keepHeight: boolean; img: HTMLImageElement } | null = null
 
   constructor(options: EditorOptions) {
     this.options = options
@@ -458,6 +460,10 @@ export class Editor {
     this.element.addEventListener('scroll', () => this.positionTableBar(), { signal })
     document.addEventListener('scroll', () => this.positionTableBar(), { signal, capture: true })
     document.addEventListener('pointerdown', this.onPointerDown, { signal, capture: true })
+    this.element.addEventListener('pointerdown', this.onImagePointerDown, { signal })
+    document.addEventListener('pointermove', this.onImagePointerMove, { signal })
+    document.addEventListener('pointerup', this.onImagePointerUp, { signal })
+    document.addEventListener('pointercancel', this.onImagePointerUp, { signal })
   }
 
   private commit(next: EditorState): void {
@@ -862,7 +868,7 @@ export class Editor {
   }
 
   private onBlur = () => {
-    if (this.rendering) return
+    if (this.rendering || this.imageDrag) return
     this.focused = false
     this.hideSlash()
     this.hideBlockMenu()
@@ -925,11 +931,57 @@ export class Editor {
     bar.style.left = `${left}px`
   }
 
+  private onImagePointerDown = (event: PointerEvent) => {
+    const target = event.target
+    if (!(target instanceof Element) || !this.editable || this.imageDrag) return
+    const handle = target.closest('.v5-image-resize')
+    if (!handle || !this.element.contains(handle)) return
+    const img = handle.closest('.v5-image')?.querySelector('img')
+    if (!(img instanceof HTMLImageElement)) return
+    const rect = img.getBoundingClientRect()
+    const width = Number(img.dataset.width || 0) || rect.width
+    const height = Number(img.dataset.height || 0) || rect.height
+    if (width < 1) return
+    event.preventDefault()
+    event.stopPropagation()
+    try { handle.setPointerCapture?.(event.pointerId) } catch { /* the document listeners still follow the pointer */ }
+    this.imageDrag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      width,
+      height: height || width,
+      keepHeight: img.dataset.height != null && img.dataset.height !== '',
+      img,
+    }
+  }
+
+  private onImagePointerMove = (event: PointerEvent) => {
+    const drag = this.imageDrag
+    if (!drag || event.pointerId !== drag.pointerId) return
+    event.preventDefault()
+    const nextWidth = resizedWidth(drag.width, event.clientX - drag.startX)
+    drag.img.style.width = `${nextWidth}px`
+    drag.img.style.maxWidth = '100%'
+    drag.img.style.height = 'auto'
+    if (drag.keepHeight) drag.img.style.aspectRatio = `${nextWidth} / ${resizedHeight(drag, nextWidth)}`
+  }
+
+  private onImagePointerUp = (event: PointerEvent) => {
+    const drag = this.imageDrag
+    if (!drag || event.pointerId !== drag.pointerId) return
+    this.imageDrag = null
+    if (Math.round(event.clientX - drag.startX) === 0) return
+    const nextWidth = resizedWidth(drag.width, event.clientX - drag.startX)
+    const nextHeight = drag.keepHeight ? resizedHeight(drag, nextWidth) : undefined
+    this.focused = true
+    this.commit(resizeImage(this.state, nextWidth, nextHeight))
+  }
+
   private onMouseDown = (event: MouseEvent) => {
     const target = event.target
     if (!(target instanceof Element) || !this.element.contains(target)) return
     if (target.closest('.v5md-find')) return
-    if (target.closest('.v5-toolbar, .v5-outline, .v5-tablebar, .v5-slash-menu, .v5-block-handle, .v5-block-menu')) {
+    if (target.closest('.v5-toolbar, .v5-outline, .v5-tablebar, .v5-slash-menu, .v5-block-handle, .v5-block-menu, .v5-image-resize')) {
       event.preventDefault()
       return
     }
@@ -986,7 +1038,7 @@ export class Editor {
   }
 
   private onSelectionChange = () => {
-    if (this.rendering || this.composing) return
+    if (this.rendering || this.composing || this.imageDrag) return
     const selection = document.getSelection()
     if (!selection?.anchorNode || !this.element.contains(selection.anchorNode)) return
     if (
@@ -1323,6 +1375,14 @@ const SLASH_COMMANDS: Array<[SlashCommand, string]> = [
   ['bulletList', '无序列表'], ['orderedList', '有序列表'], ['taskList', '待办列表'],
   ['quote', '引用'], ['code', '代码块'], ['rule', '分割线'], ['image', '图片'],
 ]
+
+function resizedWidth(start: number, delta: number): number {
+  return Math.min(4096, Math.max(16, Math.round(start + delta)))
+}
+
+function resizedHeight(drag: { width: number; height: number }, nextWidth: number): number {
+  return Math.min(4096, Math.max(16, Math.round(nextWidth * drag.height / drag.width)))
+}
 
 function imageAltRange(doc: string, start: number, end: number): { anchor: number; head: number } {
   const match = /^!\[([^\]]*)\]/.exec(doc.slice(start, end))

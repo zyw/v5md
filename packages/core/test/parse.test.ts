@@ -157,4 +157,16 @@ describe('parse', () => {
       expect(doc.slice(leaf.start, leaf.end)).toBe(leaf.text ?? '')
     }
   })
+
+  it('reads a size token inside an image without taking over code', () => {
+    const doc = '看 ![说明](pic.png "标题" =240x160) 这里\n'
+    const image = collect(parse(doc), 'image')[0]
+    expect(image).toMatchObject({ url: 'pic.png', alt: '说明', title: '标题', width: 240, height: 160 })
+    expect(doc.slice(image?.start ?? 0, image?.end ?? 0)).toBe('![说明](pic.png "标题" =240x160)')
+    const widthOnly = collect(parse('![](pic.png =80x)\n'), 'image')[0]
+    expect(widthOnly).toMatchObject({ url: 'pic.png', alt: '', width: 80 })
+    expect(widthOnly?.height).toBeUndefined()
+    expect(collect(parse('![说明](pic.png)\n'), 'image')[0]?.width).toBeUndefined()
+    expect(parse('```\n![说明](pic.png =10x)\n```\n').children[0]?.type).toBe('code')
+  })
 })

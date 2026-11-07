@@ -239,13 +239,33 @@ function renderLink(node: MdNode): HTMLElement {
 function renderImage(node: MdNode): HTMLElement {
   const host = inline('span', node, 'v5-image')
   host.replaceChildren()
+  const frame = document.createElement('span')
+  frame.className = 'v5-image-frame'
+  frame.contentEditable = 'false'
   const image = document.createElement('img')
   image.className = 'v5-image-preview'
   image.alt = node.alt ?? ''
   image.src = node.url ?? ''
   image.setAttribute('data-void', 'image')
+  if (node.width) {
+    image.dataset.width = String(node.width)
+    image.style.width = `${node.width}px`
+    image.style.maxWidth = '100%'
+    image.style.height = 'auto'
+  }
+  if (node.width && node.height) {
+    image.dataset.height = String(node.height)
+    image.style.aspectRatio = `${node.width} / ${node.height}`
+  }
+  const handle = document.createElement('button')
+  handle.type = 'button'
+  handle.className = 'v5-image-resize'
+  handle.tabIndex = -1
+  handle.contentEditable = 'false'
+  handle.setAttribute('aria-label', '调整图片大小')
+  frame.append(image, handle)
   const source = leaf('span', node, 'v5-source', node.children.map((child) => child.text ?? '').join(''))
-  host.append(source, image)
+  host.append(source, frame)
   const caption = node.alt?.trim()
   if (caption) {
     const label = document.createElement('span')

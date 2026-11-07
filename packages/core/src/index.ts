@@ -37,6 +37,7 @@ export {
   previousBoundary,
   redo,
   replaceAllMatches,
+  resizeImage,
   replaceAllText,
   replaceCurrentMatch,
   splitBlock,

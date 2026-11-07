@@ -1,5 +1,5 @@
 import { replacementFor, replaceQuery, runFind, selectedMatch, type FindOptions, type FindQueryResult } from './find.js'
-import { nodeText, parse, pathAt } from './parse.js'
+import { nodeText, parse, pathAt, withImageSize } from './parse.js'
 import {
   caret,
   normalizeNewlines,
@@ -126,6 +126,19 @@ export function convertTopLevelBlock(state: EditorState, start: number, type: Bl
   const caretOffset = Math.min(replacement.length, Math.max(0, state.selection.head - node.start))
   return applyEdit(state, { from: node.start, to: node.end, insert: replacement },
     caret(node.start + caretOffset))
+}
+
+export function resizeImage(state: EditorState, width: number, height?: number): EditorState {
+  const nextWidth = Math.round(width)
+  const nextHeight = height == null ? undefined : Math.round(height)
+  if (!Number.isFinite(nextWidth) || nextWidth < 1 || nextWidth > 4096) return state
+  if (nextHeight != null && (!Number.isFinite(nextHeight) || nextHeight < 1 || nextHeight > 4096)) return state
+  const image = pathAt(parse(state.doc), state.selection.head, state.doc.length).find((node) => node.type === 'image')
+  if (!image) return state
+  const raw = state.doc.slice(image.start, image.end)
+  const insert = withImageSize(raw, nextWidth, nextHeight)
+  if (insert === raw) return state
+  return applyEdit(state, { from: image.start, to: image.end, insert }, state.selection)
 }
 
 export function insertText(state: EditorState, text: string): EditorState {

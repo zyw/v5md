@@ -335,6 +335,42 @@ describe('Editor', () => {
     editor.destroy()
   })
 
+  it('shows an image at the size written in its source and updates that size from the corner', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '![示意图](sample.svg =200x100)\n'
+    const editor = new Editor({ element, value: doc })
+    const image = element.querySelector('img')
+    expect(image?.style.width).toBe('200px')
+    expect(image?.style.aspectRatio).toBe('200 / 100')
+    element.querySelector('img')?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    const handle = element.querySelector('.v5-image-resize')
+    expect(handle).not.toBeNull()
+    handle?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 20, pointerId: 1 }))
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 70, pointerId: 1 }))
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 70, pointerId: 1 }))
+    expect(editor.getMarkdown()).toBe('![示意图](sample.svg =250x125)\n')
+    editor.undo()
+    expect(editor.getMarkdown()).toBe(doc)
+    editor.destroy()
+  })
+
+  it('keeps preview images at their size without accepting a drag', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '![示意图](sample.svg =240x)\n'
+    const editor = new Editor({ element, value: doc, editable: false })
+    const image = element.querySelector('img')
+    expect(image?.style.width).toBe('240px')
+    expect(image?.style.height).toBe('auto')
+    image?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    expect(element.querySelector('.v5-image')?.classList.contains('is-source')).toBe(false)
+    element.querySelector('.v5-image-resize')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 10, pointerId: 2 }))
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 80, pointerId: 2 }))
+    expect(editor.getMarkdown()).toBe(doc)
+    editor.destroy()
+  })
+
   it('opens the find bar inside the editor', () => {
     const element = document.createElement('div')
     document.body.append(element)

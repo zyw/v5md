@@ -72,6 +72,8 @@ export interface MdNode {
   url?: string
   alt?: string
   title?: string | null
+  width?: number
+  height?: number
   checked?: boolean | null
   align?: Align[] | null
   value?: string

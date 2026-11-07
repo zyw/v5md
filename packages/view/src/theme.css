@@ -343,6 +343,36 @@
   border-radius: 6px;
 }
 
+.v5md .v5-image-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.v5md .v5-image-resize {
+  display: none;
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  z-index: 2;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  background: #3d8666;
+  cursor: nwse-resize;
+}
+
+.v5md .v5-image.is-source .v5-image-resize {
+  display: block;
+}
+
+.v5md.is-preview .v5-image-resize {
+  display: none;
+}
+
 .v5md .v5-image .v5-source,
 .v5md .v5-hr .v5-source,
 .v5md .v5-math .v5-source {

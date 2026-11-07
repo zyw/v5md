@@ -52,6 +52,7 @@ export function parse(markdown: string): MdNode {
   ensureListItemCaret(root)
   applyUnderline(root)
   applyHighlight(root)
+  liftSizedImages(root, doc)
   if (root.children.length === 0) root.children.push(emptyParagraph(0))
   return root
 }
@@ -378,7 +379,66 @@ function convertCode(node: Code, doc: string): MdNode {
 
 function convertImage(node: Image, doc: string): MdNode {
   const whole = convertWhole(node, doc, 'image')
-  return { ...whole, url: node.url, alt: node.alt ?? '', title: node.title }
+  return { ...whole, url: node.url, alt: node.alt ?? '', title: node.title, ...readImageSize(doc.slice(whole.start, whole.end)) }
+}
+
+const SIZED_IMAGE = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\s+=([1-9]\d*)x(\d*)\)/
+const SIZE_TOKEN = /\s+=[1-9]\d*x\d*(?=\s*\))/
+
+export function withImageSize(source: string, width: number, height?: number): string {
+  const token = height != null && height > 0 ? ` =${width}x${height}` : ` =${width}x`
+  if (SIZE_TOKEN.test(source)) return source.replace(SIZE_TOKEN, token)
+  const close = source.lastIndexOf(')')
+  if (close < 0) return source
+  return `${source.slice(0, close)}${token}${source.slice(close)}`
+}
+
+function readImageSize(source: string): { width?: number; height?: number } {
+  const match = new RegExp(SIZED_IMAGE.source).exec(source)
+  if (!match) return {}
+  const width = Number(match[4])
+  const height = match[5] ? Number(match[5]) : 0
+  return height > 0 ? { width, height } : { width }
+}
+
+function liftSizedImages(node: MdNode, doc: string): void {
+  if (node.type === 'code' || node.type === 'inlineCode' || node.type === 'html' || node.type === 'math' || node.type === 'inlineMath' || node.type === 'yaml' || node.type === 'image') return
+  node.children = node.children.flatMap((child) => child.type === 'text' ? splitSizedImages(child, doc) : [child])
+  node.children.forEach((child) => liftSizedImages(child, doc))
+}
+
+function splitSizedImages(node: MdNode, doc: string): MdNode[] {
+  const text = node.text ?? ''
+  const parts: MdNode[] = []
+  let cursor = 0
+  for (const match of text.matchAll(new RegExp(SIZED_IMAGE.source, 'g'))) {
+    const index = match.index ?? 0
+    if (index > cursor) parts.push(textSlice(node.start, cursor, index, doc))
+    const start = node.start + index
+    const end = start + match[0].length
+    const height = match[5] ? Number(match[5]) : 0
+    parts.push({
+      type: 'image',
+      start,
+      end,
+      url: match[2],
+      alt: match[1],
+      title: match[3] ?? null,
+      width: Number(match[4]),
+      ...(height > 0 ? { height } : {}),
+      children: [textNode(start, end, doc.slice(start, end))],
+    })
+    cursor = end - node.start
+  }
+  if (cursor === 0) return [node]
+  if (cursor < text.length) parts.push(textSlice(node.start, cursor, text.length, doc))
+  return parts
+}
+
+function textSlice(base: number, from: number, to: number, doc: string): MdNode {
+  const start = base + from
+  const end = base + to
+  return textNode(start, end, doc.slice(start, end))
 }
 
 function convertHtml(node: Html, doc: string): MdNode {

@@ -106,7 +106,7 @@ export class Editor {
   }
 
   focus(): void {
-    this.element.focus()
+    this.focusSurface()
     this.restoreSelection()
   }
 
@@ -116,7 +116,7 @@ export class Editor {
     this.handleSource = null
     this.focused = true
     this.rendering = true
-    this.element.focus()
+    this.focusSurface()
     this.render()
     this.scrollSelectionIntoView()
   }
@@ -157,7 +157,7 @@ export class Editor {
     if (!match) return false
     this.state = { ...this.state, selection: { anchor: match.from, head: match.to } }
     this.focused = true
-    this.element.focus()
+    this.focusSurface()
     this.render()
     return true
   }
@@ -214,7 +214,7 @@ export class Editor {
 
   format(command: FormatCommand): void {
     this.focused = true
-    this.element.focus()
+    this.focusSurface()
     this.commit(formatBlock(this.state, command))
   }
 
@@ -257,12 +257,35 @@ export class Editor {
 
   private prepare(): void {
     this.element.classList.add('v5md')
-    this.element.contentEditable = 'true'
-    this.element.spellcheck = false
-    this.element.autocapitalize = 'off'
-    this.element.setAttribute('role', 'textbox')
-    this.element.setAttribute('aria-multiline', 'true')
+    // The shell is a row flexbox (toolbar, document, outline). A contenteditable
+    // flex container turns IME composition into sibling flex items, so the
+    // uncommitted text sits beside the placeholder. Edit the document itself.
+    this.element.contentEditable = 'false'
     this.element.translate = false
+    this.syncSurface()
+  }
+
+  private surface(): HTMLElement {
+    const doc = this.element.querySelector('.v5-doc')
+    return doc instanceof HTMLElement ? doc : this.element
+  }
+
+  private focusSurface(): void {
+    this.surface().focus()
+  }
+
+  private syncSurface(): void {
+    const doc = this.element.querySelector('.v5-doc')
+    if (!(doc instanceof HTMLElement)) return
+    doc.contentEditable = 'true'
+    doc.spellcheck = false
+    doc.autocapitalize = 'off'
+    doc.setAttribute('role', 'textbox')
+    doc.setAttribute('aria-multiline', 'true')
+    doc.translate = false
+    if (!this.composing) doc.classList.remove('is-composing')
+    this.element.removeAttribute('role')
+    this.element.removeAttribute('aria-multiline')
   }
 
   private mountChrome(): void {
@@ -280,7 +303,7 @@ export class Editor {
 
   private runToolbar(command: ToolbarCommand): void {
     this.focused = true
-    this.element.focus()
+    this.focusSurface()
     switch (command) {
       case 'code':
       case 'table':
@@ -366,11 +389,12 @@ export class Editor {
     this.element.addEventListener('dragend', this.onDragEnd, { signal })
     this.element.addEventListener('click', this.onClick, { signal })
     this.element.addEventListener('input', this.onInput, { signal })
-    this.element.addEventListener('focus', this.onFocus, { signal })
-    this.element.addEventListener('blur', this.onBlur, { signal })
+    this.surface().addEventListener('focus', this.onFocus, { signal })
+    this.surface().addEventListener('blur', this.onBlur, { signal })
     document.addEventListener('selectionchange', this.onSelectionChange, { signal })
     this.element.addEventListener('scroll', () => this.positionTableBar(), { signal })
     document.addEventListener('scroll', () => this.positionTableBar(), { signal, capture: true })
+    document.addEventListener('pointerdown', this.onPointerDown, { signal, capture: true })
   }
 
   private commit(next: EditorState): void {
@@ -384,7 +408,7 @@ export class Editor {
     this.rendering = true
     try {
       this.prepare()
-      const active = document.activeElement === this.element
+      const active = document.activeElement === this.surface()
       renderDocument(
         this.element,
         {
@@ -403,7 +427,7 @@ export class Editor {
       this.updateSlash()
       this.positionHandle()
       if (this.focused || active) this.syncChrome()
-      if (active) this.element.focus()
+      if (active) this.focusSurface()
       this.restoreSelection()
     } finally {
       this.rendering = false
@@ -459,6 +483,13 @@ export class Editor {
     else if (type === 'historyRedo') this.commit(redo(this.state))
   }
 
+  private onPointerDown = (event: PointerEvent) => {
+    if (!this.blockMenu?.isConnected) return
+    const target = event.target
+    if (target instanceof Node && (this.blockMenu.contains(target) || this.handle?.contains(target))) return
+    this.hideBlockMenu()
+  }
+
   private onKeyDown = (event: KeyboardEvent) => {
     if (this.composing || event.isComposing) return
     if (this.slashMenu?.isConnected) {
@@ -479,6 +510,11 @@ export class Editor {
         this.executeSlash(options[this.slashIndex].dataset.command as SlashCommand)
         return
       }
+    }
+    if (this.blockMenu?.isConnected && event.key === 'Escape') {
+      event.preventDefault()
+      this.hideBlockMenu()
+      return
     }
     const mod = event.metaKey || event.ctrlKey
     const key = event.key.toLowerCase()
@@ -666,10 +702,12 @@ export class Editor {
     this.composing = true
     this.hideSlash()
     this.compositionSelection = this.state.selection
+    this.surface().classList.add('is-composing')
   }
 
   private onCompositionEnd = (event: CompositionEvent) => {
     this.composing = false
+    this.surface().classList.remove('is-composing')
     const text = event.data ?? ''
     const selection = this.compositionSelection ?? this.state.selection
     this.compositionSelection = null
@@ -699,7 +737,7 @@ export class Editor {
     if (this.rendering) return
     this.focused = false
     this.hideSlash()
-    this.blockMenu?.remove()
+    this.hideBlockMenu()
     this.clearChrome()
   }
 
@@ -767,7 +805,7 @@ export class Editor {
     if (check) {
       event.preventDefault()
       this.focused = true
-      this.element.focus()
+      this.focusSurface()
       this.commit(toggleTask(this.state, Number(check.dataset.start ?? 0)))
       return
     }
@@ -780,7 +818,7 @@ export class Editor {
       const end = Number(host.getAttribute('data-end') ?? start)
       this.state = { ...this.state, selection: imageAltRange(this.state.doc, start, end) }
       this.focused = true
-      this.element.focus()
+      this.focusSurface()
       this.syncChrome()
       this.restoreSelection()
       return
@@ -792,7 +830,7 @@ export class Editor {
       const offset = atomicCaret(host, voidHost.dataset.void)
       this.state = { ...this.state, selection: { anchor: offset, head: offset } }
       this.focused = true
-      this.element.focus()
+      this.focusSurface()
       this.syncChrome()
       this.restoreSelection()
       return
@@ -836,7 +874,7 @@ export class Editor {
       this.state = { ...this.state, selection: { anchor, head } }
       this.handleSource = null
     }
-    if (this.focused || document.activeElement === this.element) {
+    if (this.focused || document.activeElement === this.surface()) {
       this.focused = true
       this.syncChrome()
     }
@@ -899,7 +937,7 @@ export class Editor {
     this.hideSlash()
     this.focused = true
     this.commit(applySlashCommand(this.state, range.from, range.to, command))
-    this.element.focus()
+    this.focusSurface()
   }
 
   private hideSlash(): void {
@@ -953,7 +991,7 @@ export class Editor {
     if (this.handleSource === null) return
     const node = parse(this.state.doc).children.find(child => child.start === this.handleSource)
     if (!node) return
-    this.blockMenu?.remove()
+    this.hideBlockMenu()
     const menu = document.createElement('div')
     menu.className = 'v5-block-menu'
     menu.contentEditable = 'false'
@@ -982,7 +1020,7 @@ export class Editor {
   }
 
   private runBlockAction(action: string): void {
-    this.blockMenu?.remove()
+    this.hideBlockMenu()
     const blocks = parse(this.state.doc).children.filter(node => node.end > node.start && node.type !== 'yaml')
     const index = blocks.findIndex(node => node.start === this.handleSource)
     if (index < 0) return
@@ -1004,9 +1042,14 @@ export class Editor {
     this.hideHandle()
   }
 
+  private hideBlockMenu(): void {
+    this.blockMenu?.remove()
+    this.blockMenu = null
+  }
+
   private hideHandle(): void {
     this.handle?.remove()
-    this.blockMenu?.remove()
+    this.hideBlockMenu()
     this.handleSource = null
   }
 
@@ -1071,7 +1114,7 @@ export class Editor {
     const all = findButton('全部替换', () => this.replaceAll())
     const close = findButton('关闭', () => {
       bar.hidden = true
-      this.element.focus()
+      this.focusSurface()
     })
     bar.append(find, replace, next, one, all, close)
     bar.addEventListener('submit', (event) => {
@@ -1082,7 +1125,7 @@ export class Editor {
       if (event.key === 'Escape') {
         event.preventDefault()
         bar.hidden = true
-        this.element.focus()
+        this.focusSurface()
       }
     })
     this.findBar = bar

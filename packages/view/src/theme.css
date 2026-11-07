@@ -77,6 +77,7 @@
   min-height: 1.7em;
   padding: 22px 36px 28px;
   box-sizing: border-box;
+  outline: none;
 }
 
 .v5-doc[data-empty="true"]::before {
@@ -84,6 +85,10 @@
   position: absolute;
   color: #a3a3a3;
   pointer-events: none;
+}
+
+.v5-doc.is-composing::before {
+  content: none;
 }
 
 .v5md :is(h1, h2, h3, h4, h5, h6) {

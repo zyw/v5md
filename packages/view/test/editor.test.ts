@@ -148,6 +148,35 @@ describe('block chrome', () => {
     editor.destroy()
   })
 
+  it('closes the block menu from outside or escape and still runs a chosen action', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '## Title\n\nTail' })
+    const open = () => {
+      editor.focusAt(4)
+      element.querySelector<HTMLButtonElement>('.v5-block-handle')?.click()
+      expect(element.querySelector('.v5-block-menu')).not.toBeNull()
+    }
+    open()
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    expect(element.querySelector('.v5-block-menu')).toBeNull()
+    expect(editor.getMarkdown()).toBe('## Title\n\nTail')
+
+    open()
+    element.querySelector('.v5-block-handle')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    element.querySelector('[data-block-action="paragraph"]')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    expect(element.querySelector('.v5-block-menu')).not.toBeNull()
+    element.querySelector<HTMLButtonElement>('[data-block-action="paragraph"]')?.click()
+    expect(editor.getMarkdown()).toBe('Title\n\nTail')
+
+    editor.undo()
+    open()
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(element.querySelector('.v5-block-menu')).toBeNull()
+    expect(editor.getMarkdown()).toBe('## Title\n\nTail')
+    editor.destroy()
+  })
+
   it('moves the list as one block from the handle action and supports undo', () => {
     const element = document.createElement('div')
     document.body.append(element)
@@ -198,6 +227,29 @@ describe('htmlToMarkdown', () => {
 })
 
 describe('Editor', () => {
+  it('keeps IME composition inside the document instead of the flex shell', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, placeholder: '开始编写…' })
+    const doc = element.querySelector('.v5-doc')
+    expect(doc).toBeInstanceOf(HTMLElement)
+    expect(element.contentEditable).toBe('false')
+    expect(doc?.getAttribute('contenteditable')).toBe('true')
+    expect(element.getAttribute('role')).toBeNull()
+    expect(doc?.getAttribute('role')).toBe('textbox')
+    expect(document.activeElement).not.toBe(element)
+    editor.focus()
+    expect(document.activeElement).toBe(doc)
+    element.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+    expect(doc?.classList.contains('is-composing')).toBe(true)
+    const cancelled = new CompositionEvent('compositionend', { bubbles: true })
+    Object.defineProperty(cancelled, 'data', { value: '' })
+    element.dispatchEvent(cancelled)
+    expect(doc?.classList.contains('is-composing')).toBe(false)
+    expect(doc?.getAttribute('data-empty')).toBe('true')
+    editor.destroy()
+  })
+
   it('types through beforeinput and emits markdown', () => {
     const element = document.createElement('div')
     document.body.append(element)

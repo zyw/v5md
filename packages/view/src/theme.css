@@ -1,3 +1,8 @@
+::highlight(v5-find) {
+  background: #f3e3a2;
+  color: inherit;
+}
+
 .v5md {
   position: relative;
   box-sizing: border-box;
@@ -68,6 +73,25 @@
   height: 2px;
   background: #3d8666;
   pointer-events: none;
+}
+
+.v5md.is-preview {
+  cursor: default;
+}
+
+.v5md.is-preview .v5-doc {
+  cursor: text;
+  user-select: text;
+}
+
+.v5md.is-preview :is(.v5-block-handle, .v5-block-menu, .v5-slash-menu, .v5-drop-line, .v5-tablebar) {
+  display: none;
+}
+
+.v5md.is-preview .md-marker,
+.v5md.is-preview .v5-block.is-active > .md-marker,
+.v5md.is-preview .v5-inline.is-source > .md-marker {
+  display: none;
 }
 
 .v5-doc {

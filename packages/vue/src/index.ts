@@ -1,4 +1,4 @@
-import { Editor, type EditorOptions } from '@v5md/view'
+import { Editor, type EditorOptions, type FindRequest } from '@v5md/view'
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, watch, type PropType } from 'vue'
 
 export const V5Editor = defineComponent({
@@ -14,6 +14,11 @@ export const V5Editor = defineComponent({
       type: Function as PropType<(editor: Editor) => void>,
       default: undefined,
     },
+    onFindRequest: {
+      type: Function as PropType<(request: FindRequest) => void>,
+      default: undefined,
+    },
+    editable: { type: Boolean, default: true },
   },
   emits: ['update:modelValue'],
   setup(props, { emit, attrs }) {
@@ -27,6 +32,8 @@ export const V5Editor = defineComponent({
         value: props.modelValue,
         placeholder: props.placeholder,
         onUploadImage: props.onUploadImage,
+        onFindRequest: props.onFindRequest,
+        editable: props.editable,
         onChange(markdown) {
           emit('update:modelValue', markdown)
         },
@@ -39,6 +46,11 @@ export const V5Editor = defineComponent({
       (value) => {
         if (editor && value !== editor.getMarkdown()) editor.setMarkdown(value)
       },
+    )
+
+    watch(
+      () => props.editable,
+      (editable) => editor?.setEditable(editable),
     )
 
     watch(

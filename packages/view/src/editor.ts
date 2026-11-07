@@ -4,7 +4,7 @@ import {
   createState,
   deleteBackward,
   deleteForward,
-  findMatch,
+  findInState,
   indent,
   insertSoftBreak,
   insertText,
@@ -17,7 +17,8 @@ import {
   parse,
   pathAt,
   redo,
-  replaceAllText,
+  replaceAllMatches as replaceEveryMatch,
+  replaceCurrentMatch,
   sortedRange,
   splitBlock,
   toggleMark,
@@ -25,6 +26,8 @@ import {
   toggleUnderline,
   undo,
   type EditorState,
+  type FindOptions,
+  type FindQueryResult,
   type FormatCommand,
   type SlashCommand,
   type BlockType,
@@ -39,14 +42,20 @@ import { createToolbar, type ToolbarCommand } from './toolbar.js'
 import { renderDocument } from './render.js'
 import { applyChrome, domPointToOffset, offsetToDomPoint } from './selection.js'
 
+export interface FindRequest {
+  kind: 'find' | 'replace'
+}
+
 export interface EditorOptions {
   element: HTMLElement
   value?: string
   placeholder?: string
   toolbar?: boolean
   outline?: boolean
+  editable?: boolean
   onChange?: (markdown: string) => void
   onUploadImage?: (file: File) => string | Promise<string>
+  onFindRequest?: (request: FindRequest) => void
 }
 
 export class Editor {
@@ -68,6 +77,7 @@ export class Editor {
   private outlinePanel: OutlinePanel | null = null
   private toolbarVisible = true
   private outlineVisible = true
+  private editable = true
   private findQuery: HTMLInputElement | null = null
   private replaceQuery: HTMLInputElement | null = null
   private slashMenu: HTMLElement | null = null
@@ -84,6 +94,7 @@ export class Editor {
     this.element = options.element
     this.toolbarVisible = options.toolbar !== false
     this.outlineVisible = options.outline !== false
+    this.editable = options.editable !== false
     this.state = createState(options.value ?? '')
     this.prepare()
     this.mountChrome()
@@ -106,6 +117,7 @@ export class Editor {
   }
 
   focus(): void {
+    this.clearFindHit()
     this.focusSurface()
     this.restoreSelection()
   }
@@ -148,33 +160,61 @@ export class Editor {
     this.findQuery?.select()
   }
 
+  findNextMatch(query: string, options: FindOptions = {}, direction: 1 | -1 = 1, advance = true): FindQueryResult {
+    if (!query) {
+      this.clearFindHit()
+      return { hit: null, error: null }
+    }
+    const located = findInState(this.state, query, direction, options, advance)
+    if (!located.result.hit) {
+      this.clearFindHit()
+      return located.result
+    }
+    this.revealFind(located.state)
+    return located.result
+  }
+
+  replaceNextMatch(query: string, replacement: string, options: FindOptions = {}): FindQueryResult {
+    const replaced = replaceCurrentMatch(this.state, query, replacement, options)
+    if (replaced.state === this.state) {
+      this.clearFindHit()
+      return replaced.result
+    }
+    this.revealFind(replaced.state)
+    return replaced.result
+  }
+
+  replaceAllMatches(query: string, replacement: string, options: FindOptions = {}): FindQueryResult {
+    const replaced = replaceEveryMatch(this.state, query, replacement, options)
+    if (replaced.state === this.state) {
+      this.clearFindHit()
+      return replaced.result
+    }
+    this.revealFind(replaced.state)
+    return replaced.result
+  }
+
+  selectFindMatch(from: number, to: number): void {
+    const end = this.state.doc.length
+    const start = Math.max(0, Math.min(from, end))
+    const stop = Math.max(start, Math.min(to, end))
+    this.revealFind({ ...this.state, selection: { anchor: start, head: stop } })
+  }
+
   findNext(query = this.findQuery?.value ?? ''): boolean {
-    if (!query) return false
-    const { from, to } = sortedRange(this.state.selection)
-    const selected = this.state.doc.slice(from, to)
-    const start = selected === query ? to : from
-    const match = findMatch(this.state.doc, query, start)
-    if (!match) return false
-    this.state = { ...this.state, selection: { anchor: match.from, head: match.to } }
-    this.focused = true
-    this.focusSurface()
-    this.render()
-    return true
+    const result = this.findNextMatch(query)
+    if (result.hit) this.focusSurface()
+    return result.hit !== null
   }
 
   replaceNext(query = this.findQuery?.value ?? '', replacement = this.replaceQuery?.value ?? ''): void {
-    if (!query) return
-    const { from, to } = sortedRange(this.state.selection)
-    if (this.state.doc.slice(from, to) !== query) {
-      this.findNext(query)
-      return
-    }
-    this.commit(insertText(this.state, replacement))
-    this.findNext(query)
+    const result = this.replaceNextMatch(query, replacement)
+    if (result.hit) this.focusSurface()
   }
 
   replaceAll(query = this.findQuery?.value ?? '', replacement = this.replaceQuery?.value ?? ''): void {
-    this.commit(replaceAllText(this.state, query, replacement))
+    this.replaceAllMatches(query, replacement)
+    this.focusSurface()
   }
 
   destroy(): void {
@@ -241,6 +281,19 @@ export class Editor {
     if (this.outlinePanel) this.outlinePanel.element.hidden = !visible
   }
 
+  setEditable(enabled: boolean): void {
+    if (this.editable === enabled) return
+    this.editable = enabled
+    if (!enabled) {
+      this.hideSlash()
+      this.hideHandle()
+      this.dropLine?.remove()
+      this.clearChrome()
+    }
+    this.element.classList.toggle('is-preview', !enabled)
+    this.syncSurface()
+  }
+
   undo(): void {
     this.commit(undo(this.state))
   }
@@ -257,6 +310,7 @@ export class Editor {
 
   private prepare(): void {
     this.element.classList.add('v5md')
+    this.element.classList.toggle('is-preview', !this.editable)
     // The shell is a row flexbox (toolbar, document, outline). A contenteditable
     // flex container turns IME composition into sibling flex items, so the
     // uncommitted text sits beside the placeholder. Edit the document itself.
@@ -277,11 +331,20 @@ export class Editor {
   private syncSurface(): void {
     const doc = this.element.querySelector('.v5-doc')
     if (!(doc instanceof HTMLElement)) return
-    doc.contentEditable = 'true'
+    doc.contentEditable = this.editable ? 'true' : 'false'
+    if (this.editable) doc.removeAttribute('tabindex')
+    else doc.tabIndex = 0
     doc.spellcheck = false
     doc.autocapitalize = 'off'
-    doc.setAttribute('role', 'textbox')
-    doc.setAttribute('aria-multiline', 'true')
+    if (this.editable) {
+      doc.setAttribute('role', 'textbox')
+      doc.setAttribute('aria-multiline', 'true')
+      doc.removeAttribute('aria-readonly')
+    } else {
+      doc.setAttribute('role', 'document')
+      doc.removeAttribute('aria-multiline')
+      doc.setAttribute('aria-readonly', 'true')
+    }
     doc.translate = false
     if (!this.composing) doc.classList.remove('is-composing')
     this.element.removeAttribute('role')
@@ -398,10 +461,56 @@ export class Editor {
   }
 
   private commit(next: EditorState): void {
+    if (!this.editable && next.doc !== this.state.doc) return
     const changed = next.doc !== this.state.doc
+    this.clearFindHit()
     this.state = next
     this.render()
     if (changed) this.options.onChange?.(this.state.doc)
+  }
+
+  private revealFind(next: EditorState): void {
+    if (!this.editable && next.doc !== this.state.doc) return
+    const previous = document.activeElement
+    const changed = next.doc !== this.state.doc
+    this.state = next
+    this.focused = true
+    this.render()
+    this.scrollSelectionIntoView()
+    this.paintFindHit()
+    if (changed) this.options.onChange?.(this.state.doc)
+    this.restoreOutsideFocus(previous)
+  }
+
+  private restoreOutsideFocus(previous: Element | null): void {
+    if (!(previous instanceof HTMLElement)) return
+    const surface = this.surface()
+    if (previous === surface || surface.contains(previous)) return
+    previous.focus({ preventScroll: true })
+  }
+
+  private paintFindHit(): void {
+    const highlights = globalThis.CSS?.highlights
+    if (!highlights || typeof Highlight === 'undefined') return
+    const { from, to } = sortedRange(this.state.selection)
+    const start = offsetToDomPoint(this.element, from)
+    const end = offsetToDomPoint(this.element, to)
+    if (!start || !end || from === to) {
+      highlights.delete('v5-find')
+      return
+    }
+    const range = document.createRange()
+    try {
+      range.setStart(start.node, start.offset)
+      range.setEnd(end.node, end.offset)
+      highlights.set('v5-find', new Highlight(range))
+    } catch {
+      highlights.delete('v5-find')
+    }
+  }
+
+  private clearFindHit(): void {
+    globalThis.CSS?.highlights?.delete('v5-find')
   }
 
   private render(): void {
@@ -461,6 +570,10 @@ export class Editor {
   }
 
   private onBeforeInput = (event: InputEvent) => {
+    if (!this.editable) {
+      event.preventDefault()
+      return
+    }
     if (this.composing || event.isComposing) return
     const type = event.inputType
     if (type === 'insertCompositionText' || type === 'deleteCompositionText' || type === 'deleteByComposition') return
@@ -518,6 +631,13 @@ export class Editor {
     }
     const mod = event.metaKey || event.ctrlKey
     const key = event.key.toLowerCase()
+    if (mod && !event.altKey && !event.shiftKey && (key === 'f' || key === 'h')) {
+      event.preventDefault()
+      if (this.options.onFindRequest) this.options.onFindRequest({ kind: key === 'h' ? 'replace' : 'find' })
+      else this.openFind()
+      return
+    }
+    if (!this.editable) return
     if (mod && !event.altKey && key === 'z') {
       event.preventDefault()
       if (event.shiftKey) this.redo()
@@ -557,11 +677,6 @@ export class Editor {
     if (mod && event.shiftKey && !event.altKey && key === 's') {
       event.preventDefault()
       this.toggleSourceMode()
-      return
-    }
-    if (mod && !event.altKey && !event.shiftKey && key === 'f') {
-      event.preventDefault()
-      this.openFind()
       return
     }
     if (mod && event.shiftKey && !event.altKey && key === 'k') {
@@ -653,6 +768,10 @@ export class Editor {
   }
 
   private onPaste = (event: ClipboardEvent) => {
+    if (!this.editable) {
+      event.preventDefault()
+      return
+    }
     if (this.composing) return
     event.preventDefault()
     const files = [...(event.clipboardData?.files ?? [])]
@@ -684,6 +803,10 @@ export class Editor {
   }
 
   private onCut = (event: ClipboardEvent) => {
+    if (!this.editable) {
+      this.onCopy(event)
+      return
+    }
     const slice = this.selectedText()
     if (slice == null) return
     event.preventDefault()
@@ -699,6 +822,7 @@ export class Editor {
   }
 
   private onCompositionStart = () => {
+    if (!this.editable) return
     this.composing = true
     this.hideSlash()
     this.compositionSelection = this.state.selection
@@ -706,6 +830,10 @@ export class Editor {
   }
 
   private onCompositionEnd = (event: CompositionEvent) => {
+    if (!this.editable) {
+      this.composing = false
+      return
+    }
     this.composing = false
     this.surface().classList.remove('is-composing')
     const text = event.data ?? ''
@@ -742,6 +870,10 @@ export class Editor {
   }
 
   private syncChrome(): void {
+    if (!this.editable) {
+      this.clearChrome()
+      return
+    }
     applyChrome(this.element, this.state.selection.head, this.state.selection.anchor, this.state.doc.length)
     this.syncTableBar()
     this.syncToolbarState()
@@ -758,7 +890,7 @@ export class Editor {
 
   private syncTableBar(): void {
     const table = this.element.querySelector('table.v5-table.is-active')
-    if (this.sourceMode || !this.focused || !table) {
+    if (this.sourceMode || !this.editable || !this.focused || !table) {
       this.tableBar?.remove()
       return
     }
@@ -804,6 +936,7 @@ export class Editor {
     const check = target.closest<HTMLElement>('.v5-check')
     if (check) {
       event.preventDefault()
+      if (!this.editable) return
       this.focused = true
       this.focusSurface()
       this.commit(toggleTask(this.state, Number(check.dataset.start ?? 0)))
@@ -881,7 +1014,7 @@ export class Editor {
   }
 
   private updateSlash(): void {
-    if (this.composing || this.sourceMode || this.state.selection.anchor !== this.state.selection.head) {
+    if (!this.editable || this.composing || this.sourceMode || this.state.selection.anchor !== this.state.selection.head) {
       this.hideSlash()
       return
     }
@@ -946,7 +1079,7 @@ export class Editor {
   }
 
   private onHoverBlock = (event: MouseEvent) => {
-    if (this.sourceMode || this.dragSource) return
+    if (!this.editable || this.sourceMode || this.dragSource) return
     const target = event.target
     if (!(target instanceof Element) || target.closest('.v5-block-handle, .v5-block-menu')) return
     const block = target.closest<HTMLElement>('[data-block]')
@@ -956,7 +1089,10 @@ export class Editor {
   }
 
   private positionHandle(): void {
-    if (this.sourceMode) return
+    if (!this.editable || this.sourceMode) {
+      this.hideHandle()
+      return
+    }
     if (this.handleSource === null && this.focused) {
       const offset = this.state.selection.head
       const block = parse(this.state.doc).children.find(node =>
@@ -1054,6 +1190,7 @@ export class Editor {
   }
 
   private onDragStart = (event: DragEvent) => {
+    if (!this.editable) return
     if (event.target !== this.handle || this.handleSource === null) return
     this.dragSource = { start: this.handleSource, doc: this.state.doc }
     event.dataTransfer?.setData('text/plain', '')
@@ -1078,6 +1215,11 @@ export class Editor {
   }
 
   private onDrop = (event: DragEvent) => {
+    if (!this.editable) {
+      event.preventDefault()
+      this.onDragEnd()
+      return
+    }
     const source = this.dragSource
     this.onDragEnd()
     if (!source || source.doc !== this.state.doc) return

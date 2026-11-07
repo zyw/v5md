@@ -1,7 +1,7 @@
 import 'katex/dist/katex.min.css'
 
 export { Editor } from './editor.js'
-export type { EditorOptions } from './editor.js'
+export type { EditorOptions, FindRequest } from './editor.js'
 export { createOutline } from './outline.js'
 export type { OutlinePanel } from './outline.js'
 export { createToolbar } from './toolbar.js'

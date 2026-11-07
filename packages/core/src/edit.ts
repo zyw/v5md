@@ -1,3 +1,4 @@
+import { replacementFor, replaceQuery, runFind, selectedMatch, type FindOptions, type FindQueryResult } from './find.js'
 import { nodeText, parse, pathAt } from './parse.js'
 import {
   caret,
@@ -489,6 +490,59 @@ export function toggleTask(state: EditorState, offset: number): EditorState {
   const insert = marker.text.replace(/\[(?: |x|X)\]/, located.checked ? '[ ]' : '[x]')
   if (insert === marker.text) return state
   return applyEdit(state, { from: marker.start, to: marker.end, insert }, state.selection)
+}
+
+export function findInState(
+  state: EditorState,
+  query: string,
+  direction: 1 | -1 = 1,
+  options: FindOptions = {},
+  advance = true,
+): { state: EditorState, result: FindQueryResult } {
+  const result = runFind(state.doc, state.selection, query, direction, options, advance)
+  if (!result.hit) return { state, result }
+  return {
+    state: { ...state, selection: { anchor: result.hit.from, head: result.hit.to } },
+    result,
+  }
+}
+
+export function replaceCurrentMatch(
+  state: EditorState,
+  query: string,
+  replacement: string,
+  options: FindOptions = {},
+): { state: EditorState, result: FindQueryResult } {
+  const selected = selectedMatch(state.doc, state.selection, query, options)
+  if (selected.error) return { state, result: { hit: null, error: selected.error } }
+  let next = state
+  if (selected.match) {
+    const expanded = replacementFor(state.doc, selected.match, query, replacement, options)
+    if (expanded.error) return { state, result: { hit: null, error: expanded.error } }
+    const current = state.doc.slice(selected.match.from, selected.match.to)
+    if (expanded.text !== current) {
+      next = applyEdit(
+        state,
+        { from: selected.match.from, to: selected.match.to, insert: expanded.text },
+        caret(selected.match.from + expanded.text.length),
+      )
+    }
+  }
+  return findInState(next, query, 1, options, true)
+}
+
+export function replaceAllMatches(
+  state: EditorState,
+  query: string,
+  replacement: string,
+  options: FindOptions = {},
+): { state: EditorState, result: FindQueryResult } {
+  const replaced = replaceQuery(state.doc, query, replacement, options)
+  if (replaced.error) return { state, result: { hit: null, error: replaced.error } }
+  const edited = replaced.doc === state.doc
+    ? state
+    : applyEdit(state, { from: 0, to: state.doc.length, insert: replaced.doc }, caret(0))
+  return findInState(edited, query, 1, options, false)
 }
 
 export function findMatch(doc: string, query: string, from: number): { from: number; to: number } | null {

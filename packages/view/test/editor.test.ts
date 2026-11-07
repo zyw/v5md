@@ -339,10 +339,78 @@ describe('Editor', () => {
     const element = document.createElement('div')
     document.body.append(element)
     const editor = new Editor({ element, value: 'hello' })
-    editor.openFind()
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', metaKey: true, bubbles: true, cancelable: true }))
     const bar = element.querySelector('.v5md-find')
     expect(bar?.parentElement).toBe(element)
     expect(bar?.hasAttribute('hidden')).toBe(false)
+    editor.destroy()
+  })
+
+  it('sends find shortcuts to the host without opening the top bar', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const requests: string[] = []
+    const editor = new Editor({
+      element,
+      value: 'hello',
+      onFindRequest(request) {
+        requests.push(request.kind)
+      },
+    })
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', metaKey: true, bubbles: true, cancelable: true }))
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', ctrlKey: true, bubbles: true, cancelable: true }))
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', metaKey: true, shiftKey: true, bubbles: true, cancelable: true }))
+    expect(requests).toEqual(['find', 'replace'])
+    expect(element.querySelector('.v5md-find')).toBeNull()
+    expect(editor.getMarkdown()).toContain('==')
+    editor.destroy()
+  })
+
+  it('stays read-only in preview and can return to editing', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const requests: string[] = []
+    const editor = new Editor({
+      element,
+      value: 'hello',
+      editable: false,
+      onFindRequest(request) {
+        requests.push(request.kind)
+      },
+    })
+    const surface = element.querySelector('.v5-doc')
+    expect(element.classList.contains('is-preview')).toBe(true)
+    expect(surface?.getAttribute('contenteditable')).toBe('false')
+    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }))
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', metaKey: true, bubbles: true, cancelable: true }))
+    element.querySelector('[data-block]')?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    expect(editor.getMarkdown()).toBe('hello')
+    expect(element.querySelector('.v5-block-handle')).toBeNull()
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', metaKey: true, bubbles: true, cancelable: true }))
+    expect(requests).toEqual(['find'])
+    editor.setEditable(true)
+    expect(surface?.getAttribute('contenteditable')).toBe('true')
+    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }))
+    expect(editor.getMarkdown()).toBe('xhello')
+    editor.destroy()
+  })
+
+  it('keeps heading marks hidden while previewing', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '# 一级标题\n', editable: false })
+    const heading = element.querySelector('h1')
+    const text = heading?.querySelector('.v5-text')
+    element.querySelector<HTMLElement>('.v5-doc')?.focus()
+    const selection = document.getSelection()
+    if (text?.firstChild && selection) {
+      selection.setBaseAndExtent(text.firstChild, 0, text.firstChild, 1)
+      document.dispatchEvent(new Event('selectionchange'))
+    }
+    expect(heading?.classList.contains('is-active')).toBe(false)
+    editor.setEditable(true)
+    document.dispatchEvent(new Event('selectionchange'))
+    expect(heading?.classList.contains('is-active')).toBe(true)
     editor.destroy()
   })
 

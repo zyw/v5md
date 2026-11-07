@@ -65,7 +65,7 @@ export function isLeafVisible(leaf: HTMLElement): boolean {
     return Boolean(host?.classList.contains('is-source') || host?.classList.contains('is-active'))
   }
   if (leaf.classList.contains('md-marker')) {
-    if (leaf.closest('.v5-table')) return false
+    if (leaf.closest('.v5-table, li')) return false
     const inline = leaf.closest('[data-inline]')
     if (inline) return inline.classList.contains('is-source')
     return Boolean(leaf.closest('[data-block]')?.classList.contains('is-active'))

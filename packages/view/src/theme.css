@@ -169,10 +169,6 @@
   padding-left: 1.5em;
 }
 
-.v5md li.is-active {
-  list-style: none;
-}
-
 .v5md li > .v5-item-text {
   display: inline;
   margin: 0;
@@ -208,10 +204,6 @@
   border: solid #1d4ed8;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
-}
-
-.v5md li.v5-task.is-active > .v5-check {
-  display: none;
 }
 
 .v5md .v5-table {
@@ -436,6 +428,10 @@
 .v5md .v5-inline.is-source > .md-marker {
   display: inline;
   white-space: pre-wrap;
+}
+
+.v5md li.v5-listitem.v5-block.is-active .md-marker {
+  display: none;
 }
 
 .v5md :is(h1, h2, h3, h4, h5, h6) > .md-marker {

@@ -187,7 +187,7 @@ export function splitBlock(state: EditorState): EditorState {
     [...path].reverse().find((node) => node.type === 'listItem') ?? listItemEndingAt(tree, offset)
   if (listItem && listItemPlain(listItem).trim() === '') {
     const marker = listItem.children.find((node) => node.type === 'marker' && node.marker === 'block')
-    if (marker) return applyEdit(base, { from: marker.start, to: marker.end, insert: '' }, caret(marker.start))
+    if (marker) return exitEmptyListItem(base, marker)
   }
   if (listItem) {
     const marker = listItem.children.find((node) => node.type === 'marker' && node.marker === 'block')
@@ -810,6 +810,38 @@ function blockEndsAt(tree: MdNode, offset: number): boolean {
   }
   visit(tree)
   return found
+}
+
+function exitEmptyListItem(state: EditorState, marker: MdNode): EditorState {
+  const cleared = applyEdit(state, { from: marker.start, to: marker.end, insert: '' }, caret(marker.start))
+  const parked = paragraphOutsideList(cleared.doc, cleared.selection.head)
+  if (parked != null) return { ...cleared, selection: caret(parked) }
+  // Deleting the marker of a final item leaves only the list's trailing
+  // newline. The caret then has no paragraph of its own and the view puts it
+  // back on the previous item, so the next enter recreates the bullet.
+  if (offsetInsideList(cleared.doc, cleared.selection.head)) return cleared
+  const at = cleared.selection.head
+  const opened = applyEdit(cleared, { from: at, to: at, insert: '\n' }, caret(at + 1))
+  const spot = paragraphOutsideList(opened.doc, opened.selection.head)
+  return spot == null ? opened : { ...opened, selection: caret(spot) }
+}
+
+function paragraphOutsideList(doc: string, offset: number): number | null {
+  const blanks: number[] = []
+  const visit = (node: MdNode, inList: boolean) => {
+    const nested = inList || node.type === 'list' || node.type === 'listItem'
+    if (!nested && node.type === 'paragraph' && node.start === node.end) blanks.push(node.start)
+    node.children.forEach((child) => visit(child, nested))
+  }
+  visit(parse(doc), false)
+  if (blanks.includes(offset)) return offset
+  return blanks
+    .filter((start) => Math.abs(start - offset) <= 2)
+    .sort((left, right) => Math.abs(left - offset) - Math.abs(right - offset) || left - right)[0] ?? null
+}
+
+function offsetInsideList(doc: string, offset: number): boolean {
+  return pathAt(parse(doc), offset, doc.length).some((node) => node.type === 'list' || node.type === 'listItem')
 }
 
 function listItemPlain(node: MdNode): string {

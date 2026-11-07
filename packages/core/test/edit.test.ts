@@ -101,6 +101,33 @@ describe('edit', () => {
     expect(state.doc).toBe('- 第一项\n- ')
   })
 
+  it('leaves an unordered list when enter is pressed on an empty item', () => {
+    let state = createState('* 无效列表1\n* 无效列表2\n* 无效列表3')
+    state = { ...state, selection: { anchor: state.doc.length, head: state.doc.length } }
+    state = splitBlock(state)
+    expect(state.doc).toBe('* 无效列表1\n* 无效列表2\n* 无效列表3\n* ')
+    state = splitBlock(state)
+    expect(state.doc).toBe('* 无效列表1\n* 无效列表2\n* 无效列表3\n\n')
+    const blank = parse(state.doc).children.find((node) => node.type === 'paragraph' && node.start === node.end)
+    expect(blank).toBeTruthy()
+    expect(state.selection.head).toBe(blank?.start)
+    state = splitBlock(state)
+    const items = parse(state.doc).children.find((node) => node.type === 'list')?.children.filter((node) => node.type === 'listItem') ?? []
+    expect(items).toHaveLength(3)
+    expect(parse(state.doc).children.filter((node) => node.type === 'paragraph' && node.start === node.end)).toHaveLength(2)
+  })
+
+  it('leaves an ordered list and a dash list the same way', () => {
+    for (const initial of ['1. 甲', '- 第一项']) {
+      let state = createState(initial)
+      state = { ...state, selection: { anchor: state.doc.length, head: state.doc.length } }
+      state = splitBlock(splitBlock(state))
+      expect(state.doc).toBe(`${initial}\n\n`)
+      const blank = parse(state.doc).children.find((node) => node.type === 'paragraph')
+      expect(state.selection.head).toBe(blank?.start)
+    }
+  })
+
   it('inserts a newline inside a code block', () => {
     const doc = '```\nabc\n```'
     let state = createState(doc)

@@ -2,19 +2,48 @@
 import { ref, shallowRef } from 'vue'
 import type { Editor } from '@v5md/view'
 import { V5Editor } from '@v5md/vue'
+import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
+import { createTypographyPlugin, type TypographyApi } from '@v5md/plugin-typography'
 import { sample } from '@v5md/sample'
 import '@v5md/view/theme.css'
 
 const markdown = ref(sample)
 const editor = shallowRef<Editor | null>(null)
+const typography = shallowRef<TypographyApi | null>(null)
+const exporter = shallowRef<ExportApi | null>(null)
 const sourceMode = ref(false)
 const preview = ref(false)
 const showOutline = ref(true)
 const showToolbar = ref(true)
 const showLineNumbers = ref(true)
+const fontSize = ref(17)
+const exportStatus = ref('')
+const plugins = [createTypographyPlugin({ defaultSize: 17 }), createExportPlugin({ title: 'v5md 示例' })]
 
 function onReady(instance: Editor) {
   editor.value = instance
+  typography.value = instance.getPlugin<TypographyApi>('typography')?.api ?? null
+  exporter.value = instance.getPlugin<ExportApi>('export')?.api ?? null
+}
+
+function changeFontSize(next: number) {
+  const size = Math.min(28, Math.max(12, next))
+  fontSize.value = size
+  typography.value?.setFontSize(size)
+}
+
+async function exportFile(kind: 'markdown' | 'html' | 'image' | 'pdf') {
+  if (!exporter.value) return
+  exportStatus.value = '导出中…'
+  try {
+    if (kind === 'markdown') exporter.value.downloadMarkdown('v5md-示例.md')
+    else if (kind === 'html') exporter.value.downloadHtml('v5md-示例.html')
+    else if (kind === 'image') await exporter.value.downloadImage('v5md-示例.png')
+    else await exporter.value.downloadPdf('v5md-示例.pdf')
+    exportStatus.value = '已导出'
+  } catch (error) {
+    exportStatus.value = error instanceof Error ? error.message : '导出失败'
+  }
 }
 
 function toggleSource() {
@@ -72,8 +101,18 @@ function onUploadImage(file: File) {
           <button type="button" @click="toggleSource">{{ sourceMode ? '所见即所得' : '源码模式' }}</button>
           <button type="button" :aria-pressed="showLineNumbers" :disabled="!sourceMode" @click="toggleLineNumbers">行号</button>
           <button type="button" :aria-pressed="preview" @click="togglePreview">{{ preview ? '退出预览' : '预览' }}</button>
+          <button type="button" :disabled="fontSize <= 12" @click="changeFontSize(fontSize - 1)">A-</button>
+          <button type="button" :disabled="fontSize >= 28" @click="changeFontSize(fontSize + 1)">A+</button>
+          <button type="button" @click="exportFile('markdown')">导出 MD</button>
+          <button type="button" @click="exportFile('html')">导出 HTML</button>
+          <button type="button" @click="exportFile('pdf')">导出 PDF</button>
+          <button type="button" @click="exportFile('image')">导出图片</button>
         </div>
-        <p class="hint">工具条和大纲可以分别显示或隐藏。源码模式会给 Markdown 着色并显示行号。预览模式会关闭正文编辑，但待办复选框仍可切换。</p>
+        <p class="hint">
+          工具条和大纲可以分别显示或隐藏。源码模式会给 Markdown 着色并显示行号。预览模式会关闭正文编辑，但待办复选框仍可切换。
+          字号和导出按钮由插件提供，当前字号 {{ fontSize }}px。
+          <span v-if="exportStatus"> · {{ exportStatus }}</span>
+        </p>
       </div>
     </header>
     <section class="workspace">
@@ -81,6 +120,7 @@ function onUploadImage(file: File) {
         v-model="markdown"
         placeholder="开始编写…"
         :editable="!preview"
+        :plugins="plugins"
         :on-upload-image="onUploadImage"
         :on-ready="onReady"
       />
@@ -153,6 +193,11 @@ header h1 {
   padding: 6px 10px;
   cursor: pointer;
   font: inherit;
+}
+
+.toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .workspace {

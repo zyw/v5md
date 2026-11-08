@@ -37,6 +37,7 @@ export function Page() {
 | `placeholder` | 空文档提示，变化时同步到编辑器 |
 | `className` | 加在宿主元素上，宿主同时有 `v5md-host` |
 | `editable` | 是否可编辑，默认 `true`。传 `false` 进入只读预览，变化时调用 `setEditable`；预览下待办复选框仍可切换 |
+| `plugins` | 插件数组，挂载时传给 `Editor` |
 | `onUploadImage` | `(file: File) => string \| Promise<string>` |
 | `onPickImage` | 点击工具条图片按钮时调用；返回 `false` 则继续使用系统文件选择框 |
 | `onFindRequest` | `(request: { kind: 'find' \| 'replace' }) => void`。不传时按 Mod+F / Mod+H 打开内置查找栏 |
@@ -44,7 +45,9 @@ export function Page() {
 
 编辑器只在挂载时创建一次。之后 `value` 与内部全文不同时，才调用 `setMarkdown`。`onChange`、`onUploadImage`、`onPickImage`、`onFindRequest`、`onReady` 的后续变化不会重建编辑器；`editable` 和 `placeholder` 会直接同步到实例。
 
-`onReady` 得到的实例可以调用 `undo`、`redo`、`openFind`、`setSourceMode`、`setToolbarVisible`、`setOutlineVisible`、`copyForWechat`。工具条最右侧的「复制到公众号」会生成带内联样式的富文本，也可以直接调用 `editor.copyForWechat()`。工具条和大纲默认显示。卸载时会 `destroy()`。
+`plugins` 只在挂载时读取。运行时安装插件可以通过 `onReady` 拿到实例后调用 `editor.use(plugin)`，卸载调用返回句柄的 `dispose()`。
+
+`onReady` 得到的实例可以调用 `undo`、`redo`、`openFind`、`setSourceMode`、`setToolbarVisible`、`setOutlineVisible`、`copyForWechat`、`use`、`runCommand`。工具条最右侧的「复制到公众号」会生成带内联样式的富文本，也可以直接调用 `editor.copyForWechat()`。工具条和大纲默认显示。卸载时会 `destroy()`。
 
 ## 构建
 

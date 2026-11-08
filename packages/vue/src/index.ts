@@ -23,6 +23,10 @@ export const V5Editor = defineComponent({
       default: undefined,
     },
     editable: { type: Boolean, default: true },
+    plugins: {
+      type: Array as PropType<EditorOptions['plugins']>,
+      default: undefined,
+    },
   },
   emits: ['update:modelValue'],
   setup(props, { emit, attrs }) {
@@ -49,6 +53,7 @@ export const V5Editor = defineComponent({
           else editor?.openFind()
         },
         editable: props.editable,
+        plugins: props.plugins,
         onChange(markdown) {
           emit('update:modelValue', markdown)
         },

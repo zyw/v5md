@@ -153,6 +153,14 @@ export function insertText(state: EditorState, text: string): EditorState {
     ?? next
 }
 
+export function replaceRange(state: EditorState, from: number, to: number, text: string): EditorState {
+  const start = Math.max(0, Math.min(from, state.doc.length))
+  const end = Math.max(start, Math.min(to, state.doc.length))
+  const insert = normalizeNewlines(text)
+  if (start === end && insert === '') return state
+  return applyEdit(state, { from: start, to: end, insert }, caret(start + insert.length))
+}
+
 function closeFenceAfterTyping(
   before: EditorState,
   next: EditorState,

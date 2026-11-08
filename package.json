@@ -4,14 +4,15 @@
   "license": "MIT",
   "workspaces": [
     "packages/*",
+    "packages/plugins/*",
     "playground-vue",
     "playground-react"
   ],
   "scripts": {
-    "build": "npm run build -w @v5md/core && npm run build -w @v5md/view && npm run build -w @v5md/vue && npm run build -w @v5md/react",
+    "build": "npm run build -w @v5md/core && npm run build -w @v5md/view && npm run build -w @v5md/vue && npm run build -w @v5md/react && npm run build -w @v5md/plugin-typography && npm run build -w @v5md/plugin-export",
     "test": "vitest run",
-    "publish:packages": "npm run test && npm publish -w @v5md/core && npm publish -w @v5md/view && npm publish -w @v5md/vue && npm publish -w @v5md/react",
-    "publish:onedev": "npm run test && npm publish -w @v5md/core --registry https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/view --registry https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/vue --registry https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/react --registry https://onedev.v5ai.xin/v5md/~npm/",
+    "publish:packages": "npm run test && npm publish -w @v5md/core && npm publish -w @v5md/view && npm publish -w @v5md/vue && npm publish -w @v5md/react && npm publish -w @v5md/plugin-typography && npm publish -w @v5md/plugin-export",
+    "publish:onedev": "npm run test && npm publish -w @v5md/core --registry https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/view --registry https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/vue --registry https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/react --registry https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/plugin-typography --registry https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/plugin-export --registry https://onedev.v5ai.xin/v5md/~npm/",
     "dev:vue": "npm run dev -w playground-vue",
     "dev:react": "npm run dev -w playground-react"
   },

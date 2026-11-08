@@ -1,7 +1,7 @@
 # v5md 插件系统设计
 
-> 状态：设计稿  
-> 日期：2026-11-08  
+> 状态：设计已落地
+> 日期：2026-11-08
 > 范围：`@v5md/view`、`@v5md/vue`、`@v5md/react`，以及后续的 `@v5md/plugin-*` 包
 
 ## 1. 背景
@@ -777,7 +777,20 @@ typography.api.setFontSize(18)
 - playground 增加一个本地插件示例（例如插入提示块或导出 Markdown）；
 - 新增 `docs/plugin-design.md` 本文件作为长期设计文档。
 
-## 15. 风险与备选方案
+## 15. 实现进度
+
+截至本次提交：
+
+- 第 1 步：已完成，新增 `plugin.ts`、`packages/view/test/plugin.test.ts`；
+- 第 2 步：已完成，工具条改为描述式 items，保留旧 `createToolbar`；
+- 第 3 步：已完成，`EditorOptions.plugins`、`use`、`getPlugin`、`runCommand`、受控编辑 API 已接入；
+- 第 4 步：已完成，插件安装、卸载、`ready`、清理和销毁已接入；
+- 第 5 步：已完成，Vue / React 增加 `plugins` prop 并有封装测试；
+- 第 6 步：已完成，新增 `@v5md/plugin-typography`、`@v5md/plugin-export` 独立包；
+- 第 7 步：已完成，内置按钮和命令迁移到 `packages/view/src/builtins.ts`，与插件命令共用 `runCommand`；
+- 第 8 步：已完成，README 和两个 playground 都加入了插件示例。
+
+## 16. 风险与备选方案
 
 ### 风险
 
@@ -793,7 +806,7 @@ typography.api.setFontSize(18)
 - **插件通过全局事件总线通信**：难以类型化和清理，不采用。
 - **所有插件放 `@v5md/view` 子路径**：可以减少包数量，但会让主包或构建产物带上重依赖，按需加载不彻底。
 
-## 16. 待确认问题
+## 17. 待确认问题
 
 - 导出 HTML 需要“独立完整 HTML 文档”还是“可粘贴 HTML 片段”？建议两者都提供：`exportHtml()` 返回片段，`exportDocument()` 返回完整文档。
 - PDF / 图片导出使用哪个实现（`html2canvas` + `jspdf`，还是浏览器打印）？建议插件内部可替换，不绑死。

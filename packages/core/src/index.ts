@@ -28,6 +28,7 @@ export {
   indent,
   insertSoftBreak,
   insertText,
+  replaceRange,
   editTable,
   formatBlock,
   moveTableCaret,

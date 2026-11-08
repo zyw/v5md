@@ -36,6 +36,7 @@ const editor = new Editor({
 | `onUploadImage` | 工具条选图或粘贴图片时调用，返回图片地址 |
 | `onPickImage` | 点击工具条图片按钮时调用；返回 `false` 则继续弹出系统文件选择框 |
 | `onFindRequest` | 按 Mod+F / Mod+H 时收到 `{ kind: 'find' \| 'replace' }`；不传则打开内置查找栏 |
+| `plugins` | 插件数组，见下面「插件」章节 |
 
 `onUploadImage` 可以返回字符串或 `Promise<string>`。返回值会写成 `![文件名](地址)`。`onPickImage` 适合接管工具条图片按钮，由宿主自己打开图片选择器，再用 `insertImageUrl` 插入地址。
 
@@ -62,7 +63,84 @@ const editor = new Editor({
 | `isOutlineVisible` / `setOutlineVisible` | 显示或隐藏大纲 |
 | `getWechatHtml()` | 当前文档对应的公众号内联样式 HTML |
 | `copyForWechat()` | 生成公众号 HTML 并复制为富文本，返回是否成功 |
+| `getHostElement()` / `getContentElement()` | 根元素 / 正文元素，供插件和导出使用 |
+| `getPluginState()` | 当前插件用状态快照 |
+| `insertText` / `replaceSelection` / `wrapSelection` | 插件可用的受控编辑方法 |
+| `use()` / `getPlugin()` / `runCommand()` | 安装插件、获取插件 API、执行插件命令 |
 | `destroy()` | 卸下监听并清空元素 |
+
+## 插件
+
+插件可以贡献工具条按钮，也可以完全不贡献按钮，只提供外部调用的命令或 API。
+
+```ts
+import type { V5mdPlugin } from '@v5md/view'
+
+const exportPlugin: V5mdPlugin<{ exportMarkdown(): string }> = {
+  name: 'export',
+  api: ({ editor }) => ({
+    exportMarkdown: () => editor.getMarkdown(),
+  }),
+}
+
+const calloutPlugin: V5mdPlugin = {
+  name: 'callout',
+  commands: {
+    'callout.note': {
+      run({ wrapSelection, state }) {
+        if (!state.editable) return
+        wrapSelection('> [!NOTE]\n> ', '\n')
+      },
+    },
+  },
+  toolbar: [
+    {
+      command: 'callout.note',
+      label: '提示块',
+      icon: '<svg viewBox="0 0 24 24"></svg>',
+      group: 'insert',
+      order: 40,
+    },
+  ],
+}
+
+const editor = new Editor({
+  element,
+  plugins: [exportPlugin, calloutPlugin],
+})
+
+const exportTools = editor.getPlugin<{ exportMarkdown(): string }>('export')!
+exportTools.api.exportMarkdown()
+```
+
+运行时安装和卸载：
+
+```ts
+const handle = editor.use(calloutPlugin)
+await handle.ready
+handle.dispose()
+```
+
+插件字段：
+
+| 字段 | 说明 |
+| --- | --- |
+| `name` | 插件唯一名，重复安装不同实例会报错 |
+| `apiVersion` | 插件 API 版本，当前为 `1` |
+| `requires` | 必装依赖的插件名 |
+| `toolbar` | 可选，工具条按钮描述 |
+| `commands` | 可选，命令表，key 是命令 id |
+| `api` | 可选，插件对外 API 工厂 |
+| `setup` | 安装后执行，可返回清理函数 |
+| `destroy` | 卸载时执行 |
+
+命令可以被外部调用：
+
+```ts
+await editor.runCommand('callout.note')
+```
+
+插件按钮会和内置按钮一起排序；`group` 使用内置分组时会插入对应区域，使用新分组时追加到内置区域之后。内置按钮和命令定义在 `packages/view/src/builtins.ts`，和插件命令共用同一个 `runCommand` 分发入口；内置命令 id 不能被插件覆盖。
 
 ## 复制到公众号
 

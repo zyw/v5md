@@ -10,6 +10,8 @@ export default defineConfig({
       { find: '@v5md/core', replacement: path.resolve(__dirname, '../packages/core/src/index.ts') },
       { find: '@v5md/view', replacement: path.resolve(__dirname, '../packages/view/src/index.ts') },
       { find: '@v5md/react', replacement: path.resolve(__dirname, '../packages/react/src/index.tsx') },
+      { find: '@v5md/plugin-export', replacement: path.resolve(__dirname, '../packages/plugins/export/src/index.ts') },
+      { find: '@v5md/plugin-typography', replacement: path.resolve(__dirname, '../packages/plugins/typography/src/index.ts') },
       { find: '@v5md/sample', replacement: path.resolve(__dirname, '../samples/demo.ts') },
     ],
   },

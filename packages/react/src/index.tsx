@@ -7,6 +7,7 @@ export interface V5EditorProps {
   placeholder?: string
   className?: string
   editable?: boolean
+  plugins?: EditorOptions['plugins']
   onUploadImage?: EditorOptions['onUploadImage']
   onPickImage?: EditorOptions['onPickImage']
   onFindRequest?: EditorOptions['onFindRequest']
@@ -32,6 +33,7 @@ export function V5Editor({
   onFindRequest,
   onReady,
   editable = true,
+  plugins,
   className,
 }: V5EditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null)
@@ -58,6 +60,7 @@ export function V5Editor({
       value,
       placeholder,
       editable,
+      plugins,
       onChange(markdown) {
         onChangeRef.current?.(markdown)
       },

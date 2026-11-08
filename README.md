@@ -4,7 +4,7 @@
 
 同一套编辑器可以嵌进 Vue 3 和 React，也可以直接挂到任意 DOM 元素上。解析与编辑在 `@v5md/core`，不创建 DOM；页面、工具条、大纲和主题在 `@v5md/view`。
 
-当前版本 `0.0.1`。四个可发布包都是 ESM（`"type": "module"`）。
+当前版本 `0.0.1`。六个可发布包都是 ESM（`"type": "module"`）。
 
 ## 功能
 
@@ -19,7 +19,7 @@
 - Mermaid 图表（围栏语言写 `mermaid`，离开编辑后渲染成图，点进去仍是源码）
 - 文首 YAML frontmatter
 
-编辑能力包括撤销重做、查找替换、带 Markdown 语法高亮和行号的整篇源码模式、大纲跳转、表格行列与对齐、图片上传、一键复制为公众号富文本，以及中文输入法。粘贴的 HTML 会先转成 Markdown 再写入文档。
+编辑能力包括撤销重做、查找替换、带 Markdown 语法高亮和行号的整篇源码模式、大纲跳转、表格行列与对齐、图片上传、一键复制为公众号富文本、插件扩展，以及中文输入法。粘贴的 HTML 会先转成 Markdown 再写入文档。
 
 源码模式把整篇 Markdown 按语法着色：标题、强调、行内代码、链接、表格、公式和围栏代码块各有颜色，围栏代码块还会沿用 lowlight 高亮。左侧行号与逻辑行对齐，长行自动换行后仍保持悬挂缩进；可以用 `lineNumbers` 选项或 `setLineNumbersVisible` 关掉行号。
 
@@ -46,7 +46,7 @@
 
 ## 仓库结构
 
-npm workspaces 包含 `packages/*`、`playground-vue` 和 `playground-react`。根目录 `package.json` 是 `"private": true`，不会被发布。playground 也不发布。
+npm workspaces 包含 `packages/*`、`packages/plugins/*`、`playground-vue` 和 `playground-react`。根目录 `package.json` 是 `"private": true`，不会被发布。playground 也不发布。
 
 | 目录 | 包名 | 说明 |
 | --- | --- | --- |
@@ -54,6 +54,8 @@ npm workspaces 包含 `packages/*`、`playground-vue` 和 `playground-react`。�
 | [`packages/view`](packages/view/README.md) | `@v5md/view` | `contenteditable` 编辑器、工具条、大纲和主题 |
 | [`packages/vue`](packages/vue/README.md) | `@v5md/vue` | Vue 3 组件 `V5Editor` |
 | [`packages/react`](packages/react/README.md) | `@v5md/react` | React 组件 `V5Editor` |
+| [`packages/plugins/typography`](packages/plugins/typography/README.md) | `@v5md/plugin-typography` | 字号插件，无工具条按钮 |
+| [`packages/plugins/export`](packages/plugins/export/README.md) | `@v5md/plugin-export` | 导出 Markdown / HTML / PDF / 图片插件 |
 | [`playground-vue`](playground-vue/README.md) | `playground-vue` | Vue 示例，端口 5173 |
 | [`playground-react`](playground-react/README.md) | `playground-react` | React 示例，端口 5174 |
 | [`samples/demo.ts`](samples/demo.ts) | — | 两个示例页共用的示例文档 |
@@ -66,7 +68,9 @@ npm workspaces 包含 `packages/*`、`playground-vue` 和 `playground-react`。�
 @v5md/core
     └── @v5md/view
             ├── @v5md/vue
-            └── @v5md/react
+            ├── @v5md/react
+            ├── @v5md/plugin-typography
+            └── @v5md/plugin-export
 ```
 
 `@v5md/vue` 的 peer dependency 是 `vue@^3.4.0`。`@v5md/react` 的 peer dependency 是 `react` 与 `react-dom` 的 18 或 19。主题不打进框架包，使用时要单独引入 `@v5md/view/theme.css`。
@@ -85,14 +89,14 @@ npm run build
 
 | 命令 | 作用 |
 | --- | --- |
-| `npm test` | 用 Vitest（happy-dom）跑 `packages/*/test/**/*.test.ts` |
-| `npm run build` | 按 core、view、vue、react 的顺序编译到各自的 `dist` |
+| `npm test` | 用 Vitest（happy-dom）跑各包的测试 |
+| `npm run build` | 按 core、view、vue、react、plugin-typography、plugin-export 的顺序编译到各自的 `dist` |
 | `npm run dev:vue` | 启动 Vue 示例，http://localhost:5173 |
 | `npm run dev:react` | 启动 React 示例，http://localhost:5174 |
 | `npm run publish:packages` | 测试通过后发到 npm 官方仓库 |
 | `npm run publish:onedev` | 测试通过后发到 OneDev |
 
-两个 playground 通过 Vite alias 直接引用各包的 `src` 和 `packages/view/src/theme.css`。改源码后刷新即可看到效果，不必先 `npm run build`。示例页左侧是编辑器，右侧是当前 Markdown；顶栏可以隐藏大纲或工具条，也可以撤销、重做、查找，切换源码模式和预览模式，以及开关源码模式下的行号。示例正文来自 `samples/demo.ts`。
+两个 playground 通过 Vite alias 直接引用各包的 `src` 和 `packages/view/src/theme.css`。改源码后刷新即可看到效果，不必先 `npm run build`。示例页左侧是编辑器，右侧是当前 Markdown；顶栏可以隐藏大纲或工具条，也可以撤销、重做、查找，切换源码模式和预览模式，以及开关源码模式下的行号。字号和导出按钮由 `@v5md/plugin-typography`、`@v5md/plugin-export` 提供。示例正文来自 `samples/demo.ts`。
 
 单独编译某一个包：
 
@@ -248,11 +252,30 @@ const editor = new Editor({
 | `isToolbarVisible` / `setToolbarVisible` | 显示或隐藏工具条 |
 | `isOutlineVisible` / `setOutlineVisible` | 显示或隐藏大纲 |
 | `getWechatHtml()` / `copyForWechat()` | 生成 / 复制公众号可用的内联样式富文本 |
+| `use()` / `getPlugin()` / `runCommand()` | 安装插件、获取插件 API、执行插件命令 |
+| `getHostElement()` / `getContentElement()` | 根元素 / 正文元素 |
+| `getPluginState()` | 当前插件用状态快照 |
+| `insertText` / `replaceSelection` / `wrapSelection` | 受控编辑方法 |
 | `destroy()` | 卸下监听并清空元素 |
 
 `FormatCommand`：`code`、`table`、`orderedList`、`bulletList`、`taskList`、`quote`、`heading1`、`heading2`、`heading3`、`rule`、`link`、`math`、`inlineMath`。
 
 工具条最右侧的「复制到公众号」会调用 `copyForWechat()`：把当前 Markdown 转成只带内联样式的 HTML，并以富文本写入剪贴板，直接粘贴到公众号编辑器即可保留标题、列表、代码高亮、表格和图片排版。公众号会丢弃 class、id 和外部样式，所以输出不依赖主题 CSS。公式和 Mermaid 图表暂时以源码代码块保留；图片地址需要公众号能访问，外链图片可能需要在公众号里重新上传。
+
+插件可以贡献工具条按钮，也可以只提供外部调用的命令或 API：
+
+```ts
+const editor = new Editor({
+  element,
+  plugins: [myPlugin],
+})
+
+const handle = editor.use(myPlugin)
+await handle.ready
+handle.dispose()
+```
+
+插件可以只注册命令或 `api`，不显示任何工具条按钮。官方插件包括 [`@v5md/plugin-typography`](packages/plugins/typography/README.md)（字号）和 [`@v5md/plugin-export`](packages/plugins/export/README.md)（导出 Markdown / HTML / PDF / 图片）。完整插件协议和实现步骤见 [`docs/plugin-design.md`](docs/plugin-design.md)。
 
 页面结构：`.v5md` 里依次是 `.v5-toolbar`、`.v5-outline`、`.v5-doc`。源码模式下 `.v5-doc` 里是一张 `.v5-source-doc`，每行一个 `.v5-source-line`，行号放在 `.v5-source-number`。查找栏打开时插在 `.v5md` 顶部。表格获得焦点时，`.v5-tablebar` 出现在表格附近，提供插行、插列、对齐和删除整表。选项、快捷键和单独挂载工具条、大纲的方式见 [`packages/view/README.md`](packages/view/README.md)。
 
@@ -296,7 +319,7 @@ const state = createState('# 标题\n')
 
 ## 发布
 
-发布顺序是 `@v5md/core`、`@v5md/view`、`@v5md/vue`、`@v5md/react`。同一个版本不能发第二次。改完代码后，要把四个包自己的 `version`，以及 view 对 core、vue 和 react 对 view 的依赖版本，一起改成新号。
+发布顺序是 `@v5md/core`、`@v5md/view`、`@v5md/vue`、`@v5md/react`、`@v5md/plugin-typography`、`@v5md/plugin-export`。同一个版本不能发第二次。改完代码后，要把六个包自己的 `version`，以及 view 对 core、vue/react/两个插件对 view 的依赖版本，一起改成新号。
 
 准备令牌、演练上传文件、中断后续发，以及在业务项目里配置 registry，都写在 [发布教程](发布教程.md)。
 

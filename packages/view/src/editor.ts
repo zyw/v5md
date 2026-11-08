@@ -19,6 +19,7 @@ import {
   redo,
   replaceAllMatches as replaceEveryMatch,
   replaceCurrentMatch,
+  replaceRange,
   resizeImage,
   sortedRange,
   splitBlock,
@@ -39,10 +40,30 @@ import {
 import { htmlToMarkdown } from './html-to-md.js'
 import { createOutline, type OutlinePanel } from './outline.js'
 import { createTableBar, markTableAlign } from './table-bar.js'
-import { createToolbar, type ToolbarCommand } from './toolbar.js'
+import { BUILTIN_COMMAND_IDS, BUILTIN_COMMANDS, BUILTIN_TOOLBAR_IDS, BUILTIN_TOOLBAR_ITEMS } from './builtins.js'
+import { createToolbarFromItems, type ToolbarCommand } from './toolbar.js'
+import {
+  PluginRegistry,
+  type PluginRegistration,
+  type ToolbarItemView,
+  type V5mdCommandContext,
+  type V5mdPlugin,
+  type V5mdPluginHandle,
+  type V5mdPluginState,
+} from './plugin.js'
 import { renderDocument } from './render.js'
 import { applyChrome, domPointToOffset, offsetToDomPoint } from './selection.js'
 import { copyRichText, toWechatHtml } from './wechat.js'
+
+const TOOLBAR_GROUP_ORDER: Record<string, number> = {
+  block: 10,
+  list: 20,
+  quote: 30,
+  heading: 40,
+  insert: 50,
+  inline: 60,
+  action: 70,
+}
 
 export interface FindRequest {
   kind: 'find' | 'replace'
@@ -62,6 +83,7 @@ export interface EditorOptions {
   /** Handles the image toolbar button. Return false to keep the system file picker. */
   onPickImage?: () => void | false
   onFindRequest?: (request: FindRequest) => void
+  plugins?: V5mdPlugin[]
 }
 
 export class Editor {
@@ -96,6 +118,10 @@ export class Editor {
   private dragSource: { start: number; doc: string } | null = null
   private dropLine: HTMLElement | null = null
   private imageDrag: { pointerId: number; startX: number; width: number; height: number; keepHeight: boolean; img: HTMLImageElement } | null = null
+  private readonly pluginRegistry: PluginRegistry
+  private readonly pluginHandles = new Map<string, V5mdPluginHandle<unknown>>()
+  private toolbarItems: ToolbarItemView[] = []
+  private destroyed = false
 
   constructor(options: EditorOptions) {
     this.options = options
@@ -104,15 +130,99 @@ export class Editor {
     this.outlineVisible = options.outline !== false
     this.lineNumbers = options.lineNumbers !== false
     this.editable = options.editable !== false
+    this.pluginRegistry = new PluginRegistry(BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS)
+    for (const plugin of options.plugins ?? []) this.pluginRegistry.install(plugin)
     this.state = createState(options.value ?? '')
     this.prepare()
     this.mountChrome()
     this.render()
     this.listen()
+    for (const registration of this.pluginRegistry.list()) this.activatePlugin(registration)
   }
 
   getMarkdown(): string {
     return this.state.doc
+  }
+
+  getHostElement(): HTMLElement {
+    return this.element
+  }
+
+  getContentElement(): HTMLElement {
+    return this.surface()
+  }
+
+  getPluginState(): V5mdPluginState {
+    return {
+      markdown: this.state.doc,
+      selection: { ...this.state.selection },
+      path: pathAt(parse(this.state.doc), this.state.selection.head, this.state.doc.length),
+      editable: this.editable,
+      sourceMode: this.sourceMode,
+      findOpen: Boolean(this.findBar && !this.findBar.hidden),
+      toolbarVisible: this.toolbarVisible,
+      outlineVisible: this.outlineVisible,
+    }
+  }
+
+  insertText(text: string): boolean {
+    if (!this.editable) return false
+    const next = insertText(this.state, text)
+    if (next === this.state) return false
+    this.commit(next)
+    return true
+  }
+
+  replaceSelection(text: string): boolean {
+    if (!this.editable) return false
+    const { from, to } = sortedRange(this.state.selection)
+    const next = replaceRange(this.state, from, to, text)
+    if (next === this.state) return false
+    this.commit(next)
+    return true
+  }
+
+  wrapSelection(before: string, after = before): boolean {
+    if (!this.editable) return false
+    const { from, to } = sortedRange(this.state.selection)
+    const selected = this.state.doc.slice(from, to)
+    const next = replaceRange(this.state, from, to, before + selected + after)
+    if (next === this.state) return false
+    const anchor = from + before.length
+    this.commit({ ...next, selection: { anchor, head: anchor + selected.length } })
+    return true
+  }
+
+  use<T = undefined>(plugin: V5mdPlugin<T>): V5mdPluginHandle<T> {
+    if (this.destroyed) throw new Error('v5md editor has been destroyed')
+    const existing = this.pluginRegistry.get(plugin.name)
+    if (existing) {
+      if (existing.plugin !== plugin) {
+        throw new Error(`v5md plugin "${plugin.name}" is already installed with a different instance`)
+      }
+      const handle = this.pluginHandles.get(plugin.name)
+      if (handle) return handle as V5mdPluginHandle<T>
+    }
+    const registration = this.pluginRegistry.install(plugin)
+    this.refreshToolbar()
+    return this.activatePlugin(registration)
+  }
+
+  getPlugin<T = undefined>(name: string): V5mdPluginHandle<T> | undefined {
+    return this.pluginHandles.get(name) as V5mdPluginHandle<T> | undefined
+  }
+
+  async runCommand<T = unknown>(id: string, ...args: unknown[]): Promise<T> {
+    if (this.destroyed) throw new Error('v5md editor has been destroyed')
+    const builtin = BUILTIN_COMMANDS[id as ToolbarCommand]
+    if (builtin) {
+      return (await builtin.run(this.createCommandContext(), ...args)) as T
+    }
+    const found = this.pluginRegistry.findCommand(id)
+    if (!found) throw new Error(`Unknown v5md command: ${id}`)
+    const state = this.getPluginState()
+    if (found.command.isEnabled && !found.command.isEnabled(state)) return undefined as T
+    return (await found.command.run(this.createCommandContext(), ...args)) as T
   }
 
   setMarkdown(markdown: string): void {
@@ -237,6 +347,11 @@ export class Editor {
   }
 
   destroy(): void {
+    if (this.destroyed) return
+    this.destroyed = true
+    for (const registration of [...this.pluginRegistry.list()].reverse()) {
+      this.disposePlugin(registration.plugin.name, true)
+    }
     this.abort.abort()
     this.hideSlash()
     this.hideHandle()
@@ -399,15 +514,7 @@ export class Editor {
   }
 
   private mountChrome(): void {
-    this.toolbar = createToolbar(
-      (command) => this.runToolbar(command),
-      (file) => this.insertImageFile(file),
-      () => {
-        const pick = this.options.onPickImage
-        if (!pick) return false
-        return pick() !== false
-      },
-    )
+    this.toolbar = this.createToolbarElement()
     this.outlinePanel = createOutline((start) => this.focusAt(start))
     this.toolbar.hidden = !this.toolbarVisible
     this.outlinePanel.element.hidden = !this.outlineVisible
@@ -416,79 +523,162 @@ export class Editor {
     this.element.append(this.toolbar, this.outlinePanel.element, doc)
   }
 
-  private runToolbar(command: ToolbarCommand): void {
-    if (command === 'wechat') {
-      void this.copyForWechat()
-      return
+  private createToolbarElement(): HTMLElement {
+    this.toolbarItems = this.buildToolbarItems()
+    return createToolbarFromItems(
+      this.toolbarItems,
+      (command) => this.onToolbarCommand(command),
+      (file) => this.insertImageFile(file),
+      () => {
+        const pick = this.options.onPickImage
+        if (!pick) return false
+        return pick() !== false
+      },
+    )
+  }
+
+  private buildToolbarItems(): ToolbarItemView[] {
+    const items = [...BUILTIN_TOOLBAR_ITEMS, ...this.pluginRegistry.allToolbarItems()]
+    const groupOrder = new Map<string, number>(Object.entries(TOOLBAR_GROUP_ORDER))
+    for (const item of items) {
+      if (!groupOrder.has(item.group)) groupOrder.set(item.group, 1000 + groupOrder.size)
     }
-    this.focused = true
-    this.focusSurface()
-    switch (command) {
-      case 'code':
-      case 'table':
-      case 'orderedList':
-      case 'bulletList':
-      case 'taskList':
-      case 'quote':
-      case 'heading1':
-      case 'heading2':
-      case 'heading3':
-      case 'rule':
-      case 'link':
-      case 'math':
-      case 'inlineMath':
-        this.format(command)
-        return
-      case 'bold':
-        this.toggleBold()
-        return
-      case 'italic':
-        this.toggleItalic()
-        return
-      case 'underline':
-        this.toggleUnderline()
-        return
-      case 'inlineCode':
-        this.toggleCode()
-        return
-      case 'strike':
-        this.toggleStrikethrough()
-        return
-      case 'highlight':
-        this.toggleHighlight()
-        return
-      default:
-        return
+    return items
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        const groupA = groupOrder.get(a.item.group) ?? 1000
+        const groupB = groupOrder.get(b.item.group) ?? 1000
+        if (groupA !== groupB) return groupA - groupB
+        if (a.item.order !== b.item.order) return a.item.order - b.item.order
+        return a.index - b.index
+      })
+      .map((entry) => entry.item)
+  }
+
+  private refreshToolbar(): void {
+    const previous = this.toolbar
+    if (!previous) return
+    const next = this.createToolbarElement()
+    next.hidden = !this.toolbarVisible
+    previous.replaceWith(next)
+    this.toolbar = next
+    this.syncToolbarState()
+  }
+
+  private onToolbarCommand(command: string): void {
+    if (command === 'image') return
+    void this.runCommand(command).catch((error) => {
+      console.error(`[v5md] command "${command}" failed`, error)
+    })
+  }
+
+  private activatePlugin<T>(registration: PluginRegistration<T>): V5mdPluginHandle<T> {
+    const plugin = registration.plugin
+    const context = this.createCommandContext()
+    let api: T
+    try {
+      api = plugin.api ? plugin.api(context) : (undefined as T)
+    } catch (error) {
+      this.pluginRegistry.remove(plugin.name)
+      if (this.toolbar) this.refreshToolbar()
+      throw error
+    }
+    let resolveReady!: () => void
+    let rejectReady!: (error: unknown) => void
+    const ready = new Promise<void>((resolve, reject) => {
+      resolveReady = resolve
+      rejectReady = reject
+    })
+    void ready.catch(() => {})
+    const handle: V5mdPluginHandle<T> = {
+      name: plugin.name,
+      api,
+      ready,
+      dispose: () => this.disposePlugin(plugin.name),
+    }
+    this.pluginHandles.set(plugin.name, handle as V5mdPluginHandle<unknown>)
+    try {
+      const result = plugin.setup?.(context)
+      if (result && typeof (result as Promise<void>).then === 'function') {
+        void Promise.resolve(result).then(
+          () => {
+            if (registration.disposed) {
+              registration.cleanup?.()
+              registration.cleanup = undefined
+            }
+            resolveReady()
+          },
+          (error) => {
+            console.error(`[v5md] plugin "${plugin.name}" setup failed`, error)
+            rejectReady(error)
+          },
+        )
+      } else {
+        if (typeof result === 'function') registration.cleanup = result
+        if (registration.disposed) {
+          registration.cleanup?.()
+          registration.cleanup = undefined
+        }
+        resolveReady()
+      }
+    } catch (error) {
+      console.error(`[v5md] plugin "${plugin.name}" setup failed`, error)
+      rejectReady(error)
+    }
+    return handle
+  }
+
+  private disposePlugin(name: string, skipRefresh = false): void {
+    const registration = this.pluginRegistry.get(name)
+    if (!registration) return
+    registration.disposed = true
+    this.pluginHandles.delete(name)
+    const cleanup = registration.cleanup
+    registration.cleanup = undefined
+    try {
+      cleanup?.()
+    } catch (error) {
+      console.error(`[v5md] plugin "${name}" cleanup failed`, error)
+    }
+    try {
+      registration.plugin.destroy?.()
+    } catch (error) {
+      console.error(`[v5md] plugin "${name}" destroy failed`, error)
+    }
+    this.pluginRegistry.remove(name)
+    if (!skipRefresh && this.toolbar) this.refreshToolbar()
+  }
+
+  private createCommandContext(): V5mdCommandContext {
+    return {
+      editor: this,
+      host: this.element,
+      state: this.getPluginState(),
+      insertText: (text) => this.insertText(text),
+      replaceSelection: (text) => this.replaceSelection(text),
+      wrapSelection: (before, after) => this.wrapSelection(before, after),
+      focus: () => this.focus(),
     }
   }
 
   private syncToolbarState(): void {
     const bar = this.toolbar
     if (!bar) return
-    const path = pathAt(parse(this.state.doc), this.state.selection.head, this.state.doc.length)
-    const types = new Set(path.map((node) => node.type))
-    const heading = [...path].reverse().find((node) => node.type === 'heading')
-    const list = [...path].reverse().find((node) => node.type === 'list')
-    const item = [...path].reverse().find((node) => node.type === 'listItem')
-    const pressed = new Set<string>()
-    if (types.has('strong')) pressed.add('bold')
-    if (types.has('emphasis')) pressed.add('italic')
-    if (types.has('underline')) pressed.add('underline')
-    if (types.has('inlineCode')) pressed.add('inlineCode')
-    if (types.has('strikethrough')) pressed.add('strike')
-    if (types.has('highlight')) pressed.add('highlight')
-    if (types.has('blockquote')) pressed.add('quote')
-    if (heading?.depth === 1) pressed.add('heading1')
-    if (heading?.depth === 2) pressed.add('heading2')
-    if (heading?.depth === 3) pressed.add('heading3')
-    if (list?.ordered) pressed.add('orderedList')
-    if (list && !list.ordered && typeof item?.checked !== 'boolean') pressed.add('bulletList')
-    if (typeof item?.checked === 'boolean') pressed.add('taskList')
-    bar.querySelectorAll<HTMLButtonElement>('button[data-command]').forEach((button) => {
-      const command = button.dataset.command ?? ''
-      if (command === 'image' || command === 'wechat') return
-      button.setAttribute('aria-pressed', pressed.has(command) ? 'true' : 'false')
+    const state = this.getPluginState()
+    const buttons = new Map<string, HTMLButtonElement>()
+    bar.querySelectorAll<HTMLButtonElement>('button[data-item-id]').forEach((button) => {
+      if (button.dataset.itemId) buttons.set(button.dataset.itemId, button)
     })
+    for (const item of this.toolbarItems) {
+      const button = buttons.get(item.id)
+      if (!button) continue
+      if (item.type === 'toggle') {
+        button.setAttribute('aria-pressed', item.isActive?.(state) ? 'true' : 'false')
+      } else {
+        button.removeAttribute('aria-pressed')
+      }
+      button.disabled = item.isDisabled?.(state) ?? false
+    }
   }
 
   private listen(): void {

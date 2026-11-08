@@ -21,7 +21,7 @@ const editor = new Editor({
 const exporter = editor.getPlugin<ExportApi>('export')!
 
 const markdown = exporter.api.exportMarkdown()
-const html = exporter.api.exportHtml()
+const html = await exporter.api.exportHtml()
 const png = await exporter.api.exportImage({ type: 'png', scale: 2 })
 const pdf = await exporter.api.exportPdf({ format: 'a4', margin: 24 })
 ```
@@ -30,9 +30,10 @@ const pdf = await exporter.api.exportPdf({ format: 'a4', margin: 24 })
 
 ```ts
 exporter.api.downloadMarkdown('article.md')
-exporter.api.downloadHtml('article.html')
+await exporter.api.downloadHtml('article.html')
 await exporter.api.downloadImage('article.png')
 await exporter.api.downloadPdf('article.pdf')
+await exporter.api.print()
 ```
 
 ## API
@@ -41,15 +42,18 @@ await exporter.api.downloadPdf('article.pdf')
 | --- | --- |
 | `exportMarkdown()` | 返回 Markdown |
 | `exportHtmlFragment()` | 返回带内联样式的 HTML 片段 |
-| `exportHtml()` | 返回完整 HTML 文档 |
+| `exportHtml()` | 返回完整 HTML 文档，图片会尽量内联为 data URL |
 | `exportImage(options?)` | 返回 PNG / JPEG Blob |
 | `exportPdf(options?)` | 返回 PDF Blob |
+| `print()` | 打开浏览器打印对话框，可选择「另存为 PDF」 |
 | `downloadMarkdown(fileName?)` | 下载 Markdown |
 | `downloadHtml(fileName?)` | 下载 HTML |
 | `downloadImage(fileName?, options?)` | 下载图片 |
 | `downloadPdf(fileName?, options?)` | 下载 PDF |
 
-PDF 和图片默认使用 `html2canvas` + `jspdf`，这两个依赖在插件包内部按需动态加载。也可以通过 `renderer` 选项替换成自己的实现：
+`exportHtml()` 会导出当前编辑器已经渲染好的内容，因此公式保留 KaTeX 排版、Mermaid 保留渲染后的 SVG，而不是退回源码代码块；图片会先用 `fetch` 转成 data URL，遇到跨域图片时回退为绝对 URL。`exportHtml()` 和 `downloadHtml()` 都是异步的。`exportHtmlFragment()` 仍然输出适合公众号粘贴的内联样式片段。
+
+PDF 和图片默认使用 `html2canvas` + `jspdf`，这两个依赖在插件包内部按需动态加载。也可以选择浏览器打印路径：`print()` 会打开打印对话框，由用户在浏览器里选择「另存为 PDF」。需要自定义实现时，通过 `renderer` 替换：
 
 ```ts
 createExportPlugin({

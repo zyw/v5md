@@ -3,7 +3,7 @@ import { Editor } from '@v5md/view'
 import { createExportPlugin, type ExportApi } from '../src/index.ts'
 
 describe('@v5md/plugin-export', () => {
-  it('exports markdown, html fragments and full documents', () => {
+  it('exports markdown, html fragments and full documents', async () => {
     const element = document.createElement('div')
     document.body.append(element)
     const editor = new Editor({
@@ -18,11 +18,57 @@ describe('@v5md/plugin-export', () => {
     expect(fragment).toContain('<h1')
     expect(fragment).toContain('font-size:24px')
     expect(fragment).toContain('<strong')
-    const html = api.exportHtml()
+    const html = await api.exportHtml()
     expect(html).toContain('<!doctype html>')
     expect(html).toContain('<title>测试文章</title>')
-    expect(html).toContain(fragment)
+    expect(html).toContain('<h1')
+    expect(html).toContain('<style>')
+    expect(html).toContain('class="v5md is-preview"')
 
+    editor.destroy()
+    element.remove()
+  })
+
+  it('keeps rendered math in the exported document', async () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({
+      element,
+      value: '$x^2$',
+      plugins: [createExportPlugin()],
+    })
+    const html = await editor.getPlugin<ExportApi>('export')!.api.exportHtml()
+    expect(html).toContain('class="katex"')
+    expect(html).not.toContain('class="v5-source"')
+    editor.destroy()
+    element.remove()
+  })
+
+  it('inlines exported images as data urls', async () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"></svg>'
+    const fetchMock = vi.fn(async () => new Response(new Blob([svg], { type: 'image/svg+xml' })))
+    vi.stubGlobal('fetch', fetchMock)
+    const editor = new Editor({
+      element,
+      value: '![示意图](sample.svg)',
+      plugins: [createExportPlugin()],
+    })
+    const html = await editor.getPlugin<ExportApi>('export')!.api.exportHtml()
+    expect(fetchMock).toHaveBeenCalled()
+    expect(html).toContain('src="data:image/svg+xml')
+    vi.unstubAllGlobals()
+    editor.destroy()
+    element.remove()
+  })
+
+  it('exposes a browser print entry', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, plugins: [createExportPlugin()] })
+    const api = editor.getPlugin<ExportApi>('export')!.api
+    expect(typeof api.print).toBe('function')
     editor.destroy()
     element.remove()
   })

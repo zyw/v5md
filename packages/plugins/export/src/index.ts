@@ -36,14 +36,16 @@ export interface ExportPluginOptions {
 
 export interface ExportApi {
   exportMarkdown(): string
-  /** 完整 HTML 文档，可直接下载或打开。 */
-  exportHtml(): string
+  /** 完整 HTML 文档，可直接下载或打开；图片会尽量内联为 data URL。 */
+  exportHtml(): Promise<string>
   /** 可粘贴的 HTML 片段。 */
   exportHtmlFragment(): string
   exportImage(options?: ExportImageOptions): Promise<Blob>
   exportPdf(options?: ExportPdfOptions): Promise<Blob>
+  /** 打开浏览器打印对话框，可选择“另存为 PDF”。 */
+  print(): Promise<void>
   downloadMarkdown(fileName?: string): void
-  downloadHtml(fileName?: string): void
+  downloadHtml(fileName?: string): Promise<void>
   downloadImage(fileName?: string, options?: ExportImageOptions): Promise<void>
   downloadPdf(fileName?: string, options?: ExportPdfOptions): Promise<void>
 }
@@ -79,17 +81,10 @@ function createExportApi(editor: Editor, content: HTMLElement, options: ExportPl
       return toWechatHtml(editor.getMarkdown())
     },
     exportHtml() {
-      return `<!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(title)}</title>
-</head>
-<body style="margin:0;padding:32px;background:#fff;">
-${api.exportHtmlFragment()}
-</body>
-</html>`
+      return buildStandaloneHtml(editor, title)
+    },
+    async print() {
+      printHtml(await api.exportHtml())
     },
     exportImage(imageOptions = {}) {
       return renderImage(requireContent(), {
@@ -107,8 +102,8 @@ ${api.exportHtmlFragment()}
     downloadMarkdown(fileName = `${baseName}.md`) {
       downloadBlob(new Blob([api.exportMarkdown()], { type: 'text/markdown;charset=utf-8' }), fileName)
     },
-    downloadHtml(fileName = `${baseName}.html`) {
-      downloadBlob(new Blob([api.exportHtml()], { type: 'text/html;charset=utf-8' }), fileName)
+    async downloadHtml(fileName = `${baseName}.html`) {
+      downloadBlob(new Blob([await api.exportHtml()], { type: 'text/html;charset=utf-8' }), fileName)
     },
     async downloadImage(fileName, imageOptions) {
       const type = imageOptions?.type ?? 'png'
@@ -122,6 +117,144 @@ ${api.exportHtmlFragment()}
   }
 
   return api
+}
+
+async function buildStandaloneHtml(editor: Editor, title: string): Promise<string> {
+  const clone = editor.getContentElement().cloneNode(true)
+  if (!(clone instanceof HTMLElement)) throw new Error('editor content is not an element')
+  cleanContent(clone)
+  await inlineImages(clone)
+  const styles = collectEditorStyles()
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<style>
+${styles}
+</style>
+</head>
+<body style="margin:0;padding:32px;background:#fff;">
+<div class="v5md is-preview">${clone.outerHTML}</div>
+</body>
+</html>`
+}
+
+function cleanContent(root: HTMLElement): void {
+  root.querySelectorAll('.md-marker, .v5-source, .v5-image-resize, .v5-empty-line, .v5-block-handle, .v5-block-menu, .v5-tablebar, .v5-toolbar, .v5-outline, .v5-find').forEach((element) => element.remove())
+  root.querySelectorAll('.v5-check').forEach((check) => {
+    if (check.tagName !== 'BUTTON') return
+    const span = root.ownerDocument.createElement('span')
+    span.className = 'v5-check'
+    span.dataset.checked = check.getAttribute('data-checked') ?? 'false'
+    check.replaceWith(span)
+  })
+  for (const element of [root, ...root.querySelectorAll<HTMLElement>('*')]) {
+    for (const attribute of [...element.attributes]) {
+      if (attribute.name === 'data-checked') continue
+      if (
+        attribute.name.startsWith('data-') ||
+        attribute.name === 'contenteditable' ||
+        attribute.name === 'tabindex' ||
+        attribute.name === 'spellcheck' ||
+        attribute.name === 'autocapitalize' ||
+        attribute.name === 'role' ||
+        attribute.name.startsWith('aria-')
+      ) {
+        element.removeAttribute(attribute.name)
+      }
+    }
+    element.classList.remove('is-source', 'is-active', 'is-composing', 'v5-source-mode')
+  }
+}
+
+async function inlineImages(root: HTMLElement): Promise<void> {
+  const images = [...root.querySelectorAll<HTMLImageElement>('img')]
+  await Promise.all(
+    images.map(async (image) => {
+      const source = image.getAttribute('src')?.trim()
+      if (!source || source.startsWith('data:')) return
+      let absolute = source
+      if (typeof document !== 'undefined') {
+        try {
+          absolute = new URL(source, document.baseURI).href
+        } catch {
+          // Keep the original source when it cannot be resolved.
+        }
+      }
+      if (typeof fetch !== 'function') {
+        image.setAttribute('src', absolute)
+        return
+      }
+      try {
+        const response = await fetch(absolute, { mode: 'cors' })
+        if (!response.ok) throw new Error(`image request failed: ${response.status}`)
+        image.setAttribute('src', await blobToDataUrl(await response.blob()))
+        image.removeAttribute('srcset')
+      } catch {
+        image.setAttribute('src', absolute)
+      }
+    }),
+  )
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') resolve(reader.result)
+      else reject(new Error('failed to read image as data url'))
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('failed to read image as data url'))
+    reader.readAsDataURL(blob)
+  })
+}
+
+function collectEditorStyles(): string {
+  if (typeof document === 'undefined') return ''
+  const rules: string[] = []
+  for (const sheet of Array.from(document.styleSheets)) {
+    let list: CSSRuleList
+    try {
+      list = sheet.cssRules
+    } catch {
+      continue
+    }
+    for (const rule of Array.from(list)) {
+      const text = rule.cssText
+      if (!text) continue
+      if (/\.v5|\.katex|\.hljs|KaTeX|@font-face|::highlight/.test(text)) rules.push(text)
+    }
+  }
+  return rules.join('\n')
+}
+
+function printHtml(html: string): void {
+  if (typeof document === 'undefined') throw new Error('print requires a browser document')
+  const iframe = document.createElement('iframe')
+  iframe.setAttribute('aria-hidden', 'true')
+  iframe.style.position = 'fixed'
+  iframe.style.left = '-9999px'
+  iframe.style.top = '0'
+  iframe.style.width = '0'
+  iframe.style.height = '0'
+  iframe.style.border = '0'
+  iframe.srcdoc = html
+  const cleanup = () => {
+    setTimeout(() => iframe.remove(), 0)
+  }
+  iframe.addEventListener('load', () => {
+    const frameWindow = iframe.contentWindow
+    if (!frameWindow) {
+      cleanup()
+      return
+    }
+    frameWindow.focus()
+    frameWindow.print()
+    cleanup()
+  })
+  document.body.append(iframe)
 }
 
 async function renderCanvas(element: HTMLElement, scale: number): Promise<HTMLCanvasElement> {

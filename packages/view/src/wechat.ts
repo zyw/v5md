@@ -51,15 +51,35 @@ const HIGHLIGHT_COLORS: Record<string, string> = {
  * 公众号会丢掉 class、id 和外部样式，所以这里只输出内联样式，并且不依赖主题 CSS。
  * 公式和 Mermaid 暂时以代码块形式保留源码，避免粘贴后变成不可读的空白。
  */
-export function toWechatHtml(markdown: string): string {
+export interface WechatHtmlOptions {
+  /** 用于把相对图片地址转成绝对地址，默认使用 document.baseURI。 */
+  baseUrl?: string
+}
+
+export function toWechatHtml(markdown: string, options: WechatHtmlOptions = {}): string {
   const body = parse(markdown)
     .children.map(renderNode)
     .filter(Boolean)
     .join('')
-  return `<section style="${BODY}">${body}</section>`
+  const html = `<section style="${BODY}">${body}</section>`
+  const baseUrl = options.baseUrl ?? (typeof document !== 'undefined' ? document.baseURI : undefined)
+  return baseUrl ? resolveImageSources(html, baseUrl) : html
+}
+
+function resolveImageSources(html: string, baseUrl: string): string {
+  return html.replace(/(<img\b[^>]*\bsrc=")([^"]*)(")/g, (match, before, src, after) => {
+    if (!src || /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(src)) return match
+    try {
+      const url = new URL(src.replace(/&amp;/g, '&'), baseUrl).href
+      return `${before}${escapeHtml(url)}${after}`
+    } catch {
+      return match
+    }
+  })
 }
 
 export async function copyRichText(html: string, text: string): Promise<boolean> {
+  if (copyWithExecCommand(html, text)) return true
   if (typeof navigator !== 'undefined' && navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
     try {
       await navigator.clipboard.write([
@@ -70,45 +90,58 @@ export async function copyRichText(html: string, text: string): Promise<boolean>
       ])
       return true
     } catch {
-      // Clipboard API 在非安全上下文或旧浏览器上不可用，继续走 execCommand。
+      // Clipboard API 在非安全上下文或旧浏览器上不可用。
     }
   }
-  return copyWithExecCommand(html)
+  return false
 }
 
-function copyWithExecCommand(html: string): boolean {
+function copyWithExecCommand(html: string, text: string): boolean {
   if (typeof document === 'undefined' || typeof document.execCommand !== 'function') return false
   const holder = document.createElement('div')
   holder.contentEditable = 'true'
+  holder.innerHTML = html
   holder.style.position = 'fixed'
   holder.style.left = '-9999px'
   holder.style.top = '0'
   holder.style.opacity = '0'
   holder.style.pointerEvents = 'none'
-  holder.innerHTML = html
   document.body.append(holder)
+  const active = document.activeElement instanceof HTMLElement ? document.activeElement : null
   const selection = document.getSelection()
   const previous = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null
-  const range = document.createRange()
-  range.selectNodeContents(holder)
-  selection?.removeAllRanges()
-  selection?.addRange(range)
   let copied = false
+  const onCopy = (event: ClipboardEvent) => {
+    event.preventDefault()
+    event.clipboardData?.setData('text/html', html)
+    event.clipboardData?.setData('text/plain', text)
+    copied = Boolean(event.clipboardData)
+  }
+  document.addEventListener('copy', onCopy, true)
+  let result = false
   try {
-    copied = document.execCommand('copy')
+    holder.focus({ preventScroll: true })
+    const range = document.createRange()
+    range.selectNodeContents(holder)
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    result = document.execCommand('copy')
   } catch {
-    copied = false
-  }
-  selection?.removeAllRanges()
-  if (previous) {
-    try {
-      selection?.addRange(previous)
-    } catch {
-      // The old range may refer to nodes that were removed while copying.
+    result = false
+  } finally {
+    document.removeEventListener('copy', onCopy, true)
+    holder.remove()
+    if (previous) {
+      try {
+        selection?.removeAllRanges()
+        selection?.addRange(previous)
+      } catch {
+        // The old range may refer to nodes that were removed while copying.
+      }
     }
+    if (active && active !== holder) active.focus({ preventScroll: true })
   }
-  holder.remove()
-  return copied
+  return result && copied
 }
 
 function renderNode(node: MdNode): string {

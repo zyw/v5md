@@ -166,6 +166,36 @@ describe('Editor plugins', () => {
     element.remove()
   })
 
+  it('updates the toolbar incrementally when a plugin is installed and removed', () => {
+    const plugin = {
+      name: 'incremental',
+      commands: { 'incremental.action': { run() {} } },
+      toolbar: [
+        {
+          id: 'incremental.action',
+          command: 'incremental.action',
+          label: '增量按钮',
+          icon: '<svg></svg>',
+          group: 'inline',
+          order: 25,
+        },
+      ],
+    }
+    const { element, editor } = editorWith({ element: document.createElement('div') })
+    const toolbar = element.querySelector('.v5-toolbar')
+    const bold = element.querySelector('button[data-item-id="bold"]')
+    const handle = editor.use(plugin)
+    expect(element.querySelector('.v5-toolbar')).toBe(toolbar)
+    expect(element.querySelector('button[data-item-id="bold"]')).toBe(bold)
+    expect(element.querySelector('button[data-item-id="incremental.action"]')).not.toBeNull()
+    handle.dispose()
+    expect(element.querySelector('.v5-toolbar')).toBe(toolbar)
+    expect(element.querySelector('button[data-item-id="bold"]')).toBe(bold)
+    expect(element.querySelector('button[data-item-id="incremental.action"]')).toBeNull()
+    editor.destroy()
+    element.remove()
+  })
+
   it('applies toggle state and disabled state from plugin definitions', () => {
     const plugin = {
       name: 'state',

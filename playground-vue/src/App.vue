@@ -37,7 +37,7 @@ async function exportFile(kind: 'markdown' | 'html' | 'image' | 'pdf') {
   exportStatus.value = '导出中…'
   try {
     if (kind === 'markdown') exporter.value.downloadMarkdown('v5md-示例.md')
-    else if (kind === 'html') exporter.value.downloadHtml('v5md-示例.html')
+    else if (kind === 'html') await exporter.value.downloadHtml('v5md-示例.html')
     else if (kind === 'image') await exporter.value.downloadImage('v5md-示例.png')
     else await exporter.value.downloadPdf('v5md-示例.pdf')
     exportStatus.value = '已导出'

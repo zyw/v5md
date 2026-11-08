@@ -32,7 +32,7 @@ export function App() {
     setExportStatus('导出中…')
     try {
       if (kind === 'markdown') exporter.downloadMarkdown('v5md-示例.md')
-      else if (kind === 'html') exporter.downloadHtml('v5md-示例.html')
+      else if (kind === 'html') await exporter.downloadHtml('v5md-示例.html')
       else if (kind === 'image') await exporter.downloadImage('v5md-示例.png')
       else await exporter.downloadPdf('v5md-示例.pdf')
       setExportStatus('已导出')

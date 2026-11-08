@@ -260,7 +260,7 @@ const editor = new Editor({
 
 `FormatCommand`：`code`、`table`、`orderedList`、`bulletList`、`taskList`、`quote`、`heading1`、`heading2`、`heading3`、`rule`、`link`、`math`、`inlineMath`。
 
-工具条最右侧的「复制到公众号」会调用 `copyForWechat()`：把当前 Markdown 转成只带内联样式的 HTML，并以富文本写入剪贴板，直接粘贴到公众号编辑器即可保留标题、列表、代码高亮、表格和图片排版。公众号会丢弃 class、id 和外部样式，所以输出不依赖主题 CSS。公式和 Mermaid 图表暂时以源码代码块保留；图片地址需要公众号能访问，外链图片可能需要在公众号里重新上传。
+工具条最右侧的「复制到公众号」会调用 `copyForWechat()`：把当前 Markdown 转成只带内联样式的 HTML，并以富文本写入剪贴板，直接粘贴到公众号编辑器即可保留标题、列表、代码高亮、表格和图片排版。复制时优先走 `execCommand('copy')` 事件，把公众号 HTML 同时写入 `text/html` 和 `text/plain`，兼容只读取纯文本通道的公众号编辑器；失败时回退 Clipboard API。公众号会丢弃 class、id 和外部样式，所以输出不依赖主题 CSS。普通复制和公众号复制是分开的：所见即所得模式下选中复制的是渲染后看到的内容（不含 Markdown 标记），源码模式下复制的是完整 Markdown 文本。公式和 Mermaid 图表暂时以源码代码块保留；图片会转成绝对地址，公众号无法访问的外链图片可能需要在公众号里重新上传。
 
 插件可以贡献工具条按钮，也可以只提供外部调用的命令或 API：
 

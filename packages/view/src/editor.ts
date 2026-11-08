@@ -41,7 +41,7 @@ import { htmlToMarkdown } from './html-to-md.js'
 import { createOutline, type OutlinePanel } from './outline.js'
 import { createTableBar, markTableAlign } from './table-bar.js'
 import { BUILTIN_COMMAND_IDS, BUILTIN_COMMANDS, BUILTIN_TOOLBAR_IDS, BUILTIN_TOOLBAR_ITEMS } from './builtins.js'
-import { createToolbarFromItems, type ToolbarCommand } from './toolbar.js'
+import { createToolbarController, type ToolbarCommand, type ToolbarController } from './toolbar.js'
 import {
   PluginRegistry,
   type PluginRegistration,
@@ -103,6 +103,7 @@ export class Editor {
   private findBar: HTMLFormElement | null = null
   private tableBar: HTMLElement | null = null
   private toolbar: HTMLElement | null = null
+  private toolbarController: ToolbarController | null = null
   private outlinePanel: OutlinePanel | null = null
   private toolbarVisible = true
   private outlineVisible = true
@@ -352,6 +353,9 @@ export class Editor {
     for (const registration of [...this.pluginRegistry.list()].reverse()) {
       this.disposePlugin(registration.plugin.name, true)
     }
+    this.toolbarController?.destroy()
+    this.toolbarController = null
+    this.toolbar = null
     this.abort.abort()
     this.hideSlash()
     this.hideHandle()
@@ -411,8 +415,8 @@ export class Editor {
   }
 
   async copyForWechat(): Promise<boolean> {
-    const markdown = this.state.doc
-    const copied = await copyRichText(toWechatHtml(markdown), markdown)
+    const html = toWechatHtml(this.state.doc)
+    const copied = await copyRichText(html, html)
     this.flashWechatButton(copied)
     return copied
   }
@@ -424,6 +428,7 @@ export class Editor {
   setToolbarVisible(visible: boolean): void {
     this.toolbarVisible = visible
     if (this.toolbar) this.toolbar.hidden = !visible
+    this.toolbarController?.setHidden(!visible)
   }
 
   isOutlineVisible(): boolean {
@@ -514,27 +519,25 @@ export class Editor {
   }
 
   private mountChrome(): void {
-    this.toolbar = this.createToolbarElement()
+    this.toolbarController = createToolbarController({
+      onCommand: (command) => this.onToolbarCommand(command),
+      onImage: (file) => this.insertImageFile(file),
+      onPickImage: () => {
+        const pick = this.options.onPickImage
+        if (!pick) return false
+        return pick() !== false
+      },
+    })
+    this.toolbar = this.toolbarController.element
     this.outlinePanel = createOutline((start) => this.focusAt(start))
     this.toolbar.hidden = !this.toolbarVisible
     this.outlinePanel.element.hidden = !this.outlineVisible
     const doc = document.createElement('div')
     doc.className = 'v5-doc'
     this.element.append(this.toolbar, this.outlinePanel.element, doc)
-  }
-
-  private createToolbarElement(): HTMLElement {
     this.toolbarItems = this.buildToolbarItems()
-    return createToolbarFromItems(
-      this.toolbarItems,
-      (command) => this.onToolbarCommand(command),
-      (file) => this.insertImageFile(file),
-      () => {
-        const pick = this.options.onPickImage
-        if (!pick) return false
-        return pick() !== false
-      },
-    )
+    this.toolbarController.setItems(this.toolbarItems)
+    this.toolbarController.setHidden(!this.toolbarVisible)
   }
 
   private buildToolbarItems(): ToolbarItemView[] {
@@ -556,12 +559,10 @@ export class Editor {
   }
 
   private refreshToolbar(): void {
-    const previous = this.toolbar
-    if (!previous) return
-    const next = this.createToolbarElement()
-    next.hidden = !this.toolbarVisible
-    previous.replaceWith(next)
-    this.toolbar = next
+    if (!this.toolbarController) return
+    this.toolbarItems = this.buildToolbarItems()
+    this.toolbarController.setItems(this.toolbarItems)
+    this.toolbarController.setHidden(!this.toolbarVisible)
     this.syncToolbarState()
   }
 
@@ -665,20 +666,17 @@ export class Editor {
     const bar = this.toolbar
     if (!bar) return
     const state = this.getPluginState()
-    const buttons = new Map<string, HTMLButtonElement>()
+    const itemsById = new Map(this.toolbarItems.map((item) => [item.id, item]))
     bar.querySelectorAll<HTMLButtonElement>('button[data-item-id]').forEach((button) => {
-      if (button.dataset.itemId) buttons.set(button.dataset.itemId, button)
-    })
-    for (const item of this.toolbarItems) {
-      const button = buttons.get(item.id)
-      if (!button) continue
+      const item = button.dataset.itemId ? itemsById.get(button.dataset.itemId) : undefined
+      if (!item) return
       if (item.type === 'toggle') {
         button.setAttribute('aria-pressed', item.isActive?.(state) ? 'true' : 'false')
       } else {
         button.removeAttribute('aria-pressed')
       }
       button.disabled = item.isDisabled?.(state) ?? false
-    }
+    })
   }
 
   private listen(): void {
@@ -1068,6 +1066,10 @@ export class Editor {
   }
 
   private onCopy = (event: ClipboardEvent) => {
+    if (!this.sourceMode) {
+      this.copySelectionAsRich(event)
+      return
+    }
     const slice = this.selectedText()
     if (slice == null) return
     event.preventDefault()
@@ -1079,11 +1081,61 @@ export class Editor {
       this.onCopy(event)
       return
     }
+    if (!this.sourceMode) {
+      if (!this.copySelectionAsRich(event)) return
+      this.commit(insertText(this.state, ''))
+      return
+    }
     const slice = this.selectedText()
     if (slice == null) return
     event.preventDefault()
     event.clipboardData?.setData('text/plain', slice)
     this.commit(insertText(this.state, ''))
+  }
+
+  private copySelectionAsRich(event: ClipboardEvent): boolean {
+    if (typeof document === 'undefined') return false
+    const selection = document.getSelection()
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) return false
+    const range = selection.getRangeAt(0)
+    if (!this.element.contains(range.commonAncestorContainer)) return false
+    const holder = document.createElement('div')
+    holder.style.position = 'fixed'
+    holder.style.left = '-9999px'
+    holder.style.top = '0'
+    holder.style.opacity = '0'
+    holder.style.pointerEvents = 'none'
+    holder.append(range.cloneContents())
+    document.body.append(holder)
+    this.cleanCopiedFragment(holder)
+    const html = holder.innerHTML
+    const text = (holder.innerText || holder.textContent || '').replace(/\u00a0/g, ' ').trim() || selection.toString()
+    holder.remove()
+    if (!html) return false
+    event.preventDefault()
+    event.clipboardData?.setData('text/html', html)
+    if (text) event.clipboardData?.setData('text/plain', text)
+    return true
+  }
+
+  private cleanCopiedFragment(root: HTMLElement): void {
+    root
+      .querySelectorAll(
+        '.md-marker, .v5-marker, .v5-source, .v5-image-resize, .v5-empty-line, .v5-block-handle, .v5-block-menu, .v5-tablebar, .v5-toolbar, .v5-outline, .v5-find',
+      )
+      .forEach((element) => element.remove())
+    root.querySelectorAll('.v5-mermaid > code').forEach((element) => element.remove())
+    root.querySelectorAll<HTMLButtonElement>('button.v5-check').forEach((check) => {
+      const label = check.ownerDocument.createElement('span')
+      label.textContent = check.dataset.checked === 'true' ? '✓' : '☐'
+      check.replaceWith(label)
+    })
+    for (const element of [root, ...root.querySelectorAll<HTMLElement>('*')]) {
+      element.removeAttribute('contenteditable')
+      element.removeAttribute('spellcheck')
+      element.removeAttribute('tabindex')
+      element.classList.remove('is-source', 'is-active', 'is-composing')
+    }
   }
 
   private selectedText(): string | null {

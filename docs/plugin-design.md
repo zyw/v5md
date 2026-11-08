@@ -789,12 +789,14 @@ typography.api.setFontSize(18)
 - 第 6 步：已完成，新增 `@v5md/plugin-typography`、`@v5md/plugin-export` 独立包；
 - 第 7 步：已完成，内置按钮和命令迁移到 `packages/view/src/builtins.ts`，与插件命令共用 `runCommand`；
 - 第 8 步：已完成，README 和两个 playground 都加入了插件示例。
+- 追加：`exportHtml()` 改为基于当前渲染 DOM，并收集主题/KaTeX 样式，保留公式和 Mermaid 渲染结果；图片会内联为 data URL；新增 `print()` 浏览器打印入口。
+- 追加：工具条支持溢出菜单，`use()` / `dispose()` 改为增量更新按钮，不再整条重建。
 
 ## 16. 风险与备选方案
 
 ### 风险
 
-- **工具条重建导致闪烁**：第一版 `use` / `dispose` 重建整个工具条，后续可改为增量插入/移除。
+- ~~**工具条重建导致闪烁**~~：已改为增量插入/移除，并通过 `ResizeObserver` / `window resize` 重排溢出按钮。
 - **插件 API 版本漂移**：通过 `apiVersion` 和独立包版本控制。
 - **导出依赖过重**：使用独立包和子路径，重依赖动态加载。
 - **插件破坏 DOM**：文档要求使用受控 API；必要时后续增加只读视图或事件隔离。
@@ -806,8 +808,8 @@ typography.api.setFontSize(18)
 - **插件通过全局事件总线通信**：难以类型化和清理，不采用。
 - **所有插件放 `@v5md/view` 子路径**：可以减少包数量，但会让主包或构建产物带上重依赖，按需加载不彻底。
 
-## 17. 待确认问题
+## 17. 已确认取舍
 
-- 导出 HTML 需要“独立完整 HTML 文档”还是“可粘贴 HTML 片段”？建议两者都提供：`exportHtml()` 返回片段，`exportDocument()` 返回完整文档。
-- PDF / 图片导出使用哪个实现（`html2canvas` + `jspdf`，还是浏览器打印）？建议插件内部可替换，不绑死。
-- 插件是否需要在工具条溢出时自动收纳到“更多”菜单？建议后续版本处理。
+- 导出 HTML 同时提供两种形态：`exportHtml()` 返回完整 HTML 文档，`exportHtmlFragment()` 返回可粘贴片段；完整文档保留当前渲染的 KaTeX 公式和 Mermaid SVG。
+- PDF / 图片默认使用 `html2canvas` + `jspdf`，通过 `renderer` 可以替换；另外提供 `print()` 走浏览器打印对话框，由用户选择「另存为 PDF」。
+- 工具条已实现溢出菜单；可用宽度不足时多余按钮自动进入「更多」菜单。

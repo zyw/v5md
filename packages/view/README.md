@@ -140,7 +140,7 @@ handle.dispose()
 await editor.runCommand('callout.note')
 ```
 
-插件按钮会和内置按钮一起排序；`group` 使用内置分组时会插入对应区域，使用新分组时追加到内置区域之后。内置按钮和命令定义在 `packages/view/src/builtins.ts`，和插件命令共用同一个 `runCommand` 分发入口；内置命令 id 不能被插件覆盖。
+插件按钮会和内置按钮一起排序；`group` 使用内置分组时会插入对应区域，使用新分组时追加到内置区域之后。工具条会按可用宽度把多余按钮收进「更多」菜单。`use()` / `dispose()` 只增量增减按钮，不会重建整个工具条或编辑器。内置按钮和命令定义在 `packages/view/src/builtins.ts`，和插件命令共用同一个 `runCommand` 分发入口；内置命令 id 不能被插件覆盖。
 
 ## 复制到公众号
 
@@ -148,7 +148,13 @@ await editor.runCommand('callout.note')
 
 1. 用 `parse` 解析当前 Markdown；
 2. 生成只带内联样式的 HTML，不输出 class、id，也不依赖 `theme.css`；
-3. 通过 Clipboard API 同时写入 `text/html` 和 `text/plain`，旧浏览器回退到 `execCommand('copy')`。
+3. 优先通过 `execCommand('copy')` 触发复制事件，同时把公众号 HTML 写入 `text/html` 和 `text/plain`；不支持时回退到 Clipboard API。`text/plain` 也放 HTML，是为了兼容只读取纯文本通道的公众号编辑器。
+
+普通复制和公众号复制是两条路径：
+
+- 所见即所得模式下选中内容按 `Ctrl/Cmd+C`，复制渲染后看到的内容，不带 `**`、`##` 等 Markdown 标记；
+- 源码模式下选中复制，复制完整 Markdown 文本；
+- 公众号格式只通过工具条按钮或 `Editor#copyForWechat()` 触发。
 
 直接调用的例子：
 
@@ -164,14 +170,14 @@ const copied = await editor.copyForWechat()
 公众号平台的限制仍然存在：
 
 - 公式和 Mermaid 图表暂时以源码代码块保留，因为公众号会丢掉 KaTeX 和 SVG 依赖的样式；
-- 图片使用原始 URL，公众号无法访问的外链图片可能需要重新上传；
+- 图片会尽量转成绝对 URL；公众号无法访问的外链图片仍可能需要重新上传；
 - 公众号只对白名单链接保留可点击状态，普通外链可能被去掉。
 
 ## 页面结构
 
 `.v5md` 是一行换行的 flex 容器，子元素依次是：
 
-- `.v5-toolbar`：占满编辑区宽度，21 个按钮等宽，按组分隔
+- `.v5-toolbar`：占满编辑区宽度，21 个按钮等宽，按组分隔；容器变窄时多余按钮自动收进「更多」菜单
 - `.v5-outline`：`position: sticky`，页面滚动时停在视口顶部
 - `.v5-doc`：正文。渲染只改这里
 

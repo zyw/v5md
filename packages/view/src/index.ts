@@ -8,6 +8,7 @@ export { createToolbar, createToolbarFromItems } from './toolbar.js'
 export type { ToolbarCommand } from './toolbar.js'
 export { htmlToMarkdown } from './html-to-md.js'
 export { copyRichText, toWechatHtml } from './wechat.js'
+export type { WechatHtmlOptions } from './wechat.js'
 export { PLUGIN_API_VERSION, PluginRegistry } from './plugin.js'
 export type {
   PluginRegistration,

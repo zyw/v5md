@@ -8,8 +8,10 @@ import '@v5md/view/theme.css'
 const markdown = ref(sample)
 const editor = shallowRef<Editor | null>(null)
 const sourceMode = ref(false)
+const preview = ref(false)
 const showOutline = ref(true)
 const showToolbar = ref(true)
+const showLineNumbers = ref(true)
 
 function onReady(instance: Editor) {
   editor.value = instance
@@ -18,6 +20,15 @@ function onReady(instance: Editor) {
 function toggleSource() {
   sourceMode.value = !sourceMode.value
   editor.value?.setSourceMode(sourceMode.value)
+  if (sourceMode.value) preview.value = false
+}
+
+function togglePreview() {
+  preview.value = !preview.value
+  if (preview.value && sourceMode.value) {
+    sourceMode.value = false
+    editor.value?.setSourceMode(false)
+  }
 }
 
 function toggleOutline() {
@@ -28,6 +39,11 @@ function toggleOutline() {
 function toggleToolbar() {
   showToolbar.value = !showToolbar.value
   editor.value?.setToolbarVisible(showToolbar.value)
+}
+
+function toggleLineNumbers() {
+  showLineNumbers.value = !showLineNumbers.value
+  editor.value?.setLineNumbersVisible(showLineNumbers.value)
 }
 
 function onUploadImage(file: File) {
@@ -54,12 +70,20 @@ function onUploadImage(file: File) {
           <button type="button" @click="editor?.redo()">重做</button>
           <button type="button" @click="editor?.openFind()">查找</button>
           <button type="button" @click="toggleSource">{{ sourceMode ? '所见即所得' : '源码模式' }}</button>
+          <button type="button" :aria-pressed="showLineNumbers" :disabled="!sourceMode" @click="toggleLineNumbers">行号</button>
+          <button type="button" :aria-pressed="preview" @click="togglePreview">{{ preview ? '退出预览' : '预览' }}</button>
         </div>
-        <p class="hint">工具条和大纲可以分别显示或隐藏。光标进入当前块或行内格式时显示标记。</p>
+        <p class="hint">工具条和大纲可以分别显示或隐藏。源码模式会给 Markdown 着色并显示行号。预览模式会关闭正文编辑，但待办复选框仍可切换。</p>
       </div>
     </header>
     <section class="workspace">
-      <V5Editor v-model="markdown" placeholder="开始编写…" :on-upload-image="onUploadImage" :on-ready="onReady" />
+      <V5Editor
+        v-model="markdown"
+        placeholder="开始编写…"
+        :editable="!preview"
+        :on-upload-image="onUploadImage"
+        :on-ready="onReady"
+      />
       <pre class="source">{{ markdown }}</pre>
     </section>
   </main>
@@ -144,7 +168,6 @@ header h1 {
   min-height: 70vh;
   padding: 0 0 20px;
   border: 1px solid #e7e5e4;
-  border-radius: 16px;
   background: #fff;
   box-shadow: 0 12px 40px rgb(0 0 0 / 4%);
 }

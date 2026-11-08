@@ -42,6 +42,7 @@ import { createTableBar, markTableAlign } from './table-bar.js'
 import { createToolbar, type ToolbarCommand } from './toolbar.js'
 import { renderDocument } from './render.js'
 import { applyChrome, domPointToOffset, offsetToDomPoint } from './selection.js'
+import { copyRichText, toWechatHtml } from './wechat.js'
 
 export interface FindRequest {
   kind: 'find' | 'replace'
@@ -53,6 +54,8 @@ export interface EditorOptions {
   placeholder?: string
   toolbar?: boolean
   outline?: boolean
+  /** Shows line numbers next to the source in source mode. Defaults to true. */
+  lineNumbers?: boolean
   editable?: boolean
   onChange?: (markdown: string) => void
   onUploadImage?: (file: File) => string | Promise<string>
@@ -73,6 +76,7 @@ export class Editor {
   private ignoreInsert: string | null = null
   private suppressBreak = false
   private sourceMode = false
+  private lineNumbers = true
   private paintGeneration = 0
   private findBar: HTMLFormElement | null = null
   private tableBar: HTMLElement | null = null
@@ -98,6 +102,7 @@ export class Editor {
     this.element = options.element
     this.toolbarVisible = options.toolbar !== false
     this.outlineVisible = options.outline !== false
+    this.lineNumbers = options.lineNumbers !== false
     this.editable = options.editable !== false
     this.state = createState(options.value ?? '')
     this.prepare()
@@ -148,12 +153,22 @@ export class Editor {
   setSourceMode(enabled: boolean): void {
     if (this.sourceMode === enabled) return
     this.sourceMode = enabled
-    this.element.classList.toggle('is-source-mode', enabled)
+    this.element.classList.toggle('v5-source-mode', enabled)
     this.render()
   }
 
   toggleSourceMode(): void {
     this.setSourceMode(!this.sourceMode)
+  }
+
+  isLineNumbersVisible(): boolean {
+    return this.lineNumbers
+  }
+
+  setLineNumbersVisible(visible: boolean): void {
+    if (this.lineNumbers === visible) return
+    this.lineNumbers = visible
+    if (this.sourceMode) this.render()
   }
 
   openFind(): void {
@@ -276,6 +291,17 @@ export class Editor {
     this.commit(insertText(this.state, `![${label}](${target})`))
   }
 
+  getWechatHtml(): string {
+    return toWechatHtml(this.state.doc)
+  }
+
+  async copyForWechat(): Promise<boolean> {
+    const markdown = this.state.doc
+    const copied = await copyRichText(toWechatHtml(markdown), markdown)
+    this.flashWechatButton(copied)
+    return copied
+  }
+
   isToolbarVisible(): boolean {
     return this.toolbarVisible
   }
@@ -303,7 +329,7 @@ export class Editor {
       this.dropLine?.remove()
       this.clearChrome()
     }
-    this.element.classList.toggle('is-preview', !enabled)
+    this.element.classList.toggle('v5-preview', !enabled)
     this.syncSurface()
   }
 
@@ -331,7 +357,7 @@ export class Editor {
 
   private prepare(): void {
     this.element.classList.add('v5md')
-    this.element.classList.toggle('is-preview', !this.editable)
+    this.element.classList.toggle('v5-preview', !this.editable)
     // The shell is a row flexbox (toolbar, document, outline). A contenteditable
     // flex container turns IME composition into sibling flex items, so the
     // uncommitted text sits beside the placeholder. Edit the document itself.
@@ -367,7 +393,7 @@ export class Editor {
       doc.setAttribute('aria-readonly', 'true')
     }
     doc.translate = false
-    if (!this.composing) doc.classList.remove('is-composing')
+    if (!this.composing) doc.classList.remove('v5-composing')
     this.element.removeAttribute('role')
     this.element.removeAttribute('aria-multiline')
   }
@@ -391,6 +417,10 @@ export class Editor {
   }
 
   private runToolbar(command: ToolbarCommand): void {
+    if (command === 'wechat') {
+      void this.copyForWechat()
+      return
+    }
     this.focused = true
     this.focusSurface()
     switch (command) {
@@ -456,7 +486,7 @@ export class Editor {
     if (typeof item?.checked === 'boolean') pressed.add('taskList')
     bar.querySelectorAll<HTMLButtonElement>('button[data-command]').forEach((button) => {
       const command = button.dataset.command ?? ''
-      if (command === 'image') return
+      if (command === 'image' || command === 'wechat') return
       button.setAttribute('aria-pressed', pressed.has(command) ? 'true' : 'false')
     })
   }
@@ -490,13 +520,28 @@ export class Editor {
     document.addEventListener('pointercancel', this.onImagePointerUp, { signal })
   }
 
-  private commit(next: EditorState): void {
-    if (!this.editable && next.doc !== this.state.doc) return
+  private commit(next: EditorState, allowReadOnly = false): void {
+    if (!allowReadOnly && !this.editable && next.doc !== this.state.doc) return
     const changed = next.doc !== this.state.doc
     this.clearFindHit()
     this.state = next
     this.render()
     if (changed) this.options.onChange?.(this.state.doc)
+  }
+
+  private flashWechatButton(copied: boolean): void {
+    const button = this.toolbar?.querySelector<HTMLButtonElement>('button[data-command="wechat"]')
+    if (!button) return
+    const label = copied ? '已复制到公众号' : '复制失败'
+    button.dataset.state = copied ? 'done' : 'error'
+    button.dataset.label = label
+    button.setAttribute('aria-label', label)
+    setTimeout(() => {
+      if (!button.isConnected) return
+      delete button.dataset.state
+      button.dataset.label = '复制到公众号'
+      button.setAttribute('aria-label', '复制到公众号')
+    }, 1600)
   }
 
   private revealFind(next: EditorState): void {
@@ -556,6 +601,7 @@ export class Editor {
           anchor: this.state.selection.anchor,
           placeholder: this.options.placeholder,
           sourceMode: this.sourceMode,
+          lineNumbers: this.lineNumbers,
         },
         parse(this.state.doc),
       )
@@ -593,7 +639,9 @@ export class Editor {
       const point = offsetToDomPoint(this.element, this.state.selection.head)
       const node = point?.node
       const host = node instanceof HTMLElement ? node : node?.parentElement
-      host?.closest<HTMLElement>('[data-block]')?.scrollIntoView({ block: 'center', inline: 'nearest' })
+      host
+        ?.closest<HTMLElement>('[data-block], .v5-source-line')
+        ?.scrollIntoView({ block: 'center', inline: 'nearest' })
     }
     scroll()
     requestAnimationFrame(scroll)
@@ -645,7 +693,7 @@ export class Editor {
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault()
         this.slashIndex = (this.slashIndex + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length
-        options.forEach((option, index) => option.classList.toggle('is-selected', index === this.slashIndex))
+        options.forEach((option, index) => option.classList.toggle('v5-selected', index === this.slashIndex))
         return
       }
       if (event.key === 'Enter' && options.length > 0) {
@@ -860,7 +908,7 @@ export class Editor {
     this.composing = true
     this.hideSlash()
     this.compositionSelection = this.state.selection
-    this.surface().classList.add('is-composing')
+    this.surface().classList.add('v5-composing')
   }
 
   private onCompositionEnd = (event: CompositionEvent) => {
@@ -869,7 +917,7 @@ export class Editor {
       return
     }
     this.composing = false
-    this.surface().classList.remove('is-composing')
+    this.surface().classList.remove('v5-composing')
     const text = event.data ?? ''
     const selection = this.compositionSelection ?? this.state.selection
     this.compositionSelection = null
@@ -916,21 +964,21 @@ export class Editor {
   }
 
   private clearChrome(): void {
-    this.element.querySelectorAll<HTMLElement>('.is-active, .is-source').forEach((element) => {
-      element.classList.remove('is-active', 'is-source')
+    this.element.querySelectorAll<HTMLElement>('.v5-active, .v5-source-visible').forEach((element) => {
+      element.classList.remove('v5-active', 'v5-source-visible')
     })
     this.tableBar?.remove()
   }
 
   private syncTableBar(): void {
-    const table = this.element.querySelector('table.v5-table.is-active')
+    const table = this.element.querySelector('table.v5-table.v5-active')
     if (this.sourceMode || !this.editable || !this.focused || !table) {
       this.tableBar?.remove()
       return
     }
     const bar = this.ensureTableBar()
     this.element.append(bar)
-    const cell = this.element.querySelector<HTMLElement>('th.is-active, td.is-active')
+    const cell = this.element.querySelector<HTMLElement>('th.v5-active, td.v5-active')
     const align = cell?.style.textAlign
     markTableAlign(bar, align === 'center' || align === 'right' ? align : 'left')
     this.positionTableBar()
@@ -947,7 +995,7 @@ export class Editor {
 
   private positionTableBar(): void {
     const bar = this.tableBar
-    const table = this.element.querySelector('table.v5-table.is-active')
+    const table = this.element.querySelector('table.v5-table.v5-active')
     if (!bar || !table || !bar.isConnected) return
     const editorRect = this.element.getBoundingClientRect()
     const tableRect = table.getBoundingClientRect()
@@ -1009,6 +1057,17 @@ export class Editor {
     const target = event.target
     if (!(target instanceof Element) || !this.element.contains(target)) return
     if (target.closest('.v5md-find')) return
+    const lineNumber = target.closest<HTMLElement>('.v5-source-number')
+    if (lineNumber) {
+      event.preventDefault()
+      const offset = Number(lineNumber.closest<HTMLElement>('.v5-source-line')?.dataset.start ?? 0)
+      this.state = { ...this.state, selection: { anchor: offset, head: offset } }
+      this.focused = true
+      this.focusSurface()
+      this.syncChrome()
+      this.restoreSelection()
+      return
+    }
     if (target.closest('.v5-toolbar, .v5-outline, .v5-tablebar, .v5-slash-menu, .v5-block-handle, .v5-block-menu, .v5-image-resize')) {
       event.preventDefault()
       return
@@ -1016,10 +1075,12 @@ export class Editor {
     const check = target.closest<HTMLElement>('.v5-check')
     if (check) {
       event.preventDefault()
-      if (!this.editable) return
-      this.focused = true
-      this.focusSurface()
-      this.commit(toggleTask(this.state, Number(check.dataset.start ?? 0)))
+      // Toggling a task is the one edit preview mode allows.
+      if (this.editable) {
+        this.focused = true
+        this.focusSurface()
+      }
+      this.commit(toggleTask(this.state, Number(check.dataset.start ?? 0)), true)
       return
     }
     const voidHost = target.closest<HTMLElement>('[data-void]')
@@ -1127,7 +1188,7 @@ export class Editor {
       button.type = 'button'
       button.dataset.command = command
       button.textContent = title
-      button.className = index === 0 ? 'is-selected' : ''
+      button.className = index === 0 ? 'v5-selected' : ''
       button.addEventListener('click', () => this.executeSlash(command))
       return button
     }))

@@ -18,6 +18,7 @@ export type ToolbarCommand =
   | 'inlineCode'
   | 'strike'
   | 'highlight'
+  | 'wechat'
 
 interface ToolbarItem {
   command: ToolbarCommand | 'image'
@@ -123,6 +124,12 @@ const ITEMS: ToolbarItem[] = [
     command: 'highlight',
     label: '高亮',
     icon: svg('<path d="M12 3.2a4.6 4.6 0 0 0-2.55 8.45c.45.35.75.9.75 1.5V14h3.6v-.85c0-.6.3-1.15.75-1.5A4.6 4.6 0 0 0 12 3.2Z"/><path d="M9.6 16.2h4.8M10.2 18.2h3.6"/>'),
+  },
+  {
+    command: 'wechat',
+    label: '复制到公众号',
+    icon: svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/>'),
+    gapBefore: true,
   },
 ]
 

@@ -62,20 +62,20 @@ export function offsetToDomPoint(root: HTMLElement, offset: number): { node: Nod
 export function isLeafVisible(leaf: HTMLElement): boolean {
   if (leaf.classList.contains('v5-source')) {
     const host = leaf.closest('.v5-math, .v5-image, .v5-hr')
-    return Boolean(host?.classList.contains('is-source') || host?.classList.contains('is-active'))
+    return Boolean(host?.classList.contains('v5-source-visible') || host?.classList.contains('v5-active'))
   }
-  if (leaf.classList.contains('md-marker')) {
+  if (leaf.classList.contains('v5-marker')) {
     if (leaf.closest('.v5-table, li')) return false
     const inline = leaf.closest('[data-inline]')
-    if (inline) return inline.classList.contains('is-source')
-    return Boolean(leaf.closest('[data-block]')?.classList.contains('is-active'))
+    if (inline) return inline.classList.contains('v5-source-visible')
+    return Boolean(leaf.closest('[data-block]')?.classList.contains('v5-active'))
   }
   return true
 }
 
 export function applyChrome(root: HTMLElement, head: number, anchor: number, docLength: number): void {
   root.querySelectorAll<HTMLElement>('[data-block]').forEach((element) => {
-    element.classList.toggle('is-active', elementHoldsCaret(element, head, docLength))
+    element.classList.toggle('v5-active', elementHoldsCaret(element, head, docLength))
   })
   root.querySelectorAll<HTMLElement>('[data-inline]').forEach((element) => {
     const start = readOffset(element, 'data-start')
@@ -87,7 +87,7 @@ export function applyChrome(root: HTMLElement, head: number, anchor: number, doc
       Math.min(anchor, head) < end &&
       Math.max(anchor, head) > start &&
       (image || element.dataset.inline === 'thematicBreak')
-    element.classList.toggle('is-source', inside || covered)
+    element.classList.toggle('v5-source-visible', inside || covered)
   })
 }
 

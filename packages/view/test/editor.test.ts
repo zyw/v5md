@@ -18,7 +18,7 @@ describe('render', () => {
     const doc = '# Title\n\n段落 **粗体**\n'
     const element = draw(doc, 2)
     expect(element.querySelector('h1')?.textContent).toContain('Title')
-    expect(element.querySelector('h1')?.classList.contains('is-active')).toBe(true)
+    expect(element.querySelector('h1')?.classList.contains('v5-active')).toBe(true)
     expect(element.querySelector('strong')).not.toBeNull()
     for (const leaf of element.querySelectorAll<HTMLElement>('[data-leaf]')) {
       if (leaf.hasAttribute('data-void')) continue
@@ -32,10 +32,10 @@ describe('render', () => {
   it('shows inline markers only while the caret is inside them', () => {
     const doc = 'keep **bold**'
     const outside = draw(doc, 0)
-    expect(outside.querySelector('strong')?.classList.contains('is-source')).toBe(false)
+    expect(outside.querySelector('strong')?.classList.contains('v5-source-visible')).toBe(false)
     const inside = doc.indexOf('b')
     const focused = draw(doc, inside)
-    expect(focused.querySelector('strong')?.classList.contains('is-source')).toBe(true)
+    expect(focused.querySelector('strong')?.classList.contains('v5-source-visible')).toBe(true)
   })
 
   it('keeps a focused list marker on the same line as the item text', () => {
@@ -44,7 +44,7 @@ describe('render', () => {
     const item = element.querySelector('li')
     expect(item?.querySelector(':scope > .v5-item-text')?.tagName).toBe('SPAN')
     expect(item?.querySelector(':scope > p')).toBeNull()
-    expect(item?.classList.contains('is-active')).toBe(true)
+    expect(item?.classList.contains('v5-active')).toBe(true)
   })
 
   it('highlights a typescript code block without changing the source text', () => {
@@ -289,11 +289,11 @@ describe('Editor', () => {
     editor.focus()
     expect(document.activeElement).toBe(doc)
     element.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
-    expect(doc?.classList.contains('is-composing')).toBe(true)
+    expect(doc?.classList.contains('v5-composing')).toBe(true)
     const cancelled = new CompositionEvent('compositionend', { bubbles: true })
     Object.defineProperty(cancelled, 'data', { value: '' })
     element.dispatchEvent(cancelled)
-    expect(doc?.classList.contains('is-composing')).toBe(false)
+    expect(doc?.classList.contains('v5-composing')).toBe(false)
     expect(doc?.getAttribute('data-empty')).toBe('true')
     editor.destroy()
   })
@@ -419,8 +419,8 @@ describe('Editor', () => {
     expect(editor.getMarkdown()).toBe(doc + '\n* ')
     enter()
     expect(editor.getMarkdown()).toBe(doc + '\n\n')
-    expect(element.querySelector('li.is-active')).toBeNull()
-    expect(element.querySelector('p.is-active')).not.toBeNull()
+    expect(element.querySelector('li.v5-active')).toBeNull()
+    expect(element.querySelector('p.v5-active')).not.toBeNull()
     enter()
     expect(editor.getMarkdown()).toBe(doc + '\n\n\n')
     expect(element.querySelectorAll('li')).toHaveLength(3)
@@ -438,8 +438,8 @@ describe('Editor', () => {
     expect(editor.getMarkdown()).toBe('* a\n* b\n* \n* c')
     enter()
     expect(editor.getMarkdown()).toBe('* a\n* b\n* c\n\n')
-    expect(element.querySelector('li.is-active')).toBeNull()
-    expect(element.querySelector('p.is-active')).not.toBeNull()
+    expect(element.querySelector('li.v5-active')).toBeNull()
+    expect(element.querySelector('p.v5-active')).not.toBeNull()
     enter()
     expect(element.querySelectorAll('li')).toHaveLength(3)
     editor.destroy()
@@ -458,7 +458,7 @@ describe('Editor', () => {
     bar?.querySelector<HTMLButtonElement>('[data-command="insertRowBelow"]')?.click()
     expect(editor.getMarkdown()).toBe('| 语言 | 用途 |\n| --- | --- |\n| TypeScript | 编辑器 |\n|  |  |\n')
     expect(element.querySelectorAll('tbody td')).toHaveLength(4)
-    expect(element.querySelector('td.is-active')?.textContent).toBe('')
+    expect(element.querySelector('td.v5-active')?.textContent).toBe('')
     editor.destroy()
   })
 
@@ -469,14 +469,14 @@ describe('Editor', () => {
     const editor = new Editor({ element, value: doc })
     const image = element.querySelector('.v5-image')
     expect(image?.querySelector('.v5-image-caption')?.textContent).toBe('示意图')
-    expect(image?.classList.contains('is-source')).toBe(false)
+    expect(image?.classList.contains('v5-source-visible')).toBe(false)
     element.querySelector('img')?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-    expect(image?.classList.contains('is-source')).toBe(true)
+    expect(image?.classList.contains('v5-source-visible')).toBe(true)
     expect(image?.querySelector('img')).not.toBeNull()
     expect(document.getSelection()?.toString()).toBe('示意图')
     editor.focusAt(doc.indexOf('sample'))
     expect(editor.getMarkdown()).toBe(doc)
-    expect(element.querySelector('.v5-image')?.classList.contains('is-source')).toBe(true)
+    expect(element.querySelector('.v5-image')?.classList.contains('v5-source-visible')).toBe(true)
     editor.setMarkdown('![](sample.svg)\n')
     expect(element.querySelector('.v5-image-caption')).toBeNull()
     editor.destroy()
@@ -511,7 +511,7 @@ describe('Editor', () => {
     expect(image?.style.width).toBe('240px')
     expect(image?.style.height).toBe('auto')
     image?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-    expect(element.querySelector('.v5-image')?.classList.contains('is-source')).toBe(false)
+    expect(element.querySelector('.v5-image')?.classList.contains('v5-source-visible')).toBe(false)
     element.querySelector('.v5-image-resize')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 10, pointerId: 2 }))
     document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 80, pointerId: 2 }))
     expect(editor.getMarkdown()).toBe(doc)
@@ -562,7 +562,7 @@ describe('Editor', () => {
       },
     })
     const surface = element.querySelector('.v5-doc')
-    expect(element.classList.contains('is-preview')).toBe(true)
+    expect(element.classList.contains('v5-preview')).toBe(true)
     expect(surface?.getAttribute('contenteditable')).toBe('false')
     element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }))
     element.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', metaKey: true, bubbles: true, cancelable: true }))
@@ -578,6 +578,34 @@ describe('Editor', () => {
     editor.destroy()
   })
 
+  it('toggles task checkboxes while previewing', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const seen: string[] = []
+    const editor = new Editor({
+      element,
+      value: '- [ ] 待办\n- [x] 完成\n',
+      editable: false,
+      onChange(markdown) {
+        seen.push(markdown)
+      },
+    })
+    const toggle = (index: number) => {
+      element
+        .querySelectorAll<HTMLButtonElement>('.v5-check')[index]
+        .dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+    }
+    toggle(0)
+    expect(editor.getMarkdown()).toBe('- [x] 待办\n- [x] 完成\n')
+    expect(seen).toEqual(['- [x] 待办\n- [x] 完成\n'])
+    expect(element.querySelectorAll<HTMLButtonElement>('.v5-check')[0].dataset.checked).toBe('true')
+    toggle(1)
+    expect(editor.getMarkdown()).toBe('- [x] 待办\n- [ ] 完成\n')
+    expect(seen).toEqual(['- [x] 待办\n- [x] 完成\n', '- [x] 待办\n- [ ] 完成\n'])
+    expect(element.querySelectorAll<HTMLButtonElement>('.v5-check')[1].dataset.checked).toBe('false')
+    editor.destroy()
+  })
+
   it('keeps heading marks hidden while previewing', () => {
     const element = document.createElement('div')
     document.body.append(element)
@@ -590,10 +618,10 @@ describe('Editor', () => {
       selection.setBaseAndExtent(text.firstChild, 0, text.firstChild, 1)
       document.dispatchEvent(new Event('selectionchange'))
     }
-    expect(heading?.classList.contains('is-active')).toBe(false)
+    expect(heading?.classList.contains('v5-active')).toBe(false)
     editor.setEditable(true)
     document.dispatchEvent(new Event('selectionchange'))
-    expect(heading?.classList.contains('is-active')).toBe(true)
+    expect(heading?.classList.contains('v5-active')).toBe(true)
     editor.destroy()
   })
 
@@ -633,7 +661,7 @@ describe('Editor', () => {
     const element = document.createElement('div')
     document.body.append(element)
     const editor = new Editor({ element, value: '# 标题\n\n正文\n' })
-    expect(element.querySelectorAll('.v5-toolbar button')).toHaveLength(20)
+    expect(element.querySelectorAll('.v5-toolbar button')).toHaveLength(21)
     expect(element.querySelector('[aria-label="一级标题"]')).not.toBeNull()
     expect(element.querySelector('[aria-label="插入图片文件"]')).not.toBeNull()
     expect([...element.querySelectorAll('.v5-toolbar button')].some((button) => button.getAttribute('aria-label')?.includes('Ctrl'))).toBe(false)
@@ -658,8 +686,144 @@ describe('Editor', () => {
     const editor = new Editor({ element, value: '# 甲\n\n段落\n\n## 乙\n\n后文\n' })
     const button = [...element.querySelectorAll<HTMLButtonElement>('.v5-outline button')].find((item) => item.textContent === '乙')
     button?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
-    expect(element.querySelector('h2')?.classList.contains('is-active')).toBe(true)
-    expect(element.querySelector('h1')?.classList.contains('is-active')).toBe(false)
+    expect(element.querySelector('h2')?.classList.contains('v5-active')).toBe(true)
+    expect(element.querySelector('h1')?.classList.contains('v5-active')).toBe(false)
+    editor.destroy()
+  })
+})
+
+describe('source mode', () => {
+  it('paints highlighted lines with line numbers', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '# 标题\n\n段落 **粗体** 和 `代码`\n'
+    const editor = new Editor({ element, value: doc })
+    editor.setSourceMode(true)
+    const surface = element.querySelector<HTMLElement>('.v5-source-doc')
+    expect(surface?.getAttribute('data-line-numbers')).toBe('true')
+    const lines = [...element.querySelectorAll<HTMLElement>('.v5-source-line')]
+    expect(lines).toHaveLength(4)
+    expect(lines.map((line) => line.dataset.line)).toEqual(['1', '2', '3', '4'])
+    expect([...element.querySelectorAll('.v5-source-number')].map((item) => item.textContent))
+      .toEqual(['1', '2', '3', '4'])
+    expect(element.querySelector('.v5-md-heading')?.textContent).toBe('标题')
+    expect(element.querySelector('.v5-md-strong')?.textContent).toBe('粗体')
+    expect(element.querySelector('.v5-md-inline-code')?.textContent).toBe('代码')
+    expect(element.querySelector('.v5-md-marker')?.textContent).toBe('# ')
+    for (const leaf of element.querySelectorAll<HTMLElement>('.v5-source-doc [data-leaf]')) {
+      const start = Number(leaf.dataset.start)
+      const end = Number(leaf.dataset.end)
+      expect(doc.slice(start, end)).toBe(leaf.textContent)
+    }
+    editor.destroy()
+  })
+
+  it('can hide the line numbers column', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: 'a\nb\n', lineNumbers: false })
+    editor.setSourceMode(true)
+    expect(element.querySelector('.v5-source-doc')?.getAttribute('data-line-numbers')).toBeNull()
+    expect(element.querySelectorAll('.v5-source-number')).toHaveLength(0)
+    expect(element.querySelectorAll('.v5-source-line')).toHaveLength(3)
+    expect(editor.isLineNumbersVisible()).toBe(false)
+    editor.setLineNumbersVisible(true)
+    expect(element.querySelectorAll('.v5-source-number')).toHaveLength(3)
+    editor.setLineNumbersVisible(false)
+    expect(element.querySelectorAll('.v5-source-number')).toHaveLength(0)
+    editor.destroy()
+  })
+
+  it('moves the caret to a line start when its number is clicked', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '# 标题\n\n第二行\n' })
+    editor.setSourceMode(true)
+    editor.focusAt(2)
+    element.querySelectorAll<HTMLElement>('.v5-source-number')[2]
+      ?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'X', bubbles: true, cancelable: true }))
+    expect(editor.getMarkdown()).toBe('# 标题\n\nX第二行\n')
+    editor.destroy()
+  })
+
+  it('maps a caret at the end of a source row back to the newline offset', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: 'ab\ncd' })
+    editor.setSourceMode(true)
+    const first = element.querySelector<HTMLElement>('.v5-source-line .v5-text')
+    const selection = document.getSelection()
+    if (first?.firstChild && selection) {
+      selection.setBaseAndExtent(first.firstChild, 2, first.firstChild, 2)
+      document.dispatchEvent(new Event('selectionchange'))
+    }
+    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'X', bubbles: true, cancelable: true }))
+    expect(editor.getMarkdown()).toBe('abX\ncd')
+    editor.destroy()
+  })
+
+  it('keeps offsets while typing across source lines', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: 'a\nb' })
+    editor.setSourceMode(true)
+    editor.focusAt(1)
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(editor.getMarkdown()).toBe('a\n\nb')
+    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }))
+    expect(editor.getMarkdown()).toBe('a\nx\nb')
+    expect(element.querySelectorAll('.v5-source-line')).toHaveLength(3)
+    editor.destroy()
+  })
+
+  it('copies the model text without the line numbers', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '# 标题' })
+    editor.setSourceMode(true)
+    editor.selectFindMatch(0, 2)
+    let copied = ''
+    const event = new Event('copy', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'clipboardData', {
+      value: { setData: (_type: string, value: string) => { copied = value } },
+    })
+    element.dispatchEvent(event)
+    expect(copied).toBe('# ')
+    editor.destroy()
+  })
+
+  it('restores the rich view when leaving source mode', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '# 标题\n\n正文\n' })
+    editor.setSourceMode(true)
+    expect(element.querySelector('.v5-source-doc')).not.toBeNull()
+    editor.setSourceMode(false)
+    expect(element.querySelector('.v5-source-doc')).toBeNull()
+    expect(element.querySelector('.v5-source-line')).toBeNull()
+    expect(element.querySelector('h1')?.textContent).toContain('标题')
+    editor.destroy()
+  })
+})
+
+describe('style isolation', () => {
+  it('only emits namespaced class names', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '# 标题\n\n段落 **粗体** 和 `代码`\n\n- [x] 待办\n\n> 引用\n\n![图](sample.svg)\n\n```ts\nconst answer = 1\n```\n'
+    const editor = new Editor({ element, value: doc })
+    editor.focusAt(doc.indexOf('粗体'))
+    // hljs- 是 lowlight 产出的第三方类名，其余类名都归 v5- 命名空间所有。
+    const mine = (name: string) => name.startsWith('v5') || name.startsWith('hljs-')
+    const rich = [...element.querySelectorAll<HTMLElement>('*')].flatMap((node) => [...node.classList])
+    expect(rich.length).toBeGreaterThan(10)
+    expect(rich.filter((name) => !mine(name))).toEqual([])
+    expect(rich.some((name) => name.startsWith('hljs-'))).toBe(true)
+    editor.setSourceMode(true)
+    const source = [...element.querySelectorAll<HTMLElement>('*')].flatMap((node) => [...node.classList])
+    expect(source.length).toBeGreaterThan(10)
+    expect(source.filter((name) => !mine(name))).toEqual([])
     editor.destroy()
   })
 })

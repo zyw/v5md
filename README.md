@@ -19,7 +19,9 @@
 - Mermaid 图表（围栏语言写 `mermaid`，离开编辑后渲染成图，点进去仍是源码）
 - 文首 YAML frontmatter
 
-编辑能力包括撤销重做、查找替换、整篇源码模式、大纲跳转、表格行列与对齐、图片上传，以及中文输入法。粘贴的 HTML 会先转成 Markdown 再写入文档。
+编辑能力包括撤销重做、查找替换、带 Markdown 语法高亮和行号的整篇源码模式、大纲跳转、表格行列与对齐、图片上传、一键复制为公众号富文本，以及中文输入法。粘贴的 HTML 会先转成 Markdown 再写入文档。
+
+源码模式把整篇 Markdown 按语法着色：标题、强调、行内代码、链接、表格、公式和围栏代码块各有颜色，围栏代码块还会沿用 lowlight 高亮。左侧行号与逻辑行对齐，长行自动换行后仍保持悬挂缩进；可以用 `lineNumbers` 选项或 `setLineNumbersVisible` 关掉行号。
 
 表格数据行按白、浅灰交替。工具条按钮等分整条宽度。大纲在页面滚动时停在视口顶部。一、二级标题下方有分隔线。图片未聚焦时只显示居中预览；替代文字非空时，预览下方显示这段文字。
 
@@ -55,6 +57,7 @@ npm workspaces 包含 `packages/*`、`playground-vue` 和 `playground-react`。�
 | [`playground-vue`](playground-vue/README.md) | `playground-vue` | Vue 示例，端口 5173 |
 | [`playground-react`](playground-react/README.md) | `playground-react` | React 示例，端口 5174 |
 | [`samples/demo.ts`](samples/demo.ts) | — | 两个示例页共用的示例文档 |
+| [`docs/plugin-design.md`](docs/plugin-design.md) | — | 插件系统设计与实现步骤 |
 | [`发布教程.md`](发布教程.md) | — | 发到 npm 或 OneDev，以及安装已发布包 |
 
 依赖关系：
@@ -89,7 +92,7 @@ npm run build
 | `npm run publish:packages` | 测试通过后发到 npm 官方仓库 |
 | `npm run publish:onedev` | 测试通过后发到 OneDev |
 
-两个 playground 通过 Vite alias 直接引用各包的 `src` 和 `packages/view/src/theme.css`。改源码后刷新即可看到效果，不必先 `npm run build`。示例页左侧是编辑器，右侧是当前 Markdown；顶栏可以隐藏大纲或工具条，也可以撤销、重做、查找，以及切换源码模式。示例正文来自 `samples/demo.ts`。
+两个 playground 通过 Vite alias 直接引用各包的 `src` 和 `packages/view/src/theme.css`。改源码后刷新即可看到效果，不必先 `npm run build`。示例页左侧是编辑器，右侧是当前 Markdown；顶栏可以隐藏大纲或工具条，也可以撤销、重做、查找，切换源码模式和预览模式，以及开关源码模式下的行号。示例正文来自 `samples/demo.ts`。
 
 单独编译某一个包：
 
@@ -154,7 +157,7 @@ function onUploadImage(file: File) {
 | --- | --- |
 | `v-model` / `modelValue` | Markdown 全文。外部改成与编辑器不同的字符串时，会整篇替换并重置历史 |
 | `placeholder` | 文档为空时的提示 |
-| `editable` | 是否可编辑，默认 `true`；传 `false` 进入只读预览 |
+| `editable` | 是否可编辑，默认 `true`；传 `false` 进入只读预览，预览下待办复选框仍可切换 |
 | `onUploadImage` | 选择或粘贴图片时调用，返回图片地址，可以是 `Promise<string>` |
 | `onPickImage` | 点击工具条图片按钮时调用；返回 `false` 时继续用系统文件选择框 |
 | `onFindRequest` | 按 Mod+F / Mod+H 时收到查找或替换请求；不传则打开内置查找栏 |
@@ -193,7 +196,7 @@ export function Page() {
 | `value` / `onChange` | 当前 Markdown，以及文档变化时的回调 |
 | `placeholder` | 空文档提示 |
 | `className` | 加在宿主元素上，宿主同时有 `v5md-host` |
-| `editable` | 是否可编辑，默认 `true`；传 `false` 进入只读预览 |
+| `editable` | 是否可编辑，默认 `true`；传 `false` 进入只读预览，预览下待办复选框仍可切换 |
 | `onUploadImage` | 同 Vue，返回图片地址 |
 | `onPickImage` | 同 Vue，返回 `false` 时继续用系统文件选择框 |
 | `onFindRequest` | 同 Vue，不传则打开内置查找栏 |
@@ -241,13 +244,19 @@ const editor = new Editor({
 | `insertImageFile(file)` | 走 `onUploadImage` 后插入图片 |
 | `openFind()` / `findNext` / `replaceNext` / `replaceAll` | 查找替换 |
 | `isSourceMode` / `setSourceMode` / `toggleSourceMode` | 整篇源码模式 |
+| `isLineNumbersVisible` / `setLineNumbersVisible` | 源码模式左侧行号的显隐 |
 | `isToolbarVisible` / `setToolbarVisible` | 显示或隐藏工具条 |
 | `isOutlineVisible` / `setOutlineVisible` | 显示或隐藏大纲 |
+| `getWechatHtml()` / `copyForWechat()` | 生成 / 复制公众号可用的内联样式富文本 |
 | `destroy()` | 卸下监听并清空元素 |
 
 `FormatCommand`：`code`、`table`、`orderedList`、`bulletList`、`taskList`、`quote`、`heading1`、`heading2`、`heading3`、`rule`、`link`、`math`、`inlineMath`。
 
-页面结构：`.v5md` 里依次是 `.v5-toolbar`、`.v5-outline`、`.v5-doc`。查找栏打开时插在 `.v5md` 顶部。表格获得焦点时，`.v5-tablebar` 出现在表格附近，提供插行、插列、对齐和删除整表。选项、快捷键和单独挂载工具条、大纲的方式见 [`packages/view/README.md`](packages/view/README.md)。
+工具条最右侧的「复制到公众号」会调用 `copyForWechat()`：把当前 Markdown 转成只带内联样式的 HTML，并以富文本写入剪贴板，直接粘贴到公众号编辑器即可保留标题、列表、代码高亮、表格和图片排版。公众号会丢弃 class、id 和外部样式，所以输出不依赖主题 CSS。公式和 Mermaid 图表暂时以源码代码块保留；图片地址需要公众号能访问，外链图片可能需要在公众号里重新上传。
+
+页面结构：`.v5md` 里依次是 `.v5-toolbar`、`.v5-outline`、`.v5-doc`。源码模式下 `.v5-doc` 里是一张 `.v5-source-doc`，每行一个 `.v5-source-line`，行号放在 `.v5-source-number`。查找栏打开时插在 `.v5md` 顶部。表格获得焦点时，`.v5-tablebar` 出现在表格附近，提供插行、插列、对齐和删除整表。选项、快捷键和单独挂载工具条、大纲的方式见 [`packages/view/README.md`](packages/view/README.md)。
+
+主题样式全部以 `.v5md` 为作用域、`v5` 为类名前缀，正文规则再收进 `.v5md .v5-doc`，所以宿主项目里的全局样式不会串进编辑器；编辑器外沿不带圆角，嵌进宿主容器时不会和宿主容器的圆角打架。需要覆盖主题时同样从 `.v5md` 开始写选择器，详见 [`packages/view/README.md`](packages/view/README.md) 的「样式隔离」一节。
 
 ## 只做解析
 

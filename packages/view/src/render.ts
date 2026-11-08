@@ -1,6 +1,7 @@
 import type { MdNode } from '@v5md/core'
 import katex from 'katex'
 import { highlightSpans } from './highlight.js'
+import { sourceLines, type SourceLine, type SourceToken } from './source.js'
 
 export interface RenderOptions {
   doc: string
@@ -8,11 +9,13 @@ export interface RenderOptions {
   anchor: number
   placeholder?: string
   sourceMode?: boolean
+  /** Show the line numbers column next to the source. Defaults to true. */
+  lineNumbers?: boolean
 }
 
 export function renderDocument(container: HTMLElement, options: RenderOptions, tree: MdNode): void {
   const fragment = document.createDocumentFragment()
-  if (options.sourceMode) fragment.append(renderSourceDocument(options.doc))
+  if (options.sourceMode) fragment.append(renderSourceDocument(options.doc, tree, options.lineNumbers !== false))
   else for (const child of tree.children) fragment.append(renderNode(child))
   const doc = documentHost(container)
   doc.replaceChildren(fragment)
@@ -79,7 +82,7 @@ function renderNode(node: MdNode): Node {
     case 'hardBreak':
       return renderBreak(node)
     case 'marker':
-      return leaf('span', node, 'md-marker', node.text ?? '')
+      return leaf('span', node, 'v5-marker', node.text ?? '')
     case 'text':
       return renderText(node)
     default:
@@ -119,13 +122,13 @@ function renderCode(node: MdNode): HTMLElement {
   if ((node.lang ?? '').trim().toLowerCase() === 'mermaid') return renderMermaid(node)
   const pre = block('pre', node, [], 'v5-code')
   const code = document.createElement('code')
-  if (node.lang) code.className = `language-${node.lang}`
+  if (node.lang) code.className = `v5-language-${node.lang}`
   for (const child of node.children) {
     if (child.type === 'marker') pre.append(renderNode(child))
     else if (child.type === 'text') appendHighlighted(code, child, node.lang)
     else code.append(renderNode(child))
   }
-  const fence = [...pre.querySelectorAll('.md-marker')]
+  const fence = [...pre.querySelectorAll('.v5-marker')]
   const close = fence.at(-1)
   if (close && code.childNodes.length > 0) pre.insertBefore(code, close)
   else pre.append(code)
@@ -164,7 +167,7 @@ function renderMermaid(node: MdNode): HTMLElement {
     if (child.type === 'marker') pre.append(renderNode(child))
     else code.append(renderNode(child))
   }
-  const fence = [...pre.querySelectorAll('.md-marker')]
+  const fence = [...pre.querySelectorAll('.v5-marker')]
   const close = fence.at(-1)
   if (close && code.childNodes.length > 0) pre.insertBefore(code, close)
   else pre.append(code)
@@ -221,12 +224,46 @@ function renderMath(node: MdNode, display: boolean): HTMLElement {
   return host
 }
 
-function renderSourceDocument(doc: string): HTMLElement {
+function renderSourceDocument(doc: string, tree: MdNode, lineNumbers: boolean): HTMLElement {
   const pre = document.createElement('pre')
   pre.className = 'v5-source-doc'
-  const text: MdNode = { type: 'text', start: 0, end: doc.length, text: doc, children: [] }
-  pre.append(leaf('span', text, 'v5-text', doc))
+  const lines = sourceLines(doc, tree)
+  pre.dataset.lines = String(lines.length)
+  if (lineNumbers) pre.dataset.lineNumbers = 'true'
+  pre.style.setProperty('--v5-source-line-digits', String(String(lines.length).length))
+  pre.append(...lines.map((line) => renderSourceLine(line, lineNumbers)))
   return pre
+}
+
+function renderSourceLine(line: SourceLine, lineNumbers: boolean): HTMLElement {
+  const row = document.createElement('span')
+  row.className = 'v5-source-line'
+  row.dataset.line = String(line.number)
+  row.dataset.start = String(line.start)
+  if (lineNumbers) {
+    const number = document.createElement('span')
+    number.className = 'v5-source-number'
+    number.contentEditable = 'false'
+    number.setAttribute('aria-hidden', 'true')
+    number.textContent = String(line.number)
+    row.append(number)
+  }
+  if (line.tokens.length === 0) {
+    row.append(leaf('span', textNode(line.start, line.start, ''), 'v5-text', ''))
+    return row
+  }
+  for (const item of line.tokens) row.append(renderSourceToken(item))
+  return row
+}
+
+function renderSourceToken(item: SourceToken): HTMLElement {
+  const node = textNode(item.start, item.end, item.text)
+  const className = ['v5-text', item.className].filter(Boolean).join(' ')
+  return leaf('span', node, className, item.text)
+}
+
+function textNode(start: number, end: number, text: string): MdNode {
+  return { type: 'text', start, end, text, children: [] }
 }
 
 function renderLink(node: MdNode): HTMLElement {

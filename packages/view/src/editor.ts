@@ -788,7 +788,11 @@ export class Editor {
     }
     const html = event.clipboardData?.getData('text/html') ?? ''
     const text = event.clipboardData?.getData('text/plain') ?? ''
-    const markdown = html && /<(p|h1|h2|h3|h4|li|blockquote|pre|ul|ol)\b/i.test(html) ? htmlToMarkdown(html) : text
+    const rich = Boolean(html) && /<(p|h1|h2|h3|h4|li|blockquote|pre|ul|ol)\b/i.test(html)
+    // Source mode edits the markdown string itself. Converting the clipboard
+    // HTML there would wrap copied markdown in a code fence when the source
+    // page put it inside <pre>, so keep the plain text untouched.
+    const markdown = rich && !(this.sourceMode && text) ? htmlToMarkdown(html) : text
     if (markdown) this.commit(insertText(this.state, markdown))
   }
 

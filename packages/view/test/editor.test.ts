@@ -301,6 +301,43 @@ describe('Editor', () => {
     editor.destroy()
   })
 
+  it('pastes markdown as plain text in source mode', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element })
+    editor.setSourceMode(true)
+    editor.focusAt(0)
+    const html = '<pre>---\ntitle: 示例\n---\n\n# 标题</pre>'
+    const text = '---\ntitle: 示例\n---\n\n# 标题'
+    const event = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'clipboardData', {
+      value: {
+        files: [],
+        getData: (type: string) => (type === 'text/html' ? html : type === 'text/plain' ? text : ''),
+      },
+    })
+    element.dispatchEvent(event)
+    expect(editor.getMarkdown()).toBe(text)
+    editor.destroy()
+  })
+
+  it('still converts pasted html into markdown outside source mode', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element })
+    editor.focusAt(0)
+    const event = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'clipboardData', {
+      value: {
+        files: [],
+        getData: (type: string) => (type === 'text/html' ? '<pre>---\ntitle: 示例\n---</pre>' : '---\ntitle: 示例\n---'),
+      },
+    })
+    element.dispatchEvent(event)
+    expect(editor.getMarkdown()).toBe('```\n---\ntitle: 示例\n---\n```')
+    editor.destroy()
+  })
+
   it('ignores an echoed external value', () => {
     const element = document.createElement('div')
     document.body.append(element)

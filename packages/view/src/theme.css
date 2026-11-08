@@ -295,6 +295,12 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+.v5md pre code .v5-empty-line {
+  display: inline-block;
+  width: 0;
+  height: 1em;
+}
+
 .v5md :not(pre) > code,
 .v5md .v5-inlinecode {
   padding: 0.1em 0.35em;

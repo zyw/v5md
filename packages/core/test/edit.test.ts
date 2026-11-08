@@ -184,6 +184,42 @@ describe('edit', () => {
     expect(state.doc).toBe('```\nab\nc\n```')
   })
 
+  it('completes a code fence as soon as the opening fence is typed', () => {
+    let state = createState('')
+    for (const char of '```') state = insertText(state, char)
+    expect(state.doc).toBe('```\n\n```')
+    expect(state.selection.head).toBe(3)
+    expect(undo(state).doc).toBe('``')
+    for (const char of 'java') state = insertText(state, char)
+    expect(state.doc).toBe('```java\n\n```')
+    state = splitBlock(state)
+    expect(state.doc).toBe('```java\n\n```')
+    expect(state.selection.head).toBe(8)
+    for (const char of 'dabc') state = insertText(state, char)
+    expect(state.doc).toBe('```java\ndabc\n```')
+  })
+
+  it('completes a tilde fence too', () => {
+    let state = createState('')
+    for (const char of '~~~') state = insertText(state, char)
+    expect(state.doc).toBe('~~~\n\n~~~')
+  })
+
+  it('does not complete a fence typed after text on the line', () => {
+    let state = createState('ab')
+    state = { ...state, selection: { anchor: 2, head: 2 } }
+    for (const char of '```') state = insertText(state, char)
+    expect(state.doc).toBe('ab```')
+  })
+
+  it('keeps a tight closing fence on its own line while typing', () => {
+    let state = createState('```java\n```')
+    state = { ...state, selection: { anchor: 8, head: 8 } }
+    state = insertText(state, 'd')
+    expect(state.doc).toBe('```java\nd\n```')
+    expect(state.selection.head).toBe(9)
+  })
+
   it('wraps and unwraps bold', () => {
     let state = createState('hello')
     state = { ...state, selection: { anchor: 0, head: 5 } }

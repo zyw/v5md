@@ -67,6 +67,15 @@ describe('render', () => {
     expect(element.querySelector('.katex')).not.toBeNull()
   })
 
+  it('keeps an empty code block to a single body line', () => {
+    const element = draw('```html\n\n```', 8)
+    const body = element.querySelector('pre code .v5-text')
+    expect(body?.querySelector('.v5-empty-line')).not.toBeNull()
+    // A <br> here would add one more line and make the block shrink on input.
+    expect(body?.querySelector('br')).toBeNull()
+    expect(body?.textContent).toBe('')
+  })
+
   it('preserves code markers as text', () => {
     const doc = '```ts\n**nope**\n```\n'
     const element = draw(doc, doc.indexOf('*'))
@@ -264,6 +273,31 @@ describe('Editor', () => {
     element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: '!' }))
     expect(editor.getMarkdown()).toBe('!hello')
     expect(seen).toEqual(['!hello'])
+    editor.destroy()
+  })
+
+  it('writes a complete fenced block and keeps the caret in its body', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element })
+    const type = (text: string) => {
+      for (const char of text) {
+        element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: char }))
+      }
+    }
+    type('```')
+    expect(editor.getMarkdown()).toBe('```\n\n```')
+    expect(element.querySelector('pre code .v5-empty-line')).not.toBeNull()
+    type('java')
+    expect(editor.getMarkdown()).toBe('```java\n\n```')
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(editor.getMarkdown()).toBe('```java\n\n```')
+    type('d')
+    expect(editor.getMarkdown()).toBe('```java\nd\n```')
+    type('abc')
+    expect(editor.getMarkdown()).toBe('```java\ndabc\n```')
+    expect(element.querySelector('pre code')?.textContent).toBe('dabc')
+    expect(element.querySelector('pre code .v5-empty-line')).toBeNull()
     editor.destroy()
   })
 

@@ -141,11 +141,52 @@ export function resizeImage(state: EditorState, width: number, height?: number):
   return applyEdit(state, { from: image.start, to: image.end, insert }, state.selection)
 }
 
+const FENCE_LINE = /^(`{3,}|~{3,})$/
+
 export function insertText(state: EditorState, text: string): EditorState {
   const insert = normalizeNewlines(text)
-  if (insert === '' && sortedRange(state.selection).from === sortedRange(state.selection).to) return state
   const { from, to } = sortedRange(state.selection)
-  return applyEdit(state, { from, to, insert }, caret(from + insert.length))
+  if (insert === '' && from === to) return state
+  const next = applyEdit(state, { from, to, insert }, caret(from + insert.length))
+  return closeFenceAfterTyping(state, next, insert, from, to)
+    ?? splitTightFence(state, next, insert, from, to)
+    ?? next
+}
+
+function closeFenceAfterTyping(
+  before: EditorState,
+  next: EditorState,
+  insert: string,
+  from: number,
+  to: number,
+): EditorState | null {
+  if ((insert !== '`' && insert !== '~') || before.selection.anchor !== before.selection.head) return null
+  const beforePath = pathAt(parse(before.doc), before.selection.head, before.doc.length)
+  if (beforePath.some((node) => node.type === 'code' || node.type === 'math' || node.type === 'yaml')) return null
+  const line = lineAt(next.doc, next.selection.head)
+  if (line.to !== next.selection.head || !FENCE_LINE.test(line.text)) return null
+  // Complete the pair right after the opening fence; the caret stays on the
+  // opening line so the language can be typed, and enter moves into the body.
+  return applyEdit(before, { from, to, insert: `${insert}\n\n${line.text}` }, caret(from + insert.length))
+}
+
+function splitTightFence(
+  before: EditorState,
+  next: EditorState,
+  insert: string,
+  from: number,
+  to: number,
+): EditorState | null {
+  if (insert === '' || insert.includes('\n')) return null
+  const at = next.selection.head
+  const code = pathAt(parse(next.doc), at, next.doc.length).find((node) => node.type === 'code')
+  if (!code) return null
+  const close = code.children.find((node) =>
+    node.type === 'marker' && node.marker === 'fence' && node.start === at && node.end > node.start)
+  if (!close || next.doc.slice(close.start, close.end).startsWith('\n')) return null
+  // A closing fence typed on the content line is not a real fenced block.
+  // Keep what was just typed in the body and push the fence to its own line.
+  return applyEdit(before, { from, to, insert: `${insert}\n` }, caret(at))
 }
 
 export function deleteBackward(state: EditorState): EditorState {
@@ -179,6 +220,14 @@ export function splitBlock(state: EditorState): EditorState {
   const tree = parse(base.doc)
   const path = pathAt(tree, offset, base.doc.length)
   if (path.some((node) => node.type === 'code' || node.type === 'math' || node.type === 'inlineMath' || node.type === 'yaml')) {
+    const code = path.find((node) => node.type === 'code')
+    const openingFence = code?.children.find((node) =>
+      node.type === 'marker' && node.marker === 'fence' && node.end === offset + 1)
+    // An auto-completed block already has an empty body line below the
+    // opening fence; enter should step into it instead of adding a blank one.
+    if (openingFence && base.doc[offset + 1] === '\n') {
+      return { ...base, selection: caret(offset + 1) }
+    }
     return applyEdit(base, { from: offset, to: offset, insert: '\n' }, caret(offset + 1))
   }
   const tableTarget = tableLocation(tree, offset, base.doc.length)

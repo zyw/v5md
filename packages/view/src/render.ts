@@ -136,7 +136,7 @@ function appendHighlighted(code: HTMLElement, node: MdNode, lang: string | null 
   const text = node.text ?? ''
   const spans = highlightSpans(text, lang)
   if (!spans) {
-    code.append(renderText(node))
+    code.append(renderText(node, false))
     return
   }
   let offset = node.start
@@ -297,8 +297,8 @@ function renderBreak(node: MdNode): HTMLElement {
   return line
 }
 
-function renderText(node: MdNode): HTMLElement {
-  return leaf('span', node, 'v5-text', node.text ?? '')
+function renderText(node: MdNode, breakOnEmpty = true): HTMLElement {
+  return leaf('span', node, 'v5-text', node.text ?? '', breakOnEmpty)
 }
 
 function block(tag: string, node: MdNode, children: Node[], className?: string): HTMLElement {
@@ -319,14 +319,22 @@ function inline(tag: string, node: MdNode, className?: string): HTMLElement {
   return element
 }
 
-function leaf(tag: string, node: MdNode, className: string, text: string): HTMLElement {
+function leaf(tag: string, node: MdNode, className: string, text: string, breakOnEmpty = true): HTMLElement {
   const element = document.createElement(tag)
   element.className = className
   stamp(element, node)
   element.setAttribute('data-leaf', 'true')
   if (node.marker) element.setAttribute('data-marker', node.marker)
-  if (text.length === 0) element.append(document.createElement('br'))
-  else element.textContent = text
+  if (text.length === 0) {
+    if (breakOnEmpty) element.append(document.createElement('br'))
+    else {
+      const placeholder = document.createElement('span')
+      placeholder.className = 'v5-empty-line'
+      element.append(placeholder)
+    }
+  } else {
+    element.textContent = text
+  }
   return element
 }
 

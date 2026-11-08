@@ -128,6 +128,53 @@ describe('edit', () => {
     }
   })
 
+  it('leaves a list from an empty item in the middle of it', () => {
+    let state = createState('* a\n* b\n* c')
+    const offset = state.doc.indexOf('b') + 1
+    state = { ...state, selection: { anchor: offset, head: offset } }
+    state = splitBlock(state)
+    expect(state.doc).toBe('* a\n* b\n* \n* c')
+    state = splitBlock(state)
+    // Blank lines cannot split a list into two lists, so the paragraph opens
+    // at the end of the list instead of bouncing the caret back to "b".
+    expect(state.doc).toBe('* a\n* b\n* c\n\n')
+    const blank = parse(state.doc).children.find((node) => node.type === 'paragraph' && node.start === node.end)
+    expect(blank).toBeTruthy()
+    expect(state.selection.head).toBe(blank?.start)
+    const next = splitBlock(state)
+    const items = parse(next.doc).children
+      .flatMap((node) => (node.type === 'list' ? node.children : []))
+      .filter((node) => node.type === 'listItem')
+    expect(items).toHaveLength(3)
+  })
+
+  it('leaves an empty middle item before a following paragraph', () => {
+    const doc = '* a\n* b\n* c\n\ntail'
+    let state = createState(doc)
+    const offset = doc.indexOf('b') + 1
+    state = { ...state, selection: { anchor: offset, head: offset } }
+    state = splitBlock(state)
+    expect(state.doc).toBe('* a\n* b\n* \n* c\n\ntail')
+    state = splitBlock(state)
+    expect(state.doc).toBe('* a\n* b\n* c\n\n\ntail')
+    const blank = parse(state.doc).children.find((node) => node.type === 'paragraph' && node.start === node.end)
+    expect(blank).toBeTruthy()
+    expect(state.selection.head).toBe(blank?.start)
+  })
+
+  it('leaves a nested list from its empty final item', () => {
+    const doc = '* parent\n  * child1\n  * child2'
+    let state = createState(doc)
+    state = { ...state, selection: { anchor: doc.length, head: doc.length } }
+    state = splitBlock(state)
+    expect(state.doc).toBe('* parent\n  * child1\n  * child2\n* ')
+    state = splitBlock(state)
+    expect(state.doc).toBe('* parent\n  * child1\n  * child2\n\n')
+    const blank = parse(state.doc).children.find((node) => node.type === 'paragraph' && node.start === node.end)
+    expect(blank).toBeTruthy()
+    expect(state.selection.head).toBe(blank?.start)
+  })
+
   it('inserts a newline inside a code block', () => {
     const doc = '```\nabc\n```'
     let state = createState(doc)

@@ -813,13 +813,40 @@ function blockEndsAt(tree: MdNode, offset: number): boolean {
 }
 
 function exitEmptyListItem(state: EditorState, marker: MdNode): EditorState {
-  const cleared = applyEdit(state, { from: marker.start, to: marker.end, insert: '' }, caret(marker.start))
+  // Nested items carry indentation before the marker; remove it with the
+  // marker so the now empty line is a real blank line instead of spaces.
+  const lineStart = state.doc.lastIndexOf('\n', marker.start - 1) + 1
+  const indent = state.doc.slice(lineStart, marker.start)
+  const from = /^[ \t]*$/.test(indent) ? lineStart : marker.start
+  // Also drop the line break after the marker so the empty line disappears
+  // instead of turning into an empty line inside the list.
+  const to = state.doc[marker.end] === '\n' ? marker.end + 1 : marker.end
+  const cleared = applyEdit(state, { from, to, insert: '' }, caret(from))
   const parked = paragraphOutsideList(cleared.doc, cleared.selection.head)
   if (parked != null) return { ...cleared, selection: caret(parked) }
+  const list = pathAt(parse(cleared.doc), cleared.selection.head, cleared.doc.length)
+    .find((node) => node.type === 'list')
+  const listEnd = list?.end ?? from
+  if (list && from < listEnd) {
+    // The empty item sat in the middle of the list. Blank lines cannot split
+    // the two halves, because markdown reads items separated by blank lines
+    // as one loose list, so leave the list at its end where a paragraph can
+    // exist. Otherwise the caret snaps back to the previous item and the next
+    // enter recreates the bullet.
+    const tail = cleared.doc.slice(listEnd)
+    if (tail.trim() === '') {
+      return applyEdit(cleared, { from: listEnd, to: cleared.doc.length, insert: '\n\n' }, caret(listEnd + 2))
+    }
+    const missing = Math.max(0, 3 - (/^\n*/.exec(tail)?.[0].length ?? 0))
+    const opened = missing > 0
+      ? applyEdit(cleared, { from: listEnd, to: listEnd, insert: '\n'.repeat(missing) }, caret(listEnd + missing))
+      : cleared
+    const spot = paragraphOutsideList(opened.doc, listEnd)
+    return spot == null ? opened : { ...opened, selection: caret(spot) }
+  }
   // Deleting the marker of a final item leaves only the list's trailing
   // newline. The caret then has no paragraph of its own and the view puts it
   // back on the previous item, so the next enter recreates the bullet.
-  if (offsetInsideList(cleared.doc, cleared.selection.head)) return cleared
   const at = cleared.selection.head
   const opened = applyEdit(cleared, { from: at, to: at, insert: '\n' }, caret(at + 1))
   const spot = paragraphOutsideList(opened.doc, opened.selection.head)
@@ -838,10 +865,6 @@ function paragraphOutsideList(doc: string, offset: number): number | null {
   return blanks
     .filter((start) => Math.abs(start - offset) <= 2)
     .sort((left, right) => Math.abs(left - offset) - Math.abs(right - offset) || left - right)[0] ?? null
-}
-
-function offsetInsideList(doc: string, offset: number): boolean {
-  return pathAt(parse(doc), offset, doc.length).some((node) => node.type === 'list' || node.type === 'listItem')
 }
 
 function listItemPlain(node: MdNode): string {

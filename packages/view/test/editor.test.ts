@@ -298,6 +298,43 @@ describe('Editor', () => {
     editor.destroy()
   })
 
+  it('leaves a list on the second enter and does not recreate the bullet', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '* 无效列表1\n* 无效列表2\n* 无效列表3'
+    const editor = new Editor({ element, value: doc })
+    editor.focusAt(doc.length)
+    const enter = () => element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    enter()
+    expect(editor.getMarkdown()).toBe(doc + '\n* ')
+    enter()
+    expect(editor.getMarkdown()).toBe(doc + '\n\n')
+    expect(element.querySelector('li.is-active')).toBeNull()
+    expect(element.querySelector('p.is-active')).not.toBeNull()
+    enter()
+    expect(editor.getMarkdown()).toBe(doc + '\n\n\n')
+    expect(element.querySelectorAll('li')).toHaveLength(3)
+    editor.destroy()
+  })
+
+  it('leaves a list from an empty middle item instead of bouncing back', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '* a\n* b\n* c'
+    const editor = new Editor({ element, value: doc })
+    editor.focusAt(doc.indexOf('b') + 1)
+    const enter = () => element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    enter()
+    expect(editor.getMarkdown()).toBe('* a\n* b\n* \n* c')
+    enter()
+    expect(editor.getMarkdown()).toBe('* a\n* b\n* c\n\n')
+    expect(element.querySelector('li.is-active')).toBeNull()
+    expect(element.querySelector('p.is-active')).not.toBeNull()
+    enter()
+    expect(element.querySelectorAll('li')).toHaveLength(3)
+    editor.destroy()
+  })
+
   it('shows a table toolbar and inserts a row below the focused cell', () => {
     const element = document.createElement('div')
     document.body.append(element)

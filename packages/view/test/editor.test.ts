@@ -202,6 +202,45 @@ describe('block chrome', () => {
   })
 })
 
+describe('image picking', () => {
+  it('opens the file picker when the host does not handle image selection', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: 'note' })
+    const input = element.querySelector<HTMLInputElement>('input[type="file"]')!
+    let opened = false
+    input.addEventListener('click', () => { opened = true })
+    element.querySelector<HTMLButtonElement>('button[data-command="image"]')?.click()
+    expect(opened).toBe(true)
+    editor.destroy()
+  })
+
+  it('asks the host to choose an image instead of opening the file picker', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    let picked = 0
+    const editor = new Editor({ element, value: 'note', onPickImage: () => { picked += 1 } })
+    const input = element.querySelector<HTMLInputElement>('input[type="file"]')!
+    let opened = false
+    input.addEventListener('click', () => { opened = true })
+    element.querySelector<HTMLButtonElement>('button[data-command="image"]')?.click()
+    expect(picked).toBe(1)
+    expect(opened).toBe(false)
+    editor.destroy()
+  })
+
+  it('inserts a chosen image url at the caret', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: 'hello' })
+    editor.insertImageUrl('https://cdn.example/a.png', '照片')
+    expect(editor.getMarkdown()).toContain('![照片](https://cdn.example/a.png)')
+    editor.insertImageUrl('   ')
+    expect(editor.getMarkdown()).toContain('![照片](https://cdn.example/a.png)')
+    editor.destroy()
+  })
+})
+
 describe('async uploads', () => {
   it('ignores a completed upload after the editor was destroyed on note switch', async () => {
     const element = document.createElement('div')
@@ -555,6 +594,22 @@ describe('Editor', () => {
     editor.setEditable(true)
     document.dispatchEvent(new Event('selectionchange'))
     expect(heading?.classList.contains('is-active')).toBe(true)
+    editor.destroy()
+  })
+
+  it('updates the empty-document placeholder without a rebuild', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, placeholder: '开始编写…' })
+    const doc = element.querySelector<HTMLElement>('.v5-doc')
+    expect(doc?.dataset.placeholder).toBe('开始编写…')
+    editor.setPlaceholder('写点什么')
+    expect(doc?.dataset.placeholder).toBe('写点什么')
+    expect(element.dataset.placeholder).toBe('写点什么')
+    editor.setMarkdown('正文')
+    expect(doc?.dataset.placeholder).toBe('写点什么')
+    editor.setPlaceholder('')
+    expect(doc?.dataset.placeholder).toBe('')
     editor.destroy()
   })
 

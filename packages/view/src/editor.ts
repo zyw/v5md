@@ -56,6 +56,8 @@ export interface EditorOptions {
   editable?: boolean
   onChange?: (markdown: string) => void
   onUploadImage?: (file: File) => string | Promise<string>
+  /** Handles the image toolbar button. Return false to keep the system file picker. */
+  onPickImage?: () => void | false
   onFindRequest?: (request: FindRequest) => void
 }
 
@@ -265,6 +267,15 @@ export class Editor {
     void this.insertImage(file)
   }
 
+  insertImageUrl(url: string, alt = ''): void {
+    const target = url.trim()
+    if (!target || this.abort.signal.aborted) return
+    this.focused = true
+    this.focusSurface()
+    const label = alt.replace(/[\[\]\r\n]/g, '').trim()
+    this.commit(insertText(this.state, `![${label}](${target})`))
+  }
+
   isToolbarVisible(): boolean {
     return this.toolbarVisible
   }
@@ -294,6 +305,14 @@ export class Editor {
     }
     this.element.classList.toggle('is-preview', !enabled)
     this.syncSurface()
+  }
+
+  setPlaceholder(placeholder: string): void {
+    if ((this.options.placeholder ?? '') === placeholder) return
+    this.options.placeholder = placeholder
+    const doc = this.element.querySelector<HTMLElement>('.v5-doc')
+    if (doc) doc.dataset.placeholder = placeholder
+    this.element.dataset.placeholder = placeholder
   }
 
   undo(): void {
@@ -357,6 +376,11 @@ export class Editor {
     this.toolbar = createToolbar(
       (command) => this.runToolbar(command),
       (file) => this.insertImageFile(file),
+      () => {
+        const pick = this.options.onPickImage
+        if (!pick) return false
+        return pick() !== false
+      },
     )
     this.outlinePanel = createOutline((start) => this.focusAt(start))
     this.toolbar.hidden = !this.toolbarVisible
@@ -802,7 +826,7 @@ export class Editor {
     const url = await upload(file)
     if (!url || this.abort.signal.aborted) return
     const alt = file.name.replace(/\.[^.]+$/, '')
-    this.commit(insertText(this.state, `![${alt}](${url})`))
+    this.insertImageUrl(url, alt)
   }
 
   private onCopy = (event: ClipboardEvent) => {

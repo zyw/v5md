@@ -154,14 +154,17 @@ function onUploadImage(file: File) {
 | --- | --- |
 | `v-model` / `modelValue` | Markdown 全文。外部改成与编辑器不同的字符串时，会整篇替换并重置历史 |
 | `placeholder` | 文档为空时的提示 |
+| `editable` | 是否可编辑，默认 `true`；传 `false` 进入只读预览 |
 | `onUploadImage` | 选择或粘贴图片时调用，返回图片地址，可以是 `Promise<string>` |
+| `onPickImage` | 点击工具条图片按钮时调用；返回 `false` 时继续用系统文件选择框 |
+| `onFindRequest` | 按 Mod+F / Mod+H 时收到查找或替换请求；不传则打开内置查找栏 |
 | `onReady` | 挂载完成后拿到 `Editor` |
 
-组件销毁时会 `destroy()` 编辑器。根元素带 `v5md-host`，传入的 class 和属性会落到这个元素上。工具条和大纲默认显示。更完整的说明见 [`packages/vue/README.md`](packages/vue/README.md)。
+组件销毁时会 `destroy()` 编辑器。根元素带 `v5md-host`，传入的 class 和属性会落到这个元素上。工具条和大纲默认显示，各属性的后续变化会直接同步到实例。更完整的说明见 [`packages/vue/README.md`](packages/vue/README.md)。
 
 ## 在 React 里用
 
-`V5Editor` 由 `value` 和 `onChange` 受控。编辑器只在挂载时创建一次。之后 `value` 与内部全文不同时，才调用 `setMarkdown`。`onChange`、`onUploadImage`、`onReady` 的后续变化不会重建编辑器。
+`V5Editor` 由 `value` 和 `onChange` 受控。编辑器只在挂载时创建一次。之后 `value` 与内部全文不同时，才调用 `setMarkdown`。`onChange`、`onUploadImage`、`onPickImage`、`onFindRequest`、`onReady` 的后续变化不会重建编辑器；`editable` 和 `placeholder` 会直接同步到实例。
 
 ```tsx
 import { useState } from 'react'
@@ -190,7 +193,10 @@ export function Page() {
 | `value` / `onChange` | 当前 Markdown，以及文档变化时的回调 |
 | `placeholder` | 空文档提示 |
 | `className` | 加在宿主元素上，宿主同时有 `v5md-host` |
+| `editable` | 是否可编辑，默认 `true`；传 `false` 进入只读预览 |
 | `onUploadImage` | 同 Vue，返回图片地址 |
+| `onPickImage` | 同 Vue，返回 `false` 时继续用系统文件选择框 |
+| `onFindRequest` | 同 Vue，不传则打开内置查找栏 |
 | `onReady` | 拿到 `Editor` 实例 |
 
 卸载时会 `destroy()`。更完整的说明见 [`packages/react/README.md`](packages/react/README.md)。

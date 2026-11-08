@@ -36,9 +36,14 @@ function onUploadImage(file: File) {
 | 属性 | 说明 |
 | --- | --- |
 | `v-model` / `modelValue` | Markdown 全文。外部改成与编辑器不同的字符串时，会调用 `setMarkdown` |
-| `placeholder` | 空文档提示 |
+| `placeholder` | 空文档提示，变化时同步到编辑器 |
+| `editable` | 是否可编辑，默认 `true`。传 `false` 进入只读预览，变化时调用 `setEditable` |
 | `onUploadImage` | `(file: File) => string \| Promise<string>` |
+| `onPickImage` | 点击工具条图片按钮时调用；返回 `false` 则继续使用系统文件选择框 |
+| `onFindRequest` | `(request: { kind: 'find' \| 'replace' }) => void`。不传时按 Mod+F / Mod+H 打开内置查找栏 |
 | `onReady` | 挂载完成后拿到 `Editor` 实例 |
+
+编辑器只在挂载时创建一次。`modelValue`、`editable`、`placeholder` 以及各回调的后续变化都不会重建编辑器，而是直接同步到实例。
 
 `onReady` 里的实例可以调用 `undo`、`redo`、`openFind`、`setSourceMode`、`setToolbarVisible`、`setOutlineVisible` 等视图层方法。工具条和大纲默认显示。
 

@@ -126,7 +126,11 @@ const ITEMS: ToolbarItem[] = [
   },
 ]
 
-export function createToolbar(onCommand: (command: ToolbarCommand) => void, onImage: (file: File) => void): HTMLElement {
+export function createToolbar(
+  onCommand: (command: ToolbarCommand) => void,
+  onImage: (file: File) => void,
+  onPickImage?: () => boolean,
+): HTMLElement {
   const bar = document.createElement('div')
   bar.className = 'v5-toolbar'
   bar.contentEditable = 'false'
@@ -160,7 +164,12 @@ export function createToolbar(onCommand: (command: ToolbarCommand) => void, onIm
     button.setAttribute('aria-label', item.label)
     button.dataset.label = item.label
     button.innerHTML = item.icon
-    if (item.command === 'image') button.addEventListener('click', () => input.click())
+    if (item.command === 'image') {
+      button.addEventListener('click', () => {
+        if (onPickImage?.()) return
+        input.click()
+      })
+    }
     group.append(button)
   }
   sizeGroup(group)

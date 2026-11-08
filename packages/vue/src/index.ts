@@ -10,6 +10,10 @@ export const V5Editor = defineComponent({
       type: Function as PropType<EditorOptions['onUploadImage']>,
       default: undefined,
     },
+    onPickImage: {
+      type: Function as PropType<EditorOptions['onPickImage']>,
+      default: undefined,
+    },
     onReady: {
       type: Function as PropType<(editor: Editor) => void>,
       default: undefined,
@@ -31,8 +35,19 @@ export const V5Editor = defineComponent({
         element: host.value,
         value: props.modelValue,
         placeholder: props.placeholder,
-        onUploadImage: props.onUploadImage,
-        onFindRequest: props.onFindRequest,
+        onUploadImage: (file) => {
+          const upload = props.onUploadImage
+          return upload ? upload(file) : ''
+        },
+        onPickImage: () => {
+          const pick = props.onPickImage
+          return pick ? pick() : false
+        },
+        onFindRequest: (request) => {
+          const find = props.onFindRequest
+          if (find) find(request)
+          else editor?.openFind()
+        },
         editable: props.editable,
         onChange(markdown) {
           emit('update:modelValue', markdown)
@@ -55,9 +70,7 @@ export const V5Editor = defineComponent({
 
     watch(
       () => props.placeholder,
-      (placeholder) => {
-        if (host.value) host.value.dataset.placeholder = placeholder
-      },
+      (placeholder) => editor?.setPlaceholder(placeholder),
     )
 
     onBeforeUnmount(() => {

@@ -30,10 +30,13 @@ const editor = new Editor({
 | `placeholder` | 文档为空时显示的提示 |
 | `toolbar` | 是否显示工具条，默认显示 |
 | `outline` | 是否显示大纲，默认显示 |
+| `editable` | 是否可编辑，默认 `true`；传 `false` 进入只读预览 |
 | `onChange` | 文档变化时回调全文 |
 | `onUploadImage` | 工具条选图或粘贴图片时调用，返回图片地址 |
+| `onPickImage` | 点击工具条图片按钮时调用；返回 `false` 则继续弹出系统文件选择框 |
+| `onFindRequest` | 按 Mod+F / Mod+H 时收到 `{ kind: 'find' \| 'replace' }`；不传则打开内置查找栏 |
 
-`onUploadImage` 可以返回字符串或 `Promise<string>`。返回值会写成 `![文件名](地址)`。
+`onUploadImage` 可以返回字符串或 `Promise<string>`。返回值会写成 `![文件名](地址)`。`onPickImage` 适合接管工具条图片按钮，由宿主自己打开图片选择器，再用 `insertImageUrl` 插入地址。
 
 ## 方法
 
@@ -46,8 +49,11 @@ const editor = new Editor({
 | `format(command)` | 块级命令，类型与 core 的 `FormatCommand` 相同 |
 | `toggleBold` / `toggleItalic` / `toggleCode` / `toggleStrikethrough` / `toggleHighlight` / `toggleUnderline` | 行内格式 |
 | `insertImageFile(file)` | 走 `onUploadImage` 后插入图片 |
+| `insertImageUrl(url, alt?)` | 在光标处插入 `![alt](url)` |
 | `openFind()` / `findNext` / `replaceNext` / `replaceAll` | 查找替换 |
 | `isSourceMode` / `setSourceMode` / `toggleSourceMode` | 整篇源码模式 |
+| `setEditable(enabled)` | 切换可编辑与只读预览 |
+| `setPlaceholder(placeholder)` | 更新空文档提示 |
 | `isToolbarVisible` / `setToolbarVisible` | 显示或隐藏工具条 |
 | `isOutlineVisible` / `setOutlineVisible` | 显示或隐藏大纲 |
 | `destroy()` | 卸下监听并清空元素 |

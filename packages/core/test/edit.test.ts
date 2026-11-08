@@ -112,9 +112,14 @@ describe('edit', () => {
     expect(blank).toBeTruthy()
     expect(state.selection.head).toBe(blank?.start)
     state = splitBlock(state)
-    const items = parse(state.doc).children.find((node) => node.type === 'list')?.children.filter((node) => node.type === 'listItem') ?? []
+    const items =
+      parse(state.doc)
+        .children.find((node) => node.type === 'list')
+        ?.children.filter((node) => node.type === 'listItem') ?? []
     expect(items).toHaveLength(3)
-    expect(parse(state.doc).children.filter((node) => node.type === 'paragraph' && node.start === node.end)).toHaveLength(2)
+    expect(
+      parse(state.doc).children.filter((node) => node.type === 'paragraph' && node.start === node.end),
+    ).toHaveLength(2)
   })
 
   it('leaves an ordered list and a dash list the same way', () => {
@@ -142,8 +147,8 @@ describe('edit', () => {
     expect(blank).toBeTruthy()
     expect(state.selection.head).toBe(blank?.start)
     const next = splitBlock(state)
-    const items = parse(next.doc).children
-      .flatMap((node) => (node.type === 'list' ? node.children : []))
+    const items = parse(next.doc)
+      .children.flatMap((node) => (node.type === 'list' ? node.children : []))
       .filter((node) => node.type === 'listItem')
     expect(items).toHaveLength(3)
   })
@@ -267,7 +272,9 @@ describe('edit', () => {
     const offset = cell?.children.find((node) => node.type === 'text')?.end ?? cell?.end ?? 0
     state = { ...state, selection: { anchor: offset, head: offset } }
     state = splitBlock(state)
-    const rows = parse(state.doc).children.find((node) => node.type === 'table')?.children.filter((node) => node.type === 'tableRow')
+    const rows = parse(state.doc)
+      .children.find((node) => node.type === 'table')
+      ?.children.filter((node) => node.type === 'tableRow')
     expect(rows).toHaveLength(3)
     expect(findMatch('abc abc', 'abc', 1)).toEqual({ from: 4, to: 7 })
     const replaced = replaceAllText(createState('a a'), 'a', 'b')
@@ -287,8 +294,8 @@ describe('edit', () => {
     expect(editTable(at('a'), 'insertRowAbove').doc).toBe('|  |  |\n| --- | --- |\n| a | b |\n| c | d |')
     const below = editTable(at('c'), 'insertRowBelow')
     expect(below.doc).toBe('| a | b |\n| --- | --- |\n| c | d |\n|  |  |')
-    const caretCell = parse(below.doc).children
-      .find((node) => node.type === 'table')
+    const caretCell = parse(below.doc)
+      .children.find((node) => node.type === 'table')
       ?.children.filter((node) => node.type === 'tableRow')
       .at(-1)
       ?.children.find((node) => node.type === 'tableCell')
@@ -308,7 +315,9 @@ describe('edit', () => {
     const wrapped = '前文\n\n' + doc + '\n\n后文'
     const inside = createState(wrapped)
     const offset = wrapped.indexOf('a')
-    expect(editTable({ ...inside, selection: { anchor: offset, head: offset } }, 'deleteTable').doc).toBe('前文\n\n后文')
+    expect(editTable({ ...inside, selection: { anchor: offset, head: offset } }, 'deleteTable').doc).toBe(
+      '前文\n\n后文',
+    )
   })
 
   it('formats the current line and wraps inline marks', () => {
@@ -328,7 +337,11 @@ describe('edit', () => {
     expect(linked.selection).toEqual({ anchor: 5, head: 13 })
     const underlined = toggleUnderline({ ...createState('你好'), selection: { anchor: 0, head: 2 } })
     expect(underlined.doc).toBe('<u>你好</u>')
-    expect(parse(underlined.doc).children.some((node) => node.type === 'paragraph' && node.children.some((child) => child.type === 'underline'))).toBe(true)
+    expect(
+      parse(underlined.doc).children.some(
+        (node) => node.type === 'paragraph' && node.children.some((child) => child.type === 'underline'),
+      ),
+    ).toBe(true)
     expect(toggleUnderline(underlined).doc).toBe('你好')
   })
 

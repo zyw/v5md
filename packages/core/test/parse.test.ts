@@ -75,7 +75,7 @@ describe('parse', () => {
   })
 
   it('does not format markers inside a code fence', () => {
-    const doc = '```ts\nconst answer = \'**不是标记**\'\n```\n'
+    const doc = "```ts\nconst answer = '**不是标记**'\n```\n"
     const tree = parse(doc)
     const code = tree.children.find((node) => node.type === 'code')
     expect(code?.lang).toBe('ts')

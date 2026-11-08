@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { Editor } from '../src/editor.ts'
+import { Editor } from '../src/editor/editor.ts'
 import { PluginRegistry } from '../src/plugin.ts'
-import { BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS } from '../src/toolbar.ts'
+import { BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS } from '../src/chrome/toolbar.ts'
 
 function registry() {
   return new PluginRegistry(BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS)
@@ -17,14 +17,12 @@ function editorWith(options: ConstructorParameters<typeof Editor>[0] = { element
 describe('PluginRegistry', () => {
   it('rejects built-in command overrides and duplicate command ids', () => {
     const target = registry()
-    expect(() =>
-      target.install({ name: 'attack', commands: { bold: { run() {} } } }),
-    ).toThrow(/built-in command "bold"/)
+    expect(() => target.install({ name: 'attack', commands: { bold: { run() {} } } })).toThrow(
+      /built-in command "bold"/,
+    )
 
     target.install({ name: 'first', commands: { 'demo.action': { run() {} } } })
-    expect(() =>
-      target.install({ name: 'second', commands: { 'demo.action': { run() {} } } }),
-    ).toThrow(/already owned/)
+    expect(() => target.install({ name: 'second', commands: { 'demo.action': { run() {} } } })).toThrow(/already owned/)
   })
 
   it('validates api version, dependencies and toolbar references', () => {
@@ -143,7 +141,9 @@ describe('Editor plugins', () => {
     const { element, editor } = editorWith({ element: document.createElement('div') })
     const handle = editor.use(plugin)
     await handle.ready
-    const labels = [...element.querySelectorAll<HTMLButtonElement>('.v5-toolbar button')].map((button) => button.dataset.label)
+    const labels = [...element.querySelectorAll<HTMLButtonElement>('.v5-toolbar button')].map(
+      (button) => button.dataset.label,
+    )
     expect(labels.indexOf('清理测试')).toBeGreaterThan(labels.indexOf('加粗'))
     expect(labels.indexOf('清理测试')).toBeLessThan(labels.indexOf('斜体'))
 

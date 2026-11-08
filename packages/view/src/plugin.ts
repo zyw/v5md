@@ -1,5 +1,5 @@
 import type { MdNode, TextSelection } from '@v5md/core'
-import type { Editor } from './editor.js'
+import type { Editor } from './editor/editor.js'
 
 export const PLUGIN_API_VERSION = 1
 
@@ -111,9 +111,7 @@ export class PluginRegistry {
       throw new Error(`v5md plugin "${name}" is already installed with a different instance`)
     }
     if ((plugin.apiVersion ?? PLUGIN_API_VERSION) !== PLUGIN_API_VERSION) {
-      throw new Error(
-        `v5md plugin "${name}" requires API version ${plugin.apiVersion}, expected ${PLUGIN_API_VERSION}`,
-      )
+      throw new Error(`v5md plugin "${name}" requires API version ${plugin.apiVersion}, expected ${PLUGIN_API_VERSION}`)
     }
     for (const required of plugin.requires ?? []) {
       if (!required) continue
@@ -132,14 +130,17 @@ export class PluginRegistry {
         throw new Error(`v5md plugin "${name}" cannot override built-in command "${id}"`)
       }
       if (this.commandOwners.has(id)) {
-        throw new Error(
-          `v5md plugin "${name}" command "${id}" is already owned by "${this.commandOwners.get(id)}"`,
-        )
+        throw new Error(`v5md plugin "${name}" command "${id}" is already owned by "${this.commandOwners.get(id)}"`)
       }
       commands.set(id, command as V5mdCommand)
     }
 
-    const knownCommands = new Set([...this.builtinCommands, ...this.builtinToolbarIds, ...this.commandOwners.keys(), ...commands.keys()])
+    const knownCommands = new Set([
+      ...this.builtinCommands,
+      ...this.builtinToolbarIds,
+      ...this.commandOwners.keys(),
+      ...commands.keys(),
+    ])
     const toolbar: ToolbarItemView[] = []
     const toolbarIds = new Set<string>()
     for (const [index, item] of (plugin.toolbar ?? []).entries()) {

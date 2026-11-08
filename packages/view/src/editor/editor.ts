@@ -37,33 +37,30 @@ import {
   type TableCommand,
   type TextSelection,
 } from '@v5md/core'
-import { htmlToMarkdown } from './html-to-md.js'
-import { createOutline, type OutlinePanel } from './outline.js'
-import { createTableBar, markTableAlign } from './table-bar.js'
-import { BUILTIN_COMMAND_IDS, BUILTIN_COMMANDS, BUILTIN_TOOLBAR_IDS, BUILTIN_TOOLBAR_ITEMS } from './builtins.js'
-import { createToolbarController, type ToolbarCommand, type ToolbarController } from './toolbar.js'
+import { htmlToMarkdown } from '../convert/html-to-md.js'
+import { createOutline, type OutlinePanel } from '../chrome/outline.js'
+import { createTableBar, markTableAlign, positionTableBar } from '../chrome/table-bar.js'
+import { BUILTIN_COMMAND_IDS, BUILTIN_COMMANDS, BUILTIN_TOOLBAR_IDS } from '../chrome/builtins.js'
+import type { ToolbarCommand } from '../chrome/toolbar.js'
+import { ToolbarHost } from '../chrome/toolbar-host.js'
+import { createFindBar, type FindBar } from '../chrome/find-bar.js'
+import { createSlashMenu, matchSlashCommands, type SlashMenu } from '../chrome/slash-menu.js'
+import { BlockChrome, type TopBlock } from '../chrome/block-chrome.js'
+import { copySelectionAsRich } from './clipboard.js'
+import { paintDiagrams } from './diagram.js'
+import { ImageResize } from './images.js'
+import { runShortcut, type KeymapHost } from './keymap.js'
+import { PluginHost } from './plugins.js'
 import {
   PluginRegistry,
-  type PluginRegistration,
-  type ToolbarItemView,
   type V5mdCommandContext,
   type V5mdPlugin,
   type V5mdPluginHandle,
   type V5mdPluginState,
-} from './plugin.js'
+} from '../plugin.js'
 import { renderDocument } from './render.js'
-import { applyChrome, domPointToOffset, offsetToDomPoint } from './selection.js'
-import { copyRichText, toWechatHtml } from './wechat.js'
-
-const TOOLBAR_GROUP_ORDER: Record<string, number> = {
-  block: 10,
-  list: 20,
-  quote: 30,
-  heading: 40,
-  insert: 50,
-  inline: 60,
-  action: 70,
-}
+import { applyChrome, clearFindHighlight, domPointToOffset, offsetToDomPoint, paintFindHighlight } from './selection.js'
+import { copyRichText, toWechatHtml } from '../convert/wechat.js'
 
 export interface FindRequest {
   kind: 'find' | 'replace'
@@ -100,28 +97,20 @@ export class Editor {
   private sourceMode = false
   private lineNumbers = true
   private paintGeneration = 0
-  private findBar: HTMLFormElement | null = null
+  private findBar: FindBar | null = null
   private tableBar: HTMLElement | null = null
-  private toolbar: HTMLElement | null = null
-  private toolbarController: ToolbarController | null = null
+  private readonly toolbarHost: ToolbarHost
   private outlinePanel: OutlinePanel | null = null
   private toolbarVisible = true
   private outlineVisible = true
   private editable = true
-  private findQuery: HTMLInputElement | null = null
-  private replaceQuery: HTMLInputElement | null = null
-  private slashMenu: HTMLElement | null = null
+  private slash: SlashMenu | null = null
   private slashRange: { from: number; to: number } | null = null
-  private slashIndex = 0
-  private handle: HTMLButtonElement | null = null
-  private handleSource: number | null = null
-  private blockMenu: HTMLElement | null = null
-  private dragSource: { start: number; doc: string } | null = null
-  private dropLine: HTMLElement | null = null
-  private imageDrag: { pointerId: number; startX: number; width: number; height: number; keepHeight: boolean; img: HTMLImageElement } | null = null
+  private readonly blockChrome: BlockChrome
+  private readonly imageResize: ImageResize
   private readonly pluginRegistry: PluginRegistry
-  private readonly pluginHandles = new Map<string, V5mdPluginHandle<unknown>>()
-  private toolbarItems: ToolbarItemView[] = []
+  private readonly plugins: PluginHost
+  private readonly keymap: KeymapHost
   private destroyed = false
 
   constructor(options: EditorOptions) {
@@ -132,13 +121,81 @@ export class Editor {
     this.lineNumbers = options.lineNumbers !== false
     this.editable = options.editable !== false
     this.pluginRegistry = new PluginRegistry(BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS)
+    this.plugins = new PluginHost(this.pluginRegistry, {
+      context: () => this.createCommandContext(),
+      changed: () => this.toolbarHost.refresh(),
+      hasToolbar: () => this.toolbarHost.element.isConnected,
+    })
+    this.toolbarHost = new ToolbarHost({
+      pluginItems: () => this.pluginRegistry.allToolbarItems(),
+      onCommand: (command) => this.onToolbarCommand(command),
+      onImage: (file) => this.insertImageFile(file),
+      onPickImage: () => {
+        const pick = this.options.onPickImage
+        if (!pick) return false
+        return pick() !== false
+      },
+      state: () => this.getPluginState(),
+    })
     for (const plugin of options.plugins ?? []) this.pluginRegistry.install(plugin)
     this.state = createState(options.value ?? '')
+    this.blockChrome = new BlockChrome({
+      host: this.element,
+      isEnabled: () => this.editable && !this.sourceMode,
+      isFocused: () => this.focused,
+      getDoc: () => this.state.doc,
+      getCaret: () => this.state.selection.head,
+      blocks: () => this.topBlocks(),
+      onMove: (source, target, side) => this.moveBlock(source, target, side),
+      onAction: (action) => this.runBlockAction(action),
+    })
+    this.imageResize = new ImageResize({
+      host: this.element,
+      isEnabled: () => this.editable,
+      onResize: (width, height) => {
+        this.focused = true
+        this.commit(resizeImage(this.state, width, height))
+      },
+    })
+    this.keymap = {
+      isEditable: () => this.editable,
+      isSourceMode: () => this.sourceMode,
+      requestFind: (kind) => {
+        if (this.options.onFindRequest) this.options.onFindRequest({ kind })
+        else this.openFind()
+      },
+      undo: () => this.undo(),
+      redo: () => this.redo(),
+      format: (command) => this.format(command),
+      toggleMark: (mark) => {
+        if (mark === 'bold') this.toggleBold()
+        else if (mark === 'italic') this.toggleItalic()
+        else if (mark === 'code') this.toggleCode()
+        else if (mark === 'strikethrough') this.toggleStrikethrough()
+        else if (mark === 'highlight') this.toggleHighlight()
+        else this.toggleUnderline()
+      },
+      toggleSourceMode: () => this.toggleSourceMode(),
+      insertSourceIndent: () => this.commit(insertText(this.state, '  ')),
+      tab: (shift) => {
+        const moved = moveTableCaret(this.state, shift ? -1 : 1)
+        if (moved) this.commit(moved)
+        else this.commit(shift ? outdent(this.state) : indent(this.state))
+      },
+      enter: (shift) => {
+        this.suppressBreak = true
+        queueMicrotask(() => {
+          this.suppressBreak = false
+        })
+        if (this.sourceMode) this.commit(insertText(this.state, '\n'))
+        else this.commit(shift ? insertSoftBreak(this.state) : splitBlock(this.state))
+      },
+    }
     this.prepare()
     this.mountChrome()
     this.render()
     this.listen()
-    for (const registration of this.pluginRegistry.list()) this.activatePlugin(registration)
+    for (const registration of this.pluginRegistry.list()) this.plugins.activate(registration)
   }
 
   getMarkdown(): string {
@@ -160,7 +217,7 @@ export class Editor {
       path: pathAt(parse(this.state.doc), this.state.selection.head, this.state.doc.length),
       editable: this.editable,
       sourceMode: this.sourceMode,
-      findOpen: Boolean(this.findBar && !this.findBar.hidden),
+      findOpen: this.findBar?.isOpen() ?? false,
       toolbarVisible: this.toolbarVisible,
       outlineVisible: this.outlineVisible,
     }
@@ -201,16 +258,16 @@ export class Editor {
       if (existing.plugin !== plugin) {
         throw new Error(`v5md plugin "${plugin.name}" is already installed with a different instance`)
       }
-      const handle = this.pluginHandles.get(plugin.name)
-      if (handle) return handle as V5mdPluginHandle<T>
+      const handle = this.plugins.handle<T>(plugin.name)
+      if (handle) return handle
     }
     const registration = this.pluginRegistry.install(plugin)
-    this.refreshToolbar()
-    return this.activatePlugin(registration)
+    this.toolbarHost.refresh()
+    return this.plugins.activate(registration)
   }
 
   getPlugin<T = undefined>(name: string): V5mdPluginHandle<T> | undefined {
-    return this.pluginHandles.get(name) as V5mdPluginHandle<T> | undefined
+    return this.plugins.handle<T>(name)
   }
 
   async runCommand<T = unknown>(id: string, ...args: unknown[]): Promise<T> {
@@ -232,7 +289,7 @@ export class Editor {
     const offset = Math.min(this.state.selection.head, next.doc.length)
     this.state = { doc: next.doc, selection: { anchor: offset, head: offset }, history: next.history }
     this.hideSlash()
-    this.hideHandle()
+    this.blockChrome.hide()
     this.render()
   }
 
@@ -245,7 +302,7 @@ export class Editor {
   focusAt(offset: number): void {
     const clamped = Math.max(0, Math.min(offset, this.state.doc.length))
     this.state = { ...this.state, selection: { anchor: clamped, head: clamped } }
-    this.handleSource = null
+    this.blockChrome.reset()
     this.focused = true
     this.rendering = true
     this.focusSurface()
@@ -283,11 +340,15 @@ export class Editor {
   }
 
   openFind(): void {
-    const bar = this.ensureFindBar()
-    bar.hidden = false
-    this.attachFindBar()
-    this.findQuery?.focus()
-    this.findQuery?.select()
+    if (!this.findBar) {
+      this.findBar = createFindBar({
+        onNext: () => this.findNext(),
+        onReplace: () => this.replaceNext(),
+        onReplaceAll: () => this.replaceAll(),
+        onClose: () => this.focusSurface(),
+      })
+    }
+    this.findBar.open(this.element)
   }
 
   findNextMatch(query: string, options: FindOptions = {}, direction: 1 | -1 = 1, advance = true): FindQueryResult {
@@ -331,18 +392,18 @@ export class Editor {
     this.revealFind({ ...this.state, selection: { anchor: start, head: stop } })
   }
 
-  findNext(query = this.findQuery?.value ?? ''): boolean {
+  findNext(query = this.findBar?.query.value ?? ''): boolean {
     const result = this.findNextMatch(query)
     if (result.hit) this.focusSurface()
     return result.hit !== null
   }
 
-  replaceNext(query = this.findQuery?.value ?? '', replacement = this.replaceQuery?.value ?? ''): void {
+  replaceNext(query = this.findBar?.query.value ?? '', replacement = this.findBar?.replacement.value ?? ''): void {
     const result = this.replaceNextMatch(query, replacement)
     if (result.hit) this.focusSurface()
   }
 
-  replaceAll(query = this.findQuery?.value ?? '', replacement = this.replaceQuery?.value ?? ''): void {
+  replaceAll(query = this.findBar?.query.value ?? '', replacement = this.findBar?.replacement.value ?? ''): void {
     this.replaceAllMatches(query, replacement)
     this.focusSurface()
   }
@@ -351,16 +412,13 @@ export class Editor {
     if (this.destroyed) return
     this.destroyed = true
     for (const registration of [...this.pluginRegistry.list()].reverse()) {
-      this.disposePlugin(registration.plugin.name, true)
+      this.plugins.dispose(registration.plugin.name, true)
     }
-    this.toolbarController?.destroy()
-    this.toolbarController = null
-    this.toolbar = null
+    this.toolbarHost.destroy()
     this.abort.abort()
     this.hideSlash()
-    this.hideHandle()
-    this.dropLine?.remove()
-    this.findBar?.remove()
+    this.blockChrome.destroy()
+    this.findBar?.destroy()
     this.findBar = null
     this.element.replaceChildren()
     this.element.contentEditable = 'false'
@@ -406,7 +464,7 @@ export class Editor {
     if (!target || this.abort.signal.aborted) return
     this.focused = true
     this.focusSurface()
-    const label = alt.replace(/[\[\]\r\n]/g, '').trim()
+    const label = alt.replace(/[[\]\r\n]/g, '').trim()
     this.commit(insertText(this.state, `![${label}](${target})`))
   }
 
@@ -417,7 +475,7 @@ export class Editor {
   async copyForWechat(): Promise<boolean> {
     const html = toWechatHtml(this.state.doc)
     const copied = await copyRichText(html, html)
-    this.flashWechatButton(copied)
+    this.toolbarHost.flash(copied)
     return copied
   }
 
@@ -427,8 +485,7 @@ export class Editor {
 
   setToolbarVisible(visible: boolean): void {
     this.toolbarVisible = visible
-    if (this.toolbar) this.toolbar.hidden = !visible
-    this.toolbarController?.setHidden(!visible)
+    this.toolbarHost.setHidden(!visible)
   }
 
   isOutlineVisible(): boolean {
@@ -445,8 +502,7 @@ export class Editor {
     this.editable = enabled
     if (!enabled) {
       this.hideSlash()
-      this.hideHandle()
-      this.dropLine?.remove()
+      this.blockChrome.hide()
       this.clearChrome()
     }
     this.element.classList.toggle('v5-preview', !enabled)
@@ -471,8 +527,7 @@ export class Editor {
 
   moveBlock(sourceStart: number, targetStart: number, side: 'before' | 'after'): void {
     this.commit(moveTopLevelBlock(this.state, sourceStart, targetStart, side))
-    this.handleSource = null
-    this.hideHandle()
+    this.blockChrome.hide()
   }
 
   private prepare(): void {
@@ -519,51 +574,12 @@ export class Editor {
   }
 
   private mountChrome(): void {
-    this.toolbarController = createToolbarController({
-      onCommand: (command) => this.onToolbarCommand(command),
-      onImage: (file) => this.insertImageFile(file),
-      onPickImage: () => {
-        const pick = this.options.onPickImage
-        if (!pick) return false
-        return pick() !== false
-      },
-    })
-    this.toolbar = this.toolbarController.element
     this.outlinePanel = createOutline((start) => this.focusAt(start))
-    this.toolbar.hidden = !this.toolbarVisible
     this.outlinePanel.element.hidden = !this.outlineVisible
     const doc = document.createElement('div')
     doc.className = 'v5-doc'
-    this.element.append(this.toolbar, this.outlinePanel.element, doc)
-    this.toolbarItems = this.buildToolbarItems()
-    this.toolbarController.setItems(this.toolbarItems)
-    this.toolbarController.setHidden(!this.toolbarVisible)
-  }
-
-  private buildToolbarItems(): ToolbarItemView[] {
-    const items = [...BUILTIN_TOOLBAR_ITEMS, ...this.pluginRegistry.allToolbarItems()]
-    const groupOrder = new Map<string, number>(Object.entries(TOOLBAR_GROUP_ORDER))
-    for (const item of items) {
-      if (!groupOrder.has(item.group)) groupOrder.set(item.group, 1000 + groupOrder.size)
-    }
-    return items
-      .map((item, index) => ({ item, index }))
-      .sort((a, b) => {
-        const groupA = groupOrder.get(a.item.group) ?? 1000
-        const groupB = groupOrder.get(b.item.group) ?? 1000
-        if (groupA !== groupB) return groupA - groupB
-        if (a.item.order !== b.item.order) return a.item.order - b.item.order
-        return a.index - b.index
-      })
-      .map((entry) => entry.item)
-  }
-
-  private refreshToolbar(): void {
-    if (!this.toolbarController) return
-    this.toolbarItems = this.buildToolbarItems()
-    this.toolbarController.setItems(this.toolbarItems)
-    this.toolbarController.setHidden(!this.toolbarVisible)
-    this.syncToolbarState()
+    this.element.append(this.toolbarHost.element, this.outlinePanel.element, doc)
+    this.toolbarHost.mount(this.toolbarVisible)
   }
 
   private onToolbarCommand(command: string): void {
@@ -571,83 +587,6 @@ export class Editor {
     void this.runCommand(command).catch((error) => {
       console.error(`[v5md] command "${command}" failed`, error)
     })
-  }
-
-  private activatePlugin<T>(registration: PluginRegistration<T>): V5mdPluginHandle<T> {
-    const plugin = registration.plugin
-    const context = this.createCommandContext()
-    let api: T
-    try {
-      api = plugin.api ? plugin.api(context) : (undefined as T)
-    } catch (error) {
-      this.pluginRegistry.remove(plugin.name)
-      if (this.toolbar) this.refreshToolbar()
-      throw error
-    }
-    let resolveReady!: () => void
-    let rejectReady!: (error: unknown) => void
-    const ready = new Promise<void>((resolve, reject) => {
-      resolveReady = resolve
-      rejectReady = reject
-    })
-    void ready.catch(() => {})
-    const handle: V5mdPluginHandle<T> = {
-      name: plugin.name,
-      api,
-      ready,
-      dispose: () => this.disposePlugin(plugin.name),
-    }
-    this.pluginHandles.set(plugin.name, handle as V5mdPluginHandle<unknown>)
-    try {
-      const result = plugin.setup?.(context)
-      if (result && typeof (result as Promise<void>).then === 'function') {
-        void Promise.resolve(result).then(
-          () => {
-            if (registration.disposed) {
-              registration.cleanup?.()
-              registration.cleanup = undefined
-            }
-            resolveReady()
-          },
-          (error) => {
-            console.error(`[v5md] plugin "${plugin.name}" setup failed`, error)
-            rejectReady(error)
-          },
-        )
-      } else {
-        if (typeof result === 'function') registration.cleanup = result
-        if (registration.disposed) {
-          registration.cleanup?.()
-          registration.cleanup = undefined
-        }
-        resolveReady()
-      }
-    } catch (error) {
-      console.error(`[v5md] plugin "${plugin.name}" setup failed`, error)
-      rejectReady(error)
-    }
-    return handle
-  }
-
-  private disposePlugin(name: string, skipRefresh = false): void {
-    const registration = this.pluginRegistry.get(name)
-    if (!registration) return
-    registration.disposed = true
-    this.pluginHandles.delete(name)
-    const cleanup = registration.cleanup
-    registration.cleanup = undefined
-    try {
-      cleanup?.()
-    } catch (error) {
-      console.error(`[v5md] plugin "${name}" cleanup failed`, error)
-    }
-    try {
-      registration.plugin.destroy?.()
-    } catch (error) {
-      console.error(`[v5md] plugin "${name}" destroy failed`, error)
-    }
-    this.pluginRegistry.remove(name)
-    if (!skipRefresh && this.toolbar) this.refreshToolbar()
   }
 
   private createCommandContext(): V5mdCommandContext {
@@ -660,23 +599,6 @@ export class Editor {
       wrapSelection: (before, after) => this.wrapSelection(before, after),
       focus: () => this.focus(),
     }
-  }
-
-  private syncToolbarState(): void {
-    const bar = this.toolbar
-    if (!bar) return
-    const state = this.getPluginState()
-    const itemsById = new Map(this.toolbarItems.map((item) => [item.id, item]))
-    bar.querySelectorAll<HTMLButtonElement>('button[data-item-id]').forEach((button) => {
-      const item = button.dataset.itemId ? itemsById.get(button.dataset.itemId) : undefined
-      if (!item) return
-      if (item.type === 'toggle') {
-        button.setAttribute('aria-pressed', item.isActive?.(state) ? 'true' : 'false')
-      } else {
-        button.removeAttribute('aria-pressed')
-      }
-      button.disabled = item.isDisabled?.(state) ?? false
-    })
   }
 
   private listen(): void {
@@ -717,21 +639,6 @@ export class Editor {
     if (changed) this.options.onChange?.(this.state.doc)
   }
 
-  private flashWechatButton(copied: boolean): void {
-    const button = this.toolbar?.querySelector<HTMLButtonElement>('button[data-command="wechat"]')
-    if (!button) return
-    const label = copied ? '已复制到公众号' : '复制失败'
-    button.dataset.state = copied ? 'done' : 'error'
-    button.dataset.label = label
-    button.setAttribute('aria-label', label)
-    setTimeout(() => {
-      if (!button.isConnected) return
-      delete button.dataset.state
-      button.dataset.label = '复制到公众号'
-      button.setAttribute('aria-label', '复制到公众号')
-    }, 1600)
-  }
-
   private revealFind(next: EditorState): void {
     if (!this.editable && next.doc !== this.state.doc) return
     const previous = document.activeElement
@@ -753,27 +660,12 @@ export class Editor {
   }
 
   private paintFindHit(): void {
-    const highlights = globalThis.CSS?.highlights
-    if (!highlights || typeof Highlight === 'undefined') return
     const { from, to } = sortedRange(this.state.selection)
-    const start = offsetToDomPoint(this.element, from)
-    const end = offsetToDomPoint(this.element, to)
-    if (!start || !end || from === to) {
-      highlights.delete('v5-find')
-      return
-    }
-    const range = document.createRange()
-    try {
-      range.setStart(start.node, start.offset)
-      range.setEnd(end.node, end.offset)
-      highlights.set('v5-find', new Highlight(range))
-    } catch {
-      highlights.delete('v5-find')
-    }
+    paintFindHighlight(this.element, from, to)
   }
 
   private clearFindHit(): void {
-    globalThis.CSS?.highlights?.delete('v5-find')
+    clearFindHighlight()
   }
 
   private render(): void {
@@ -794,11 +686,11 @@ export class Editor {
         parse(this.state.doc),
       )
       void this.paintDiagrams()
-      this.attachFindBar()
+      this.findBar?.attach(this.element)
       this.outlinePanel?.update(this.getOutline())
-      this.syncToolbarState()
+      this.toolbarHost.sync()
       this.updateSlash()
-      this.positionHandle()
+      this.blockChrome.position()
       if (this.focused || active) this.syncChrome()
       if (active) this.focusSurface()
       this.restoreSelection()
@@ -863,174 +755,39 @@ export class Editor {
   }
 
   private onPointerDown = (event: PointerEvent) => {
-    if (!this.blockMenu?.isConnected) return
-    const target = event.target
-    if (target instanceof Node && (this.blockMenu.contains(target) || this.handle?.contains(target))) return
-    this.hideBlockMenu()
+    this.blockChrome.pointerDown(event)
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
     if (this.composing || event.isComposing) return
-    if (this.slashMenu?.isConnected) {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        this.hideSlash()
-        return
-      }
-      const options = [...this.slashMenu.querySelectorAll<HTMLButtonElement>('button')]
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault()
-        this.slashIndex = (this.slashIndex + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length
-        options.forEach((option, index) => option.classList.toggle('v5-selected', index === this.slashIndex))
-        return
-      }
-      if (event.key === 'Enter' && options.length > 0) {
-        event.preventDefault()
-        this.executeSlash(options[this.slashIndex].dataset.command as SlashCommand)
-        return
-      }
-    }
-    if (this.blockMenu?.isConnected && event.key === 'Escape') {
+    if (this.handleSlashKeys(event)) return
+    if (this.blockChrome.isMenuOpen() && event.key === 'Escape') {
       event.preventDefault()
-      this.hideBlockMenu()
+      this.blockChrome.hideMenu()
       return
     }
-    const mod = event.metaKey || event.ctrlKey
-    const key = event.key.toLowerCase()
-    if (mod && !event.altKey && !event.shiftKey && (key === 'f' || key === 'h')) {
+    runShortcut(event, this.keymap)
+  }
+
+  /** While the slash menu is open, arrows, enter and escape drive it. */
+  private handleSlashKeys(event: KeyboardEvent): boolean {
+    if (!this.slash?.isOpen()) return false
+    if (event.key === 'Escape') {
       event.preventDefault()
-      if (this.options.onFindRequest) this.options.onFindRequest({ kind: key === 'h' ? 'replace' : 'find' })
-      else this.openFind()
-      return
+      this.hideSlash()
+      return true
     }
-    if (!this.editable) return
-    if (mod && !event.altKey && key === 'z') {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
-      if (event.shiftKey) this.redo()
-      else this.undo()
-      return
+      this.slash.move(event.key === 'ArrowDown' ? 1 : -1)
+      return true
     }
-    if (mod && !event.altKey && key === 'y') {
-      event.preventDefault()
-      this.redo()
-      return
-    }
-    if (mod && !event.altKey && key === 'b') {
-      event.preventDefault()
-      this.toggleBold()
-      return
-    }
-    if (mod && !event.altKey && key === 'i') {
-      event.preventDefault()
-      this.toggleItalic()
-      return
-    }
-    if (mod && !event.altKey && !event.shiftKey && event.key === '`') {
-      event.preventDefault()
-      this.toggleCode()
-      return
-    }
-    if (mod && event.shiftKey && !event.altKey && key === 'x') {
-      event.preventDefault()
-      this.toggleStrikethrough()
-      return
-    }
-    if (mod && event.shiftKey && !event.altKey && key === 'h') {
-      event.preventDefault()
-      this.toggleHighlight()
-      return
-    }
-    if (mod && event.shiftKey && !event.altKey && key === 's') {
-      event.preventDefault()
-      this.toggleSourceMode()
-      return
-    }
-    if (mod && event.shiftKey && !event.altKey && key === 'k') {
-      event.preventDefault()
-      this.format('code')
-      return
-    }
-    if (mod && event.shiftKey && !event.altKey && key === 't') {
-      event.preventDefault()
-      this.format('table')
-      return
-    }
-    if (mod && event.shiftKey && !event.altKey && event.code === 'BracketLeft') {
-      event.preventDefault()
-      this.format('orderedList')
-      return
-    }
-    if (mod && event.shiftKey && !event.altKey && event.code === 'BracketRight') {
-      event.preventDefault()
-      this.format('bulletList')
-      return
-    }
-    if (mod && event.shiftKey && !event.altKey && key === 'o') {
-      event.preventDefault()
-      this.format('taskList')
-      return
-    }
-    if (mod && event.shiftKey && !event.altKey && key === 'q') {
-      event.preventDefault()
-      this.format('quote')
-      return
-    }
-    if (mod && !event.shiftKey && !event.altKey && event.key === '1') {
-      event.preventDefault()
-      this.format('heading1')
-      return
-    }
-    if (mod && !event.shiftKey && !event.altKey && event.key === '2') {
-      event.preventDefault()
-      this.format('heading2')
-      return
-    }
-    if (mod && !event.shiftKey && !event.altKey && event.key === '3') {
-      event.preventDefault()
-      this.format('heading3')
-      return
-    }
-    if (mod && !event.shiftKey && !event.altKey && key === 'k') {
-      event.preventDefault()
-      this.format('link')
-      return
-    }
-    if (mod && !event.shiftKey && !event.altKey && key === 'u') {
-      event.preventDefault()
-      this.toggleUnderline()
-      return
-    }
-    if (mod && !event.altKey && event.key === '~') {
-      event.preventDefault()
-      this.toggleStrikethrough()
-      return
-    }
-    if (mod && !event.altKey && (event.key === '=' || event.key === '+')) {
-      event.preventDefault()
-      this.toggleHighlight()
-      return
-    }
-    if (this.sourceMode && event.key === 'Tab') {
-      event.preventDefault()
-      this.commit(insertText(this.state, '  '))
-      return
-    }
-    if (event.key === 'Tab') {
-      event.preventDefault()
-      const moved = moveTableCaret(this.state, event.shiftKey ? -1 : 1)
-      if (moved) this.commit(moved)
-      else this.commit(event.shiftKey ? outdent(this.state) : indent(this.state))
-      return
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      this.suppressBreak = true
-      queueMicrotask(() => {
-        this.suppressBreak = false
-      })
-      if (this.sourceMode) this.commit(insertText(this.state, '\n'))
-      else this.commit(event.shiftKey ? insertSoftBreak(this.state) : splitBlock(this.state))
-    }
+    if (event.key !== 'Enter') return false
+    const command = this.slash.selected()
+    if (!command) return false
+    event.preventDefault()
+    this.executeSlash(command)
+    return true
   }
 
   private onPaste = (event: ClipboardEvent) => {
@@ -1067,7 +824,7 @@ export class Editor {
 
   private onCopy = (event: ClipboardEvent) => {
     if (!this.sourceMode) {
-      this.copySelectionAsRich(event)
+      copySelectionAsRich(this.element, event)
       return
     }
     const slice = this.selectedText()
@@ -1082,7 +839,7 @@ export class Editor {
       return
     }
     if (!this.sourceMode) {
-      if (!this.copySelectionAsRich(event)) return
+      if (!copySelectionAsRich(this.element, event)) return
       this.commit(insertText(this.state, ''))
       return
     }
@@ -1091,51 +848,6 @@ export class Editor {
     event.preventDefault()
     event.clipboardData?.setData('text/plain', slice)
     this.commit(insertText(this.state, ''))
-  }
-
-  private copySelectionAsRich(event: ClipboardEvent): boolean {
-    if (typeof document === 'undefined') return false
-    const selection = document.getSelection()
-    if (!selection || selection.isCollapsed || selection.rangeCount === 0) return false
-    const range = selection.getRangeAt(0)
-    if (!this.element.contains(range.commonAncestorContainer)) return false
-    const holder = document.createElement('div')
-    holder.style.position = 'fixed'
-    holder.style.left = '-9999px'
-    holder.style.top = '0'
-    holder.style.opacity = '0'
-    holder.style.pointerEvents = 'none'
-    holder.append(range.cloneContents())
-    document.body.append(holder)
-    this.cleanCopiedFragment(holder)
-    const html = holder.innerHTML
-    const text = (holder.innerText || holder.textContent || '').replace(/\u00a0/g, ' ').trim() || selection.toString()
-    holder.remove()
-    if (!html) return false
-    event.preventDefault()
-    event.clipboardData?.setData('text/html', html)
-    if (text) event.clipboardData?.setData('text/plain', text)
-    return true
-  }
-
-  private cleanCopiedFragment(root: HTMLElement): void {
-    root
-      .querySelectorAll(
-        '.md-marker, .v5-marker, .v5-source, .v5-image-resize, .v5-empty-line, .v5-block-handle, .v5-block-menu, .v5-tablebar, .v5-toolbar, .v5-outline, .v5-find',
-      )
-      .forEach((element) => element.remove())
-    root.querySelectorAll('.v5-mermaid > code').forEach((element) => element.remove())
-    root.querySelectorAll<HTMLButtonElement>('button.v5-check').forEach((check) => {
-      const label = check.ownerDocument.createElement('span')
-      label.textContent = check.dataset.checked === 'true' ? '✓' : '☐'
-      check.replaceWith(label)
-    })
-    for (const element of [root, ...root.querySelectorAll<HTMLElement>('*')]) {
-      element.removeAttribute('contenteditable')
-      element.removeAttribute('spellcheck')
-      element.removeAttribute('tabindex')
-      element.classList.remove('is-source', 'is-active', 'is-composing')
-    }
   }
 
   private selectedText(): string | null {
@@ -1186,10 +898,10 @@ export class Editor {
   }
 
   private onBlur = () => {
-    if (this.rendering || this.imageDrag) return
+    if (this.rendering || this.imageResize.active) return
     this.focused = false
     this.hideSlash()
-    this.hideBlockMenu()
+    this.blockChrome.hideMenu()
     this.clearChrome()
   }
 
@@ -1200,9 +912,9 @@ export class Editor {
     }
     applyChrome(this.element, this.state.selection.head, this.state.selection.anchor, this.state.doc.length)
     this.syncTableBar()
-    this.syncToolbarState()
+    this.toolbarHost.sync()
     this.updateSlash()
-    this.positionHandle()
+    this.blockChrome.position()
   }
 
   private clearChrome(): void {
@@ -1239,60 +951,19 @@ export class Editor {
     const bar = this.tableBar
     const table = this.element.querySelector('table.v5-table.v5-active')
     if (!bar || !table || !bar.isConnected) return
-    const editorRect = this.element.getBoundingClientRect()
-    const tableRect = table.getBoundingClientRect()
-    const height = bar.offsetHeight || 36
-    const above = tableRect.top - editorRect.top + this.element.scrollTop - height - 6
-    const top = above >= 4 ? above : tableRect.top - editorRect.top + this.element.scrollTop + 4
-    const left = Math.max(4, tableRect.left - editorRect.left + this.element.scrollLeft)
-    bar.style.top = `${top}px`
-    bar.style.left = `${left}px`
+    positionTableBar(bar, table, this.element)
   }
 
   private onImagePointerDown = (event: PointerEvent) => {
-    const target = event.target
-    if (!(target instanceof Element) || !this.editable || this.imageDrag) return
-    const handle = target.closest('.v5-image-resize')
-    if (!handle || !this.element.contains(handle)) return
-    const img = handle.closest('.v5-image')?.querySelector('img')
-    if (!(img instanceof HTMLImageElement)) return
-    const rect = img.getBoundingClientRect()
-    const width = Number(img.dataset.width || 0) || rect.width
-    const height = Number(img.dataset.height || 0) || rect.height
-    if (width < 1) return
-    event.preventDefault()
-    event.stopPropagation()
-    try { handle.setPointerCapture?.(event.pointerId) } catch { /* the document listeners still follow the pointer */ }
-    this.imageDrag = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      width,
-      height: height || width,
-      keepHeight: img.dataset.height != null && img.dataset.height !== '',
-      img,
-    }
+    this.imageResize.pointerDown(event)
   }
 
   private onImagePointerMove = (event: PointerEvent) => {
-    const drag = this.imageDrag
-    if (!drag || event.pointerId !== drag.pointerId) return
-    event.preventDefault()
-    const nextWidth = resizedWidth(drag.width, event.clientX - drag.startX)
-    drag.img.style.width = `${nextWidth}px`
-    drag.img.style.maxWidth = '100%'
-    drag.img.style.height = 'auto'
-    if (drag.keepHeight) drag.img.style.aspectRatio = `${nextWidth} / ${resizedHeight(drag, nextWidth)}`
+    this.imageResize.pointerMove(event)
   }
 
   private onImagePointerUp = (event: PointerEvent) => {
-    const drag = this.imageDrag
-    if (!drag || event.pointerId !== drag.pointerId) return
-    this.imageDrag = null
-    if (Math.round(event.clientX - drag.startX) === 0) return
-    const nextWidth = resizedWidth(drag.width, event.clientX - drag.startX)
-    const nextHeight = drag.keepHeight ? resizedHeight(drag, nextWidth) : undefined
-    this.focused = true
-    this.commit(resizeImage(this.state, nextWidth, nextHeight))
+    this.imageResize.pointerUp(event)
   }
 
   private onMouseDown = (event: MouseEvent) => {
@@ -1310,7 +981,11 @@ export class Editor {
       this.restoreSelection()
       return
     }
-    if (target.closest('.v5-toolbar, .v5-outline, .v5-tablebar, .v5-slash-menu, .v5-block-handle, .v5-block-menu, .v5-image-resize')) {
+    if (
+      target.closest(
+        '.v5-toolbar, .v5-outline, .v5-tablebar, .v5-slash-menu, .v5-block-handle, .v5-block-menu, .v5-image-resize',
+      )
+    ) {
       event.preventDefault()
       return
     }
@@ -1369,17 +1044,16 @@ export class Editor {
   }
 
   private onSelectionChange = () => {
-    if (this.rendering || this.composing || this.imageDrag) return
+    if (this.rendering || this.composing || this.imageResize.active) return
     const selection = document.getSelection()
     if (!selection?.anchorNode || !this.element.contains(selection.anchorNode)) return
     if (
       this.tableBar?.contains(selection.anchorNode) ||
-      this.findBar?.contains(selection.anchorNode) ||
-      this.toolbar?.contains(selection.anchorNode) ||
-      this.outlinePanel?.element.contains(selection.anchorNode)
-      || this.slashMenu?.contains(selection.anchorNode)
-      || this.blockMenu?.contains(selection.anchorNode)
-      || this.handle?.contains(selection.anchorNode)
+      this.findBar?.element.contains(selection.anchorNode) ||
+      this.toolbarHost.element.contains(selection.anchorNode) ||
+      this.outlinePanel?.element.contains(selection.anchorNode) ||
+      this.slash?.element.contains(selection.anchorNode) ||
+      this.blockChrome.owns(selection.anchorNode)
     ) {
       return
     }
@@ -1388,7 +1062,7 @@ export class Editor {
     if (anchor == null || head == null) return
     if (anchor !== this.state.selection.anchor || head !== this.state.selection.head) {
       this.state = { ...this.state, selection: { anchor, head } }
-      this.handleSource = null
+      this.blockChrome.reset()
     }
     if (this.focused || document.activeElement === this.surface()) {
       this.focused = true
@@ -1397,7 +1071,12 @@ export class Editor {
   }
 
   private updateSlash(): void {
-    if (!this.editable || this.composing || this.sourceMode || this.state.selection.anchor !== this.state.selection.head) {
+    if (
+      !this.editable ||
+      this.composing ||
+      this.sourceMode ||
+      this.state.selection.anchor !== this.state.selection.head
+    ) {
       this.hideSlash()
       return
     }
@@ -1405,46 +1084,21 @@ export class Editor {
     const from = this.state.doc.lastIndexOf('\n', to - 1) + 1
     const text = this.state.doc.slice(from, to)
     const path = pathAt(parse(this.state.doc), Math.max(from, to - 1), this.state.doc.length)
-    if (!/^\/[^\n]*$/.test(text) || path.some(node =>
-      ['code', 'yaml', 'math', 'table', 'inlineCode'].includes(node.type))) {
+    if (
+      !/^\/[^\n]*$/.test(text) ||
+      path.some((node) => ['code', 'yaml', 'math', 'table', 'inlineCode'].includes(node.type))
+    ) {
       this.hideSlash()
       return
     }
-    const query = text.slice(1).toLowerCase()
-    const options = SLASH_COMMANDS.filter(([command, title]) =>
-      command.toLowerCase().includes(query) || command.replace('heading', 'h').includes(query) || title.includes(query))
+    const options = matchSlashCommands(text.slice(1))
     if (options.length === 0) {
       this.hideSlash()
       return
     }
     this.slashRange = { from, to }
-    this.slashIndex = 0
-    if (!this.slashMenu) {
-      this.slashMenu = document.createElement('div')
-      this.slashMenu.className = 'v5-slash-menu'
-      this.slashMenu.contentEditable = 'false'
-      this.slashMenu.setAttribute('role', 'listbox')
-    }
-    this.slashMenu.replaceChildren(...options.map(([command, title], index) => {
-      const button = document.createElement('button')
-      button.type = 'button'
-      button.dataset.command = command
-      button.textContent = title
-      button.className = index === 0 ? 'v5-selected' : ''
-      button.addEventListener('click', () => this.executeSlash(command))
-      return button
-    }))
-    this.element.append(this.slashMenu)
-    const point = offsetToDomPoint(this.element, to)
-    if (point) {
-      const range = document.createRange()
-      range.setStart(point.node, point.offset)
-      range.collapse(true)
-      const rect = range.getBoundingClientRect()
-      const host = this.element.getBoundingClientRect()
-      this.slashMenu.style.left = `${Math.max(0, rect.left - host.left)}px`
-      this.slashMenu.style.top = `${Math.max(0, rect.bottom - host.top + 6)}px`
-    }
+    this.slash ??= createSlashMenu({ onPick: (command) => this.executeSlash(command) })
+    this.slash.show(this.element, options, offsetToDomPoint(this.element, to))
   }
 
   private executeSlash(command: SlashCommand): void {
@@ -1457,91 +1111,18 @@ export class Editor {
   }
 
   private hideSlash(): void {
-    this.slashMenu?.remove()
+    this.slash?.hide()
     this.slashRange = null
   }
 
   private onHoverBlock = (event: MouseEvent) => {
-    if (!this.editable || this.sourceMode || this.dragSource) return
-    const target = event.target
-    if (!(target instanceof Element) || target.closest('.v5-block-handle, .v5-block-menu')) return
-    const block = target.closest<HTMLElement>('[data-block]')
-    if (!block || block.parentElement !== this.element.querySelector('.v5-doc') || block.dataset.block === 'yaml') return
-    this.handleSource = Number(block.dataset.start)
-    this.positionHandle()
-  }
-
-  private positionHandle(): void {
-    if (!this.editable || this.sourceMode) {
-      this.hideHandle()
-      return
-    }
-    if (this.handleSource === null && this.focused) {
-      const offset = this.state.selection.head
-      const block = parse(this.state.doc).children.find(node =>
-        node.end > node.start && node.type !== 'yaml' && node.start <= offset && offset <= node.end)
-      this.handleSource = block?.start ?? null
-    }
-    if (this.handleSource === null) return
-    const block = [...this.element.querySelectorAll<HTMLElement>('.v5-doc > [data-block]')]
-      .find(node => Number(node.dataset.start) === this.handleSource && node.dataset.block !== 'yaml')
-    if (!block) {
-      this.hideHandle()
-      return
-    }
-    if (!this.handle) {
-      this.handle = document.createElement('button')
-      this.handle.type = 'button'
-      this.handle.className = 'v5-block-handle'
-      this.handle.contentEditable = 'false'
-      this.handle.draggable = true
-      this.handle.setAttribute('aria-label', '块操作')
-      this.handle.textContent = '⠿'
-      this.handle.addEventListener('click', () => this.openBlockMenu())
-    }
-    this.element.append(this.handle)
-    const rect = block.getBoundingClientRect()
-    const host = this.element.getBoundingClientRect()
-    this.handle.style.top = `${rect.top - host.top + this.element.scrollTop}px`
-    this.handle.style.left = `${rect.left - host.left - 28}px`
-  }
-
-  private openBlockMenu(): void {
-    if (this.handleSource === null) return
-    const node = parse(this.state.doc).children.find(child => child.start === this.handleSource)
-    if (!node) return
-    this.hideBlockMenu()
-    const menu = document.createElement('div')
-    menu.className = 'v5-block-menu'
-    menu.contentEditable = 'false'
-    for (const [action, label] of [
-      ['up', '上移'], ['down', '下移'], ['before', '上方插入'], ['after', '下方插入'],
-      ['paragraph', '正文'], ['heading1', '标题 1'], ['heading2', '标题 2'], ['heading3', '标题 3'],
-      ['bulletList', '无序列表'], ['orderedList', '有序列表'], ['taskList', '待办列表'],
-      ['quote', '引用'], ['delete', '删除块'],
-    ]) {
-      if (['paragraph', 'heading1', 'heading2', 'heading3', 'bulletList', 'orderedList', 'taskList', 'quote'].includes(action)) {
-        if (!['paragraph', 'heading', 'blockquote', 'list'].includes(node.type)) continue
-        if (node.type === 'list' && (node.children.length !== 1 || this.state.doc.slice(node.start, node.end).includes('\n'))
-          && !['bulletList', 'orderedList', 'taskList'].includes(action)) continue
-      }
-      const button = document.createElement('button')
-      button.type = 'button'
-      button.dataset.blockAction = action
-      button.textContent = label
-      button.addEventListener('click', () => this.runBlockAction(action))
-      menu.append(button)
-    }
-    this.blockMenu = menu
-    this.element.append(menu)
-    menu.style.top = `${parseFloat(this.handle?.style.top || '0') + 26}px`
-    menu.style.left = `${parseFloat(this.handle?.style.left || '0')}px`
+    this.blockChrome.hover(event)
   }
 
   private runBlockAction(action: string): void {
-    this.hideBlockMenu()
-    const blocks = parse(this.state.doc).children.filter(node => node.end > node.start && node.type !== 'yaml')
-    const index = blocks.findIndex(node => node.start === this.handleSource)
+    this.blockChrome.hideMenu()
+    const blocks = this.topBlocks().filter((block) => block.end > block.start && block.type !== 'yaml')
+    const index = blocks.findIndex((block) => block.start === this.blockChrome.currentSource())
     if (index < 0) return
     const block = blocks[index]
     if (action === 'up' || action === 'down') {
@@ -1558,161 +1139,40 @@ export class Editor {
     } else {
       this.commit(convertTopLevelBlock(this.state, block.start, action as BlockType))
     }
-    this.hideHandle()
+    this.blockChrome.hide()
   }
 
-  private hideBlockMenu(): void {
-    this.blockMenu?.remove()
-    this.blockMenu = null
-  }
-
-  private hideHandle(): void {
-    this.handle?.remove()
-    this.hideBlockMenu()
-    this.handleSource = null
+  private topBlocks(): TopBlock[] {
+    const doc = this.state.doc
+    return parse(doc).children.map((node) => ({
+      start: node.start,
+      end: node.end,
+      type: node.type,
+      childCount: node.children.length,
+      multiLine: doc.slice(node.start, node.end).includes('\n'),
+    }))
   }
 
   private onDragStart = (event: DragEvent) => {
-    if (!this.editable) return
-    if (event.target !== this.handle || this.handleSource === null) return
-    this.dragSource = { start: this.handleSource, doc: this.state.doc }
-    event.dataTransfer?.setData('text/plain', '')
-    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+    this.blockChrome.dragStart(event)
   }
 
   private onDragOver = (event: DragEvent) => {
-    if (!this.dragSource || this.state.doc !== this.dragSource.doc) return
-    const target = event.target
-    const block = target instanceof Element ? target.closest<HTMLElement>('[data-block]') : null
-    if (!block || block.parentElement !== this.element.querySelector('.v5-doc')
-      || block.dataset.block === 'yaml' || Number(block.dataset.start) === this.dragSource.start) return
-    event.preventDefault()
-    if (!this.dropLine) {
-      this.dropLine = document.createElement('div')
-      this.dropLine.className = 'v5-drop-line'
-    }
-    this.element.append(this.dropLine)
-    const rect = block.getBoundingClientRect()
-    const host = this.element.getBoundingClientRect()
-    this.dropLine.style.top = `${(event.clientY >= (rect.top + rect.bottom) / 2 ? rect.bottom : rect.top) - host.top}px`
+    this.blockChrome.dragOver(event)
   }
 
   private onDrop = (event: DragEvent) => {
-    if (!this.editable) {
-      event.preventDefault()
-      this.onDragEnd()
-      return
-    }
-    const source = this.dragSource
-    this.onDragEnd()
-    if (!source || source.doc !== this.state.doc) return
-    const target = event.target
-    const block = target instanceof Element ? target.closest<HTMLElement>('[data-block]') : null
-    if (!block || block.parentElement !== this.element.querySelector('.v5-doc') || block.dataset.block === 'yaml') return
-    event.preventDefault()
-    const rect = block.getBoundingClientRect()
-    this.moveBlock(source.start, Number(block.dataset.start),
-      event.clientY >= (rect.top + rect.bottom) / 2 ? 'after' : 'before')
+    this.blockChrome.drop(event)
   }
 
   private onDragEnd = () => {
-    this.dragSource = null
-    this.dropLine?.remove()
-  }
-
-  private ensureFindBar(): HTMLFormElement {
-    if (this.findBar) return this.findBar
-    const bar = document.createElement('form')
-    bar.className = 'v5md-find'
-    bar.contentEditable = 'false'
-    bar.hidden = true
-    const find = document.createElement('input')
-    find.type = 'search'
-    find.placeholder = '查找'
-    find.setAttribute('aria-label', '查找')
-    const replace = document.createElement('input')
-    replace.type = 'text'
-    replace.placeholder = '替换为'
-    replace.setAttribute('aria-label', '替换为')
-    const next = findButton('下一个', () => this.findNext())
-    const one = findButton('替换', () => this.replaceNext())
-    const all = findButton('全部替换', () => this.replaceAll())
-    const close = findButton('关闭', () => {
-      bar.hidden = true
-      this.focusSurface()
-    })
-    bar.append(find, replace, next, one, all, close)
-    bar.addEventListener('submit', (event) => {
-      event.preventDefault()
-      this.findNext()
-    })
-    bar.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        bar.hidden = true
-        this.focusSurface()
-      }
-    })
-    this.findBar = bar
-    this.attachFindBar()
-    this.findQuery = find
-    this.replaceQuery = replace
-    return bar
-  }
-
-  private attachFindBar(): void {
-    if (!this.findBar || this.findBar.hidden) return
-    this.element.prepend(this.findBar)
+    this.blockChrome.dragEnd()
   }
 
   private async paintDiagrams(): Promise<void> {
     const generation = ++this.paintGeneration
-    const nodes = [...this.element.querySelectorAll<HTMLElement>('.v5-diagram')]
-    if (nodes.length === 0) return
-    const pending = nodes.filter((node) => !diagramCache.has(node.dataset.diagram ?? ''))
-    if (pending.length === 0) {
-      for (const node of nodes) node.innerHTML = diagramCache.get(node.dataset.diagram ?? '') ?? ''
-      return
-    }
-    const mermaid = (await import('mermaid')).default
-    if (generation !== this.paintGeneration) return
-    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', fontFamily: 'inherit' })
-    for (const node of nodes) {
-      if (generation !== this.paintGeneration || !this.element.contains(node)) return
-      const source = node.dataset.diagram ?? ''
-      const cached = diagramCache.get(source)
-      if (cached) {
-        node.innerHTML = cached
-        continue
-      }
-      const id = `v5md-${Math.random().toString(36).slice(2)}`
-      try {
-        const result = await mermaid.render(id, source)
-        diagramCache.set(source, result.svg)
-        document.getElementById(id)?.remove()
-        if (generation === this.paintGeneration && this.element.contains(node)) node.innerHTML = result.svg
-      } catch {
-        document.getElementById(id)?.remove()
-        if (this.element.contains(node)) node.textContent = '图表无法显示'
-      }
-    }
+    await paintDiagrams(this.element, () => generation === this.paintGeneration)
   }
-}
-
-const diagramCache = new Map<string, string>()
-
-const SLASH_COMMANDS: Array<[SlashCommand, string]> = [
-  ['paragraph', '正文'], ['heading1', '标题 1'], ['heading2', '标题 2'], ['heading3', '标题 3'],
-  ['bulletList', '无序列表'], ['orderedList', '有序列表'], ['taskList', '待办列表'],
-  ['quote', '引用'], ['code', '代码块'], ['rule', '分割线'], ['image', '图片'],
-]
-
-function resizedWidth(start: number, delta: number): number {
-  return Math.min(4096, Math.max(16, Math.round(start + delta)))
-}
-
-function resizedHeight(drag: { width: number; height: number }, nextWidth: number): number {
-  return Math.min(4096, Math.max(16, Math.round(nextWidth * drag.height / drag.width)))
 }
 
 function imageAltRange(doc: string, start: number, end: number): { anchor: number; head: number } {
@@ -1733,15 +1193,4 @@ function atomicCaret(host: HTMLElement, kind: string): number {
   const jump = host.dataset.block === 'math' ? 2 : 1
   if (end <= start) return start
   return Math.min(start + jump, end - 1)
-}
-
-function findButton(label: string, action: () => void): HTMLButtonElement {
-  const button = document.createElement('button')
-  button.type = 'button'
-  button.textContent = label
-  button.addEventListener('click', (event) => {
-    event.preventDefault()
-    action()
-  })
-  return button
 }

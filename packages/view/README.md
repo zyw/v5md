@@ -140,7 +140,7 @@ handle.dispose()
 await editor.runCommand('callout.note')
 ```
 
-插件按钮会和内置按钮一起排序；`group` 使用内置分组时会插入对应区域，使用新分组时追加到内置区域之后。工具条会按可用宽度把多余按钮收进「更多」菜单。`use()` / `dispose()` 只增量增减按钮，不会重建整个工具条或编辑器。内置按钮和命令定义在 `packages/view/src/builtins.ts`，和插件命令共用同一个 `runCommand` 分发入口；内置命令 id 不能被插件覆盖。
+插件按钮会和内置按钮一起排序；`group` 使用内置分组时会插入对应区域，使用新分组时追加到内置区域之后。工具条会按可用宽度把多余按钮收进「更多」菜单。`use()` / `dispose()` 只增量增减按钮，不会重建整个工具条或编辑器。内置按钮和命令定义在 `packages/view/src/chrome/builtins.ts`，和插件命令共用同一个 `runCommand` 分发入口；内置命令 id 不能被插件覆盖。
 
 ## 复制到公众号
 

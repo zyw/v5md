@@ -92,3 +92,7 @@ export function sortedRange(selection: TextSelection): { from: number; to: numbe
 export function normalizeNewlines(text: string): string {
   return text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n')
 }
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}

@@ -99,8 +99,12 @@ function onUploadImage(file: File) {
           <button type="button" @click="editor?.redo()">重做</button>
           <button type="button" @click="editor?.openFind()">查找</button>
           <button type="button" @click="toggleSource">{{ sourceMode ? '所见即所得' : '源码模式' }}</button>
-          <button type="button" :aria-pressed="showLineNumbers" :disabled="!sourceMode" @click="toggleLineNumbers">行号</button>
-          <button type="button" :aria-pressed="preview" @click="togglePreview">{{ preview ? '退出预览' : '预览' }}</button>
+          <button type="button" :aria-pressed="showLineNumbers" :disabled="!sourceMode" @click="toggleLineNumbers">
+            行号
+          </button>
+          <button type="button" :aria-pressed="preview" @click="togglePreview">
+            {{ preview ? '退出预览' : '预览' }}
+          </button>
           <button type="button" :disabled="fontSize <= 12" @click="changeFontSize(fontSize - 1)">A-</button>
           <button type="button" :disabled="fontSize >= 28" @click="changeFontSize(fontSize + 1)">A+</button>
           <button type="button" @click="exportFile('markdown')">导出 MD</button>
@@ -109,8 +113,9 @@ function onUploadImage(file: File) {
           <button type="button" @click="exportFile('image')">导出图片</button>
         </div>
         <p class="hint">
-          工具条和大纲可以分别显示或隐藏。源码模式会给 Markdown 着色并显示行号。预览模式会关闭正文编辑，但待办复选框仍可切换。
-          字号和导出按钮由插件提供，当前字号 {{ fontSize }}px。
+          工具条和大纲可以分别显示或隐藏。源码模式会给 Markdown
+          着色并显示行号。预览模式会关闭正文编辑，但待办复选框仍可切换。 字号和导出按钮由插件提供，当前字号
+          {{ fontSize }}px。
           <span v-if="exportStatus"> · {{ exportStatus }}</span>
         </p>
       </div>
@@ -133,7 +138,7 @@ function onUploadImage(file: File) {
 :root {
   color: #1f1f1f;
   background: #f5f5f4;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
 }
 
 body {

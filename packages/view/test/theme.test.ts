@@ -25,8 +25,7 @@ function splitSelectors(head: string): string[] {
 
 function selectors(css: string): string[] {
   const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
-  return [...clean.matchAll(/(?:^|\})([^{}]+)\{/g)]
-    .flatMap((match) => splitSelectors(match[1] ?? ''))
+  return [...clean.matchAll(/(?:^|\})([^{}]+)\{/g)].flatMap((match) => splitSelectors(match[1] ?? ''))
 }
 
 describe('theme isolation', () => {

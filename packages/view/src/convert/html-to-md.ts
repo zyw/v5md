@@ -1,6 +1,8 @@
 export function htmlToMarkdown(html: string): string {
   const document = new DOMParser().parseFromString(html, 'text/html')
-  return renderChildren(document.body).replace(/\n{3,}/g, '\n\n').trim()
+  return renderChildren(document.body)
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 }
 
 function renderChildren(node: ParentNode): string {
@@ -64,15 +66,14 @@ function formatInline(node: HTMLElement): string {
 }
 
 function renderTable(node: HTMLElement): string {
-  const rows = [...node.children]
-    .flatMap((child) => {
-      const tag = child.tagName.toLowerCase()
-      if (tag === 'tr') return [child]
-      if (tag === 'thead' || tag === 'tbody' || tag === 'tfoot') {
-        return [...child.children].filter((row) => row.tagName.toLowerCase() === 'tr')
-      }
-      return []
-    })
+  const rows = [...node.children].flatMap((child) => {
+    const tag = child.tagName.toLowerCase()
+    if (tag === 'tr') return [child]
+    if (tag === 'thead' || tag === 'tbody' || tag === 'tfoot') {
+      return [...child.children].filter((row) => row.tagName.toLowerCase() === 'tr')
+    }
+    return []
+  })
   if (rows.length === 0) return ''
   const lines = rows.map((row) => {
     const cells = [...row.children]

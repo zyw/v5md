@@ -142,7 +142,11 @@ ${styles}
 }
 
 function cleanContent(root: HTMLElement): void {
-  root.querySelectorAll('.md-marker, .v5-source, .v5-image-resize, .v5-empty-line, .v5-block-handle, .v5-block-menu, .v5-tablebar, .v5-toolbar, .v5-outline, .v5-find').forEach((element) => element.remove())
+  root
+    .querySelectorAll(
+      '.md-marker, .v5-source, .v5-image-resize, .v5-empty-line, .v5-block-handle, .v5-block-menu, .v5-tablebar, .v5-toolbar, .v5-outline, .v5-find',
+    )
+    .forEach((element) => element.remove())
   root.querySelectorAll('.v5-check').forEach((check) => {
     if (check.tagName !== 'BUTTON') return
     const span = root.ownerDocument.createElement('span')
@@ -336,9 +340,5 @@ function downloadBlob(blob: Blob, fileName: string): void {
 }
 
 function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }

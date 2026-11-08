@@ -1,14 +1,14 @@
 import 'katex/dist/katex.min.css'
 
-export { Editor } from './editor.js'
-export type { EditorOptions, FindRequest } from './editor.js'
-export { createOutline } from './outline.js'
-export type { OutlinePanel } from './outline.js'
-export { createToolbar, createToolbarFromItems } from './toolbar.js'
-export type { ToolbarCommand } from './toolbar.js'
-export { htmlToMarkdown } from './html-to-md.js'
-export { copyRichText, toWechatHtml } from './wechat.js'
-export type { WechatHtmlOptions } from './wechat.js'
+export { Editor } from './editor/editor.js'
+export type { EditorOptions, FindRequest } from './editor/editor.js'
+export { createOutline } from './chrome/outline.js'
+export type { OutlinePanel } from './chrome/outline.js'
+export { createToolbar, createToolbarFromItems } from './chrome/toolbar.js'
+export type { ToolbarCommand } from './chrome/toolbar.js'
+export { htmlToMarkdown } from './convert/html-to-md.js'
+export { copyRichText, toWechatHtml } from './convert/wechat.js'
+export type { WechatHtmlOptions } from './convert/wechat.js'
 export { PLUGIN_API_VERSION, PluginRegistry } from './plugin.js'
 export type {
   PluginRegistration,

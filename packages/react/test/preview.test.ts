@@ -31,9 +31,9 @@ describe('@v5md/react preview', () => {
     expect(host.querySelector<HTMLButtonElement>('.v5-check')?.dataset.checked).toBe('false')
 
     await act(async () => {
-      host.querySelector<HTMLButtonElement>('.v5-check')?.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
-      )
+      host
+        .querySelector<HTMLButtonElement>('.v5-check')
+        ?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     })
     expect(changes).toEqual(['- [x] 待办\n'])
     expect(host.querySelector<HTMLButtonElement>('.v5-check')?.dataset.checked).toBe('true')

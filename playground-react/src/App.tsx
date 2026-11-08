@@ -138,8 +138,9 @@ export function App() {
             </button>
           </div>
           <p className="hint">
-            工具条和大纲可以分别显示或隐藏。源码模式会给 Markdown 着色并显示行号。预览模式会关闭正文编辑，但待办复选框仍可切换。
-            字号和导出按钮由插件提供，当前字号 {fontSize}px。
+            工具条和大纲可以分别显示或隐藏。源码模式会给 Markdown
+            着色并显示行号。预览模式会关闭正文编辑，但待办复选框仍可切换。 字号和导出按钮由插件提供，当前字号 {fontSize}
+            px。
             {exportStatus ? ` · ${exportStatus}` : ''}
           </p>
         </div>

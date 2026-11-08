@@ -1,4 +1,6 @@
-import { sortedRange, type TextSelection } from './types.js'
+// Find and replace: query matching over documents plus the state-level find operations.
+import { applyEdit } from './history.js'
+import { caret, clamp, sortedRange, type EditorState, type TextSelection } from './types.js'
 
 export interface FindOptions {
   caseSensitive?: boolean
@@ -62,7 +64,7 @@ export function listMatches(
   doc: string,
   query: string,
   options: FindOptions = {},
-): { matches: FindListItem[], error: string | null } {
+): { matches: FindListItem[]; error: string | null } {
   if (!query) return { matches: [], error: null }
   const collected = collectMatches(doc, query, options)
   if (collected.error) return { matches: [], error: collected.error }
@@ -82,7 +84,7 @@ export function selectedMatch(
   selection: TextSelection,
   query: string,
   options: FindOptions = {},
-): { match: RawMatch | null, error: string | null } {
+): { match: RawMatch | null; error: string | null } {
   if (!query) return { match: null, error: null }
   const collected = collectMatches(doc, query, options)
   if (collected.error) return { match: null, error: collected.error }
@@ -98,7 +100,7 @@ export function replaceQuery(
   query: string,
   replacement: string,
   options: FindOptions = {},
-): { doc: string, error: string | null } {
+): { doc: string; error: string | null } {
   if (!query) return { doc, error: null }
   const collected = collectMatches(doc, query, options)
   if (collected.error) return { doc, error: collected.error }
@@ -119,11 +121,11 @@ export function replaceQuery(
 
 export function replacementFor(
   doc: string,
-  match: { from: number, to: number },
+  match: { from: number; to: number },
   query: string,
   replacement: string,
   options: FindOptions = {},
-): { text: string, error: string | null } {
+): { text: string; error: string | null } {
   const collected = collectMatches(doc, query, options)
   if (collected.error) return { text: replacement, error: collected.error }
   const current = collected.matches.find((item) => item.from === match.from && item.to === match.to)
@@ -131,7 +133,11 @@ export function replacementFor(
   return { text: expandReplacement(replacement, current), error: null }
 }
 
-function collectMatches(doc: string, query: string, options: FindOptions): { matches: RawMatch[], error: string | null } {
+function collectMatches(
+  doc: string,
+  query: string,
+  options: FindOptions,
+): { matches: RawMatch[]; error: string | null } {
   const compiled = compileQuery(query, options)
   if ('error' in compiled) return { matches: [], error: compiled.error }
   const regex = compiled.regex
@@ -163,7 +169,12 @@ function compileQuery(query: string, options: FindOptions): { regex: RegExp } | 
   }
 }
 
-function pickMatch(matches: RawMatch[], selection: TextSelection, direction: 1 | -1, advance: boolean): RawMatch | null {
+function pickMatch(
+  matches: RawMatch[],
+  selection: TextSelection,
+  direction: 1 | -1,
+  advance: boolean,
+): RawMatch | null {
   if (matches.length === 0) return null
   const { from, to } = sortedRange(selection)
   const current = matches.findIndex((match) => match.from === from && match.to === to)
@@ -217,9 +228,78 @@ function codePointSize(text: string, index: number): number {
 function isSurrogatePair(text: string, index: number): boolean {
   const lead = text.charCodeAt(index)
   const trail = text.charCodeAt(index + 1)
-  return lead >= 0xD800 && lead <= 0xDBFF && trail >= 0xDC00 && trail <= 0xDFFF
+  return lead >= 0xd800 && lead <= 0xdbff && trail >= 0xdc00 && trail <= 0xdfff
 }
 
 function escapeLiteral(value: string): string {
   return value.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+}
+
+export function findInState(
+  state: EditorState,
+  query: string,
+  direction: 1 | -1 = 1,
+  options: FindOptions = {},
+  advance = true,
+): { state: EditorState; result: FindQueryResult } {
+  const result = runFind(state.doc, state.selection, query, direction, options, advance)
+  if (!result.hit) return { state, result }
+  return {
+    state: { ...state, selection: { anchor: result.hit.from, head: result.hit.to } },
+    result,
+  }
+}
+
+export function replaceCurrentMatch(
+  state: EditorState,
+  query: string,
+  replacement: string,
+  options: FindOptions = {},
+): { state: EditorState; result: FindQueryResult } {
+  const selected = selectedMatch(state.doc, state.selection, query, options)
+  if (selected.error) return { state, result: { hit: null, error: selected.error } }
+  let next = state
+  if (selected.match) {
+    const expanded = replacementFor(state.doc, selected.match, query, replacement, options)
+    if (expanded.error) return { state, result: { hit: null, error: expanded.error } }
+    const current = state.doc.slice(selected.match.from, selected.match.to)
+    if (expanded.text !== current) {
+      next = applyEdit(
+        state,
+        { from: selected.match.from, to: selected.match.to, insert: expanded.text },
+        caret(selected.match.from + expanded.text.length),
+      )
+    }
+  }
+  return findInState(next, query, 1, options, true)
+}
+
+export function replaceAllMatches(
+  state: EditorState,
+  query: string,
+  replacement: string,
+  options: FindOptions = {},
+): { state: EditorState; result: FindQueryResult } {
+  const replaced = replaceQuery(state.doc, query, replacement, options)
+  if (replaced.error) return { state, result: { hit: null, error: replaced.error } }
+  const edited =
+    replaced.doc === state.doc
+      ? state
+      : applyEdit(state, { from: 0, to: state.doc.length, insert: replaced.doc }, caret(0))
+  return findInState(edited, query, 1, options, false)
+}
+
+export function findMatch(doc: string, query: string, from: number): { from: number; to: number } | null {
+  if (!query) return null
+  const start = clamp(from, 0, doc.length)
+  let index = doc.indexOf(query, start)
+  if (index < 0 && start > 0) index = doc.indexOf(query)
+  if (index < 0) return null
+  return { from: index, to: index + query.length }
+}
+
+export function replaceAllText(state: EditorState, query: string, replacement: string): EditorState {
+  if (!query || !state.doc.includes(query)) return state
+  const insert = state.doc.split(query).join(replacement)
+  return applyEdit(state, { from: 0, to: state.doc.length, insert }, caret(0))
 }

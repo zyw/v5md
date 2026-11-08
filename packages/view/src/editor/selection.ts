@@ -14,7 +14,17 @@ const BLOCKS = new Set([
   'yaml',
 ])
 
-const INLINES = new Set(['strong', 'emphasis', 'inlineCode', 'strikethrough', 'highlight', 'underline', 'link', 'image', 'inlineMath'])
+const INLINES = new Set([
+  'strong',
+  'emphasis',
+  'inlineCode',
+  'strikethrough',
+  'highlight',
+  'underline',
+  'link',
+  'image',
+  'inlineMath',
+])
 
 export function domPointToOffset(root: HTMLElement, node: Node | null, point: number): number | null {
   if (!node || !root.contains(node)) return null
@@ -129,4 +139,30 @@ export function isBlockType(type: string): boolean {
 
 export function isInlineType(type: string): boolean {
   return INLINES.has(type)
+}
+
+const FIND_HIGHLIGHT = 'v5-find'
+
+/** Paints the active find hit with the CSS Highlight API when the browser has one. */
+export function paintFindHighlight(root: HTMLElement, from: number, to: number): void {
+  const highlights = globalThis.CSS?.highlights
+  if (!highlights || typeof Highlight === 'undefined') return
+  const start = offsetToDomPoint(root, from)
+  const end = offsetToDomPoint(root, to)
+  if (!start || !end || from === to) {
+    highlights.delete(FIND_HIGHLIGHT)
+    return
+  }
+  const range = document.createRange()
+  try {
+    range.setStart(start.node, start.offset)
+    range.setEnd(end.node, end.offset)
+    highlights.set(FIND_HIGHLIGHT, new Highlight(range))
+  } catch {
+    highlights.delete(FIND_HIGHLIGHT)
+  }
+}
+
+export function clearFindHighlight(): void {
+  globalThis.CSS?.highlights?.delete(FIND_HIGHLIGHT)
 }

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { applySlashCommand, convertTopLevelBlock, createState, moveTopLevelBlock, parse, redo, undo } from '../src/index.js'
+import {
+  applySlashCommand,
+  convertTopLevelBlock,
+  createState,
+  moveTopLevelBlock,
+  parse,
+  redo,
+  undo,
+} from '../src/index.js'
 
 describe('top-level Markdown block moves', () => {
   it('moves an entire list with one undo step and restores the caret', () => {

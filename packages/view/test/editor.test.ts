@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from '@v5md/core'
-import { applyChrome } from '../src/selection.ts'
-import { renderDocument } from '../src/render.ts'
-import { Editor } from '../src/editor.ts'
-import { htmlToMarkdown } from '../src/html-to-md.ts'
+import { applyChrome } from '../src/editor/selection.ts'
+import { renderDocument } from '../src/editor/render.ts'
+import { Editor } from '../src/editor/editor.ts'
+import { htmlToMarkdown } from '../src/convert/html-to-md.ts'
 
 function draw(doc: string, head = 0) {
   const element = document.createElement('div')
@@ -128,10 +128,14 @@ describe('block chrome', () => {
     document.body.append(element)
     const editor = new Editor({ element })
     for (const char of '/h1') {
-      element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: char, bubbles: true, cancelable: true }))
+      element.dispatchEvent(
+        new InputEvent('beforeinput', { inputType: 'insertText', data: char, bubbles: true, cancelable: true }),
+      )
     }
     expect(element.querySelector('.v5-slash-menu')).not.toBeNull()
-    const option = [...element.querySelectorAll<HTMLButtonElement>('.v5-slash-menu button')].find(button => button.textContent?.includes('标题 1'))
+    const option = [...element.querySelectorAll<HTMLButtonElement>('.v5-slash-menu button')].find((button) =>
+      button.textContent?.includes('标题 1'),
+    )
     option?.click()
     expect(editor.getMarkdown()).toBe('# ')
     editor.undo()
@@ -144,11 +148,15 @@ describe('block chrome', () => {
     document.body.append(element)
     const editor = new Editor({ element, value: '```\n\n```' })
     editor.focusAt(4)
-    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: '/', bubbles: true, cancelable: true }))
+    element.dispatchEvent(
+      new InputEvent('beforeinput', { inputType: 'insertText', data: '/', bubbles: true, cancelable: true }),
+    )
     expect(element.querySelector('.v5-slash-menu')).toBeNull()
     editor.setMarkdown('')
     element.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
-    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertCompositionText', data: '/', bubbles: true, cancelable: true }))
+    element.dispatchEvent(
+      new InputEvent('beforeinput', { inputType: 'insertCompositionText', data: '/', bubbles: true, cancelable: true }),
+    )
     expect(element.querySelector('.v5-slash-menu')).toBeNull()
     const committed = new CompositionEvent('compositionend', { bubbles: true })
     Object.defineProperty(committed, 'data', { value: '/' })
@@ -173,7 +181,9 @@ describe('block chrome', () => {
 
     open()
     element.querySelector('.v5-block-handle')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    element.querySelector('[data-block-action="paragraph"]')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    element
+      .querySelector('[data-block-action="paragraph"]')
+      ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     expect(element.querySelector('.v5-block-menu')).not.toBeNull()
     element.querySelector<HTMLButtonElement>('[data-block-action="paragraph"]')?.click()
     expect(editor.getMarkdown()).toBe('Title\n\nTail')
@@ -209,7 +219,9 @@ describe('image picking', () => {
     const editor = new Editor({ element, value: 'note' })
     const input = element.querySelector<HTMLInputElement>('input[type="file"]')!
     let opened = false
-    input.addEventListener('click', () => { opened = true })
+    input.addEventListener('click', () => {
+      opened = true
+    })
     element.querySelector<HTMLButtonElement>('button[data-command="image"]')?.click()
     expect(opened).toBe(true)
     editor.destroy()
@@ -219,10 +231,18 @@ describe('image picking', () => {
     const element = document.createElement('div')
     document.body.append(element)
     let picked = 0
-    const editor = new Editor({ element, value: 'note', onPickImage: () => { picked += 1 } })
+    const editor = new Editor({
+      element,
+      value: 'note',
+      onPickImage: () => {
+        picked += 1
+      },
+    })
     const input = element.querySelector<HTMLInputElement>('input[type="file"]')!
     let opened = false
-    input.addEventListener('click', () => { opened = true })
+    input.addEventListener('click', () => {
+      opened = true
+    })
     element.querySelector<HTMLButtonElement>('button[data-command="image"]')?.click()
     expect(picked).toBe(1)
     expect(opened).toBe(false)
@@ -248,9 +268,13 @@ describe('async uploads', () => {
     let finish!: (url: string) => void
     const seen: string[] = []
     const editor = new Editor({
-      element, value: 'old note',
-      onUploadImage: () => new Promise(resolve => { finish = resolve }),
-      onChange: markdown => seen.push(markdown),
+      element,
+      value: 'old note',
+      onUploadImage: () =>
+        new Promise((resolve) => {
+          finish = resolve
+        }),
+      onChange: (markdown) => seen.push(markdown),
     })
     editor.insertImageFile(new File(['a'], 'picture.png', { type: 'image/png' }))
     editor.destroy()
@@ -369,7 +393,8 @@ describe('Editor', () => {
     Object.defineProperty(event, 'clipboardData', {
       value: {
         files: [],
-        getData: (type: string) => (type === 'text/html' ? '<pre>---\ntitle: 示例\n---</pre>' : '---\ntitle: 示例\n---'),
+        getData: (type: string) =>
+          type === 'text/html' ? '<pre>---\ntitle: 示例\n---</pre>' : '---\ntitle: 示例\n---',
       },
     })
     element.dispatchEvent(event)
@@ -414,7 +439,8 @@ describe('Editor', () => {
     const doc = '* 无效列表1\n* 无效列表2\n* 无效列表3'
     const editor = new Editor({ element, value: doc })
     editor.focusAt(doc.length)
-    const enter = () => element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    const enter = () =>
+      element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     enter()
     expect(editor.getMarkdown()).toBe(doc + '\n* ')
     enter()
@@ -433,7 +459,8 @@ describe('Editor', () => {
     const doc = '* a\n* b\n* c'
     const editor = new Editor({ element, value: doc })
     editor.focusAt(doc.indexOf('b') + 1)
-    const enter = () => element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    const enter = () =>
+      element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     enter()
     expect(editor.getMarkdown()).toBe('* a\n* b\n* \n* c')
     enter()
@@ -512,7 +539,9 @@ describe('Editor', () => {
     expect(image?.style.height).toBe('auto')
     image?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
     expect(element.querySelector('.v5-image')?.classList.contains('v5-source-visible')).toBe(false)
-    element.querySelector('.v5-image-resize')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 10, pointerId: 2 }))
+    element
+      .querySelector('.v5-image-resize')
+      ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 10, pointerId: 2 }))
     document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 80, pointerId: 2 }))
     expect(editor.getMarkdown()).toBe(doc)
     editor.destroy()
@@ -542,7 +571,9 @@ describe('Editor', () => {
     })
     element.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', metaKey: true, bubbles: true, cancelable: true }))
     element.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', ctrlKey: true, bubbles: true, cancelable: true }))
-    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', metaKey: true, shiftKey: true, bubbles: true, cancelable: true }))
+    element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'h', metaKey: true, shiftKey: true, bubbles: true, cancelable: true }),
+    )
     expect(requests).toEqual(['find', 'replace'])
     expect(element.querySelector('.v5md-find')).toBeNull()
     expect(editor.getMarkdown()).toContain('==')
@@ -564,7 +595,9 @@ describe('Editor', () => {
     const surface = element.querySelector('.v5-doc')
     expect(element.classList.contains('v5-preview')).toBe(true)
     expect(surface?.getAttribute('contenteditable')).toBe('false')
-    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }))
+    element.dispatchEvent(
+      new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }),
+    )
     element.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', metaKey: true, bubbles: true, cancelable: true }))
     element.querySelector('[data-block]')?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
     expect(editor.getMarkdown()).toBe('hello')
@@ -573,7 +606,9 @@ describe('Editor', () => {
     expect(requests).toEqual(['find'])
     editor.setEditable(true)
     expect(surface?.getAttribute('contenteditable')).toBe('true')
-    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }))
+    element.dispatchEvent(
+      new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }),
+    )
     expect(editor.getMarkdown()).toBe('xhello')
     editor.destroy()
   })
@@ -591,9 +626,8 @@ describe('Editor', () => {
       },
     })
     const toggle = (index: number) => {
-      element
-        .querySelectorAll<HTMLButtonElement>('.v5-check')[index]
-        .dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+      const check = element.querySelectorAll<HTMLButtonElement>('.v5-check')[index]
+      check.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     }
     toggle(0)
     expect(editor.getMarkdown()).toBe('- [x] 待办\n- [x] 完成\n')
@@ -664,7 +698,11 @@ describe('Editor', () => {
     expect(element.querySelectorAll('.v5-toolbar button')).toHaveLength(21)
     expect(element.querySelector('[aria-label="一级标题"]')).not.toBeNull()
     expect(element.querySelector('[aria-label="插入图片文件"]')).not.toBeNull()
-    expect([...element.querySelectorAll('.v5-toolbar button')].some((button) => button.getAttribute('aria-label')?.includes('Ctrl'))).toBe(false)
+    expect(
+      [...element.querySelectorAll('.v5-toolbar button')].some((button) =>
+        button.getAttribute('aria-label')?.includes('Ctrl'),
+      ),
+    ).toBe(false)
     expect(element.querySelector('.v5-outline')?.textContent).toContain('标题')
     editor.focusAt(editor.getMarkdown().indexOf('正文'))
     element.querySelector<HTMLButtonElement>('[data-command="heading2"]')?.click()
@@ -684,7 +722,9 @@ describe('Editor', () => {
     const element = document.createElement('div')
     document.body.append(element)
     const editor = new Editor({ element, value: '# 甲\n\n段落\n\n## 乙\n\n后文\n' })
-    const button = [...element.querySelectorAll<HTMLButtonElement>('.v5-outline button')].find((item) => item.textContent === '乙')
+    const button = [...element.querySelectorAll<HTMLButtonElement>('.v5-outline button')].find(
+      (item) => item.textContent === '乙',
+    )
     button?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     expect(element.querySelector('h2')?.classList.contains('v5-active')).toBe(true)
     expect(element.querySelector('h1')?.classList.contains('v5-active')).toBe(false)
@@ -704,8 +744,12 @@ describe('source mode', () => {
     const lines = [...element.querySelectorAll<HTMLElement>('.v5-source-line')]
     expect(lines).toHaveLength(4)
     expect(lines.map((line) => line.dataset.line)).toEqual(['1', '2', '3', '4'])
-    expect([...element.querySelectorAll('.v5-source-number')].map((item) => item.textContent))
-      .toEqual(['1', '2', '3', '4'])
+    expect([...element.querySelectorAll('.v5-source-number')].map((item) => item.textContent)).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+    ])
     expect(element.querySelector('.v5-md-heading')?.textContent).toBe('标题')
     expect(element.querySelector('.v5-md-strong')?.textContent).toBe('粗体')
     expect(element.querySelector('.v5-md-inline-code')?.textContent).toBe('代码')
@@ -740,9 +784,12 @@ describe('source mode', () => {
     const editor = new Editor({ element, value: '# 标题\n\n第二行\n' })
     editor.setSourceMode(true)
     editor.focusAt(2)
-    element.querySelectorAll<HTMLElement>('.v5-source-number')[2]
+    element
+      .querySelectorAll<HTMLElement>('.v5-source-number')[2]
       ?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
-    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'X', bubbles: true, cancelable: true }))
+    element.dispatchEvent(
+      new InputEvent('beforeinput', { inputType: 'insertText', data: 'X', bubbles: true, cancelable: true }),
+    )
     expect(editor.getMarkdown()).toBe('# 标题\n\nX第二行\n')
     editor.destroy()
   })
@@ -758,7 +805,9 @@ describe('source mode', () => {
       selection.setBaseAndExtent(first.firstChild, 2, first.firstChild, 2)
       document.dispatchEvent(new Event('selectionchange'))
     }
-    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'X', bubbles: true, cancelable: true }))
+    element.dispatchEvent(
+      new InputEvent('beforeinput', { inputType: 'insertText', data: 'X', bubbles: true, cancelable: true }),
+    )
     expect(editor.getMarkdown()).toBe('abX\ncd')
     editor.destroy()
   })
@@ -771,7 +820,9 @@ describe('source mode', () => {
     editor.focusAt(1)
     element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(editor.getMarkdown()).toBe('a\n\nb')
-    element.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }))
+    element.dispatchEvent(
+      new InputEvent('beforeinput', { inputType: 'insertText', data: 'x', bubbles: true, cancelable: true }),
+    )
     expect(editor.getMarkdown()).toBe('a\nx\nb')
     expect(element.querySelectorAll('.v5-source-line')).toHaveLength(3)
     editor.destroy()
@@ -786,7 +837,11 @@ describe('source mode', () => {
     let copied = ''
     const event = new Event('copy', { bubbles: true, cancelable: true })
     Object.defineProperty(event, 'clipboardData', {
-      value: { setData: (_type: string, value: string) => { copied = value } },
+      value: {
+        setData: (_type: string, value: string) => {
+          copied = value
+        },
+      },
     })
     element.dispatchEvent(event)
     expect(copied).toBe('# ')
@@ -811,10 +866,11 @@ describe('style isolation', () => {
   it('only emits namespaced class names', () => {
     const element = document.createElement('div')
     document.body.append(element)
-    const doc = '# 标题\n\n段落 **粗体** 和 `代码`\n\n- [x] 待办\n\n> 引用\n\n![图](sample.svg)\n\n```ts\nconst answer = 1\n```\n'
+    const doc =
+      '# 标题\n\n段落 **粗体** 和 `代码`\n\n- [x] 待办\n\n> 引用\n\n![图](sample.svg)\n\n```ts\nconst answer = 1\n```\n'
     const editor = new Editor({ element, value: doc })
     editor.focusAt(doc.indexOf('粗体'))
-    // hljs- 是 lowlight 产出的第三方类名，其余类名都归 v5- 命名空间所有。
+    // hljs- classes come from lowlight; every other class belongs to the v5- namespace.
     const mine = (name: string) => name.startsWith('v5') || name.startsWith('hljs-')
     const rich = [...element.querySelectorAll<HTMLElement>('*')].flatMap((node) => [...node.classList])
     expect(rich.length).toBeGreaterThan(10)

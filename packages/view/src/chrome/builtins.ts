@@ -1,17 +1,15 @@
 import type { FormatCommand } from '@v5md/core'
-import type { Editor } from './editor.js'
-import type { ToolbarItemView, V5mdCommand, V5mdPluginState } from './plugin.js'
+import type { Editor } from '../editor/editor.js'
+import type { ToolbarItemView, V5mdCommand, V5mdPluginState } from '../plugin.js'
 import type { ToolbarCommand } from './toolbar.js'
 
-const svg = (inner: string) =>
-  `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">${inner}</svg>`
+const svg = (inner: string) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">${inner}</svg>`
 
 const glyph = (text: string, className = 'v5-svg-text v5-svg-serif') =>
   svg(`<text class="${className}" x="12" y="16.2" text-anchor="middle">${text}</text>`)
 
 const hasType = (state: V5mdPluginState, type: string) => state.path.some((node) => node.type === type)
-const lastType = (state: V5mdPluginState, type: string) =>
-  [...state.path].reverse().find((node) => node.type === type)
+const lastType = (state: V5mdPluginState, type: string) => [...state.path].reverse().find((node) => node.type === type)
 const headingDepth = (state: V5mdPluginState) => lastType(state, 'heading')?.depth
 const activeList = (state: V5mdPluginState) => {
   const list = lastType(state, 'list')
@@ -77,7 +75,9 @@ export const BUILTIN_TOOLBAR_ITEMS: readonly ToolbarItemView[] = [
     id: 'table',
     command: 'table',
     label: '插入表格',
-    icon: svg('<rect x="3.5" y="4.5" width="17" height="15" rx="1.6"/><path d="M3.5 9.5h17M3.5 14.5h17M9.2 4.5v15M14.8 4.5v15"/>'),
+    icon: svg(
+      '<rect x="3.5" y="4.5" width="17" height="15" rx="1.6"/><path d="M3.5 9.5h17M3.5 14.5h17M9.2 4.5v15M14.8 4.5v15"/>',
+    ),
     group: 'block',
     order: 20,
     type: 'action',
@@ -86,7 +86,9 @@ export const BUILTIN_TOOLBAR_ITEMS: readonly ToolbarItemView[] = [
     id: 'image',
     command: 'image',
     label: '插入图片文件',
-    icon: svg('<rect x="3.5" y="5" width="17" height="14" rx="1.8"/><circle cx="8.2" cy="9.2" r="1.35" fill="currentColor" stroke="none"/><path d="m4 16.2 4.1-3.6 2.5 2.1 2.3-1.9L20 16.6"/>'),
+    icon: svg(
+      '<rect x="3.5" y="5" width="17" height="14" rx="1.8"/><circle cx="8.2" cy="9.2" r="1.35" fill="currentColor" stroke="none"/><path d="m4 16.2 4.1-3.6 2.5 2.1 2.3-1.9L20 16.6"/>',
+    ),
     group: 'block',
     order: 30,
     type: 'action',
@@ -119,7 +121,9 @@ export const BUILTIN_TOOLBAR_ITEMS: readonly ToolbarItemView[] = [
     id: 'taskList',
     command: 'taskList',
     label: '任务列表',
-    icon: svg('<rect x="3.4" y="4.6" width="6.2" height="6.2" rx="1.3"/><path d="m4.7 7.7 1.35 1.35 2.15-2.3"/><path d="M12.2 7.7h8.2"/><rect x="3.4" y="13.2" width="6.2" height="6.2" rx="1.3"/><path d="M12.2 16.3h8.2"/>'),
+    icon: svg(
+      '<rect x="3.4" y="4.6" width="6.2" height="6.2" rx="1.3"/><path d="m4.7 7.7 1.35 1.35 2.15-2.3"/><path d="M12.2 7.7h8.2"/><rect x="3.4" y="13.2" width="6.2" height="6.2" rx="1.3"/><path d="M12.2 16.3h8.2"/>',
+    ),
     group: 'list',
     order: 30,
     type: 'toggle',
@@ -178,7 +182,9 @@ export const BUILTIN_TOOLBAR_ITEMS: readonly ToolbarItemView[] = [
     id: 'link',
     command: 'link',
     label: '超链接',
-    icon: svg('<path d="m9.2 14.8 5.6-5.6"/><path d="M10.4 7.6 11.7 6.3a3.1 3.1 0 0 1 4.4 4.4l-1.3 1.3"/><path d="M13.6 16.4 12.3 17.7a3.1 3.1 0 0 1-4.4-4.4l1.3-1.3"/>'),
+    icon: svg(
+      '<path d="m9.2 14.8 5.6-5.6"/><path d="M10.4 7.6 11.7 6.3a3.1 3.1 0 0 1 4.4 4.4l-1.3 1.3"/><path d="M13.6 16.4 12.3 17.7a3.1 3.1 0 0 1-4.4-4.4l1.3-1.3"/>',
+    ),
     group: 'insert',
     order: 20,
     type: 'action',
@@ -225,7 +231,9 @@ export const BUILTIN_TOOLBAR_ITEMS: readonly ToolbarItemView[] = [
     id: 'underline',
     command: 'underline',
     label: '下划线',
-    icon: svg('<text class="v5-svg-text v5-svg-serif" x="12" y="15.2" text-anchor="middle">U</text><path d="M7.2 18.4h9.6"/>'),
+    icon: svg(
+      '<text class="v5-svg-text v5-svg-serif" x="12" y="15.2" text-anchor="middle">U</text><path d="M7.2 18.4h9.6"/>',
+    ),
     group: 'inline',
     order: 40,
     type: 'toggle',
@@ -245,7 +253,9 @@ export const BUILTIN_TOOLBAR_ITEMS: readonly ToolbarItemView[] = [
     id: 'strike',
     command: 'strike',
     label: '删除线',
-    icon: svg('<text class="v5-svg-text v5-svg-serif" x="12" y="16.4" text-anchor="middle">S</text><path d="M6.2 12h11.6"/>'),
+    icon: svg(
+      '<text class="v5-svg-text v5-svg-serif" x="12" y="16.4" text-anchor="middle">S</text><path d="M6.2 12h11.6"/>',
+    ),
     group: 'inline',
     order: 60,
     type: 'toggle',
@@ -255,7 +265,9 @@ export const BUILTIN_TOOLBAR_ITEMS: readonly ToolbarItemView[] = [
     id: 'highlight',
     command: 'highlight',
     label: '高亮',
-    icon: svg('<path d="M12 3.2a4.6 4.6 0 0 0-2.55 8.45c.45.35.75.9.75 1.5V14h3.6v-.85c0-.6.3-1.15.75-1.5A4.6 4.6 0 0 0 12 3.2Z"/><path d="M9.6 16.2h4.8M10.2 18.2h3.6"/>'),
+    icon: svg(
+      '<path d="M12 3.2a4.6 4.6 0 0 0-2.55 8.45c.45.35.75.9.75 1.5V14h3.6v-.85c0-.6.3-1.15.75-1.5A4.6 4.6 0 0 0 12 3.2Z"/><path d="M9.6 16.2h4.8M10.2 18.2h3.6"/>',
+    ),
     group: 'inline',
     order: 70,
     type: 'toggle',
@@ -265,7 +277,9 @@ export const BUILTIN_TOOLBAR_ITEMS: readonly ToolbarItemView[] = [
     id: 'wechat',
     command: 'wechat',
     label: '复制到公众号',
-    icon: svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/>'),
+    icon: svg(
+      '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/>',
+    ),
     group: 'action',
     order: 10,
     type: 'action',

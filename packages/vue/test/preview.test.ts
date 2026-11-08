@@ -21,9 +21,9 @@ describe('@v5md/vue preview', () => {
     await nextTick()
     expect(host.querySelector<HTMLButtonElement>('.v5-check')?.dataset.checked).toBe('false')
 
-    host.querySelector<HTMLButtonElement>('.v5-check')?.dispatchEvent(
-      new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
-    )
+    host
+      .querySelector<HTMLButtonElement>('.v5-check')
+      ?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     await nextTick()
     expect(markdown.value).toBe('- [x] 待办\n')
     expect(host.querySelector<HTMLButtonElement>('.v5-check')?.dataset.checked).toBe('true')

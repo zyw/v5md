@@ -19,13 +19,7 @@ interface Positioned {
   }
 }
 
-const EDGE_MARKER_PARENTS = new Set<NodeType>([
-  'heading',
-  'strong',
-  'emphasis',
-  'link',
-  'strikethrough',
-])
+const EDGE_MARKER_PARENTS = new Set<NodeType>(['heading', 'strong', 'emphasis', 'link', 'strikethrough'])
 
 export interface OutlineEntry {
   depth: number
@@ -96,12 +90,7 @@ function fillBlankLines(node: MdNode, doc: string): void {
   node.children = next
 }
 
-function blankParagraphs(
-  doc: string,
-  start: number,
-  end: number,
-  edge: 'between' | 'trailing',
-): MdNode[] {
+function blankParagraphs(doc: string, start: number, end: number, edge: 'between' | 'trailing'): MdNode[] {
   const raw = doc.slice(start, end)
   if (!/^\n+$/.test(raw)) return []
   const count = edge === 'trailing' ? Math.max(0, raw.length - 1) : Math.max(0, raw.length - 2)
@@ -150,10 +139,7 @@ function childContaining(node: MdNode, offset: number, docLength: number): MdNod
   const matches = node.children.filter((child) => containsOffset(child, offset, docLength))
   if (matches.length === 0) return undefined
   if (matches.length === 1) return matches[0]
-  return (
-    matches.find((child) => offset < child.end || child.start === child.end) ??
-    matches[matches.length - 1]
-  )
+  return matches.find((child) => offset < child.end || child.start === child.end) ?? matches[matches.length - 1]
 }
 
 function convertNode(node: Nodes, doc: string): MdNode {
@@ -215,12 +201,7 @@ function convertNode(node: Nodes, doc: string): MdNode {
   }
 }
 
-function convertParent(
-  node: Parents,
-  doc: string,
-  type: NodeType,
-  extra: Partial<MdNode> = {},
-): MdNode {
+function convertParent(node: Parents, doc: string, type: NodeType, extra: Partial<MdNode> = {}): MdNode {
   const { start, end } = offsets(node)
   const parent: MdNode = { type, start, end, children: [], ...extra }
   let cursor = start
@@ -293,13 +274,7 @@ function quoteGap(raw: string, start: number): MdNode[] {
   return nodes
 }
 
-function gapNodes(
-  parentType: NodeType,
-  doc: string,
-  start: number,
-  end: number,
-  atStart: boolean,
-): MdNode[] {
+function gapNodes(parentType: NodeType, doc: string, start: number, end: number, atStart: boolean): MdNode[] {
   const raw = doc.slice(start, end)
   if (raw.length === 0) return []
   if (parentType === 'root' || parentType === 'list') return []
@@ -379,7 +354,13 @@ function convertCode(node: Code, doc: string): MdNode {
 
 function convertImage(node: Image, doc: string): MdNode {
   const whole = convertWhole(node, doc, 'image')
-  return { ...whole, url: node.url, alt: node.alt ?? '', title: node.title, ...readImageSize(doc.slice(whole.start, whole.end)) }
+  return {
+    ...whole,
+    url: node.url,
+    alt: node.alt ?? '',
+    title: node.title,
+    ...readImageSize(doc.slice(whole.start, whole.end)),
+  }
 }
 
 const SIZED_IMAGE = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\s+=([1-9]\d*)x(\d*)\)/
@@ -402,8 +383,17 @@ function readImageSize(source: string): { width?: number; height?: number } {
 }
 
 function liftSizedImages(node: MdNode, doc: string): void {
-  if (node.type === 'code' || node.type === 'inlineCode' || node.type === 'html' || node.type === 'math' || node.type === 'inlineMath' || node.type === 'yaml' || node.type === 'image') return
-  node.children = node.children.flatMap((child) => child.type === 'text' ? splitSizedImages(child, doc) : [child])
+  if (
+    node.type === 'code' ||
+    node.type === 'inlineCode' ||
+    node.type === 'html' ||
+    node.type === 'math' ||
+    node.type === 'inlineMath' ||
+    node.type === 'yaml' ||
+    node.type === 'image'
+  )
+    return
+  node.children = node.children.flatMap((child) => (child.type === 'text' ? splitSizedImages(child, doc) : [child]))
   node.children.forEach((child) => liftSizedImages(child, doc))
 }
 
@@ -643,4 +633,13 @@ function splitHighlight(node: MdNode): MdNode[] {
 export function nodeText(node: MdNode): string {
   if (node.type === 'text' || node.type === 'marker') return node.text ?? ''
   return node.children.map(nodeText).join('')
+}
+
+export function findNode(node: MdNode, test: (node: MdNode) => boolean): MdNode | undefined {
+  if (test(node)) return node
+  for (const child of node.children) {
+    const found = findNode(child, test)
+    if (found) return found
+  }
+  return undefined
 }

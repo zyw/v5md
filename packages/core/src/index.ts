@@ -13,37 +13,21 @@ export { caret, normalizeNewlines, sortedRange } from './types.js'
 export { containsOffset, emptyParagraph, nodeText, outline, parse, pathAt, plainText } from './parse.js'
 export type { OutlineEntry } from './parse.js'
 export type { FindHit, FindListItem, FindOptions, FindQueryResult } from './find.js'
-export { listMatches } from './find.js'
-export type { FormatCommand, TableCommand } from './edit.js'
-export type { SlashCommand } from './edit.js'
-export type { BlockType } from './edit.js'
+export { findInState, findMatch, listMatches, replaceAllMatches, replaceAllText, replaceCurrentMatch } from './find.js'
+export type { FormatCommand } from './format.js'
+export { formatBlock, resizeImage, toggleMark, toggleUnderline } from './format.js'
+export type { BlockType, SlashCommand } from './block.js'
 export {
   applySlashCommand,
   convertTopLevelBlock,
-  createState,
-  deleteBackward,
-  deleteForward,
-  findInState,
-  findMatch,
   indent,
   insertSoftBreak,
-  insertText,
-  replaceRange,
-  editTable,
-  formatBlock,
-  moveTableCaret,
   moveTopLevelBlock,
-  nextBoundary,
   outdent,
-  previousBoundary,
-  redo,
-  replaceAllMatches,
-  resizeImage,
-  replaceAllText,
-  replaceCurrentMatch,
   splitBlock,
-  toggleMark,
   toggleTask,
-  toggleUnderline,
-  undo,
-} from './edit.js'
+} from './block.js'
+export { createState, redo, undo } from './history.js'
+export type { TableCommand } from './table.js'
+export { editTable, moveTableCaret } from './table.js'
+export { deleteBackward, deleteForward, insertText, nextBoundary, previousBoundary, replaceRange } from './text.js'

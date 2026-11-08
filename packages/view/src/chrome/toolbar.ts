@@ -1,4 +1,4 @@
-import type { ToolbarItemView } from './plugin.js'
+import type { ToolbarItemView } from '../plugin.js'
 import { BUILTIN_TOOLBAR_ITEMS } from './builtins.js'
 
 export type ToolbarCommand =

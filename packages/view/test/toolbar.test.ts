@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ToolbarItemView } from '../src/plugin.ts'
-import { BUILTIN_TOOLBAR_ITEMS, createToolbarController } from '../src/toolbar.ts'
+import { BUILTIN_TOOLBAR_ITEMS, createToolbarController } from '../src/chrome/toolbar.ts'
 
 function controller() {
   const onCommand = vi.fn()

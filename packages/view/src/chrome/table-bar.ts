@@ -8,7 +8,12 @@ const COMMANDS: { command: TableCommand; label: string; icon: string; align?: st
   { command: 'insertRowAbove', label: '上方插入行', icon: arrow('M8 12.5V4.5M5.2 7.2 8 4.4l2.8 2.8') },
   { command: 'insertRowBelow', label: '下方插入行', icon: arrow('M8 3.5v8M5.2 8.8 8 11.6l2.8-2.8') },
   { command: 'deleteRow', label: '删除行', icon: arrow('M3.5 8h9') },
-  { command: 'insertColumnLeft', label: '左侧插入列', icon: arrow('M12 3.2v9.6M8.2 8H3.2M5.4 5.6 3.2 8l2.2 2.4'), gapBefore: true },
+  {
+    command: 'insertColumnLeft',
+    label: '左侧插入列',
+    icon: arrow('M12 3.2v9.6M8.2 8H3.2M5.4 5.6 3.2 8l2.2 2.4'),
+    gapBefore: true,
+  },
   { command: 'insertColumnRight', label: '右侧插入列', icon: arrow('M4 3.2v9.6M7.8 8h5M10.6 5.6 12.8 8l-2.2 2.4') },
   { command: 'deleteColumn', label: '删除列', icon: circleMinus },
   { command: 'alignLeft', label: '列左对齐', icon: align('M3 4h10M3 8h6.5M3 12h10'), align: 'left', gapBefore: true },
@@ -63,4 +68,16 @@ function arrow(path: string): string {
 
 function align(path: string): string {
   return `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${path}"/></svg>`
+}
+
+/** Places the bar above the table, or just below its top edge when the table starts at the top. */
+export function positionTableBar(bar: HTMLElement, table: Element, host: HTMLElement): void {
+  const hostRect = host.getBoundingClientRect()
+  const tableRect = table.getBoundingClientRect()
+  const height = bar.offsetHeight || 36
+  const above = tableRect.top - hostRect.top + host.scrollTop - height - 6
+  const top = above >= 4 ? above : tableRect.top - hostRect.top + host.scrollTop + 4
+  const left = Math.max(4, tableRect.left - hostRect.left + host.scrollLeft)
+  bar.style.top = `${top}px`
+  bar.style.left = `${left}px`
 }

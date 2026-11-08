@@ -1,14 +1,12 @@
 import { parse, type MdNode } from '@v5md/core'
-import { highlightSpans } from './highlight.js'
+import { highlightSpans } from '../editor/highlight.js'
 
 const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif"
 const MONO = "Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"
 const BODY = `font-family:${SANS};font-size:16px;line-height:1.75;color:#2c2c2c;word-break:break-word;`
 const PARAGRAPH = 'margin:0 0 16px;'
-const INLINE_CODE =
-  `margin:0 2px;padding:2px 5px;border-radius:4px;background:#f3f4f6;font-family:${MONO};font-size:14px;`
-const PRE =
-  `margin:16px 0;padding:14px 16px;border-radius:6px;background:#f6f8fa;overflow-x:auto;font-family:${MONO};font-size:14px;line-height:1.6;color:#2c2c2c;white-space:pre-wrap;word-break:break-word;`
+const INLINE_CODE = `margin:0 2px;padding:2px 5px;border-radius:4px;background:#f3f4f6;font-family:${MONO};font-size:14px;`
+const PRE = `margin:16px 0;padding:14px 16px;border-radius:6px;background:#f6f8fa;overflow-x:auto;font-family:${MONO};font-size:14px;line-height:1.6;color:#2c2c2c;white-space:pre-wrap;word-break:break-word;`
 const CODE = `font-family:${MONO};font-size:14px;line-height:1.6;color:#2c2c2c;`
 const LINK = 'color:#1d4ed8;text-decoration:none;'
 
@@ -57,10 +55,7 @@ export interface WechatHtmlOptions {
 }
 
 export function toWechatHtml(markdown: string, options: WechatHtmlOptions = {}): string {
-  const body = parse(markdown)
-    .children.map(renderNode)
-    .filter(Boolean)
-    .join('')
+  const body = parse(markdown).children.map(renderNode).filter(Boolean).join('')
   const html = `<section style="${BODY}">${body}</section>`
   const baseUrl = options.baseUrl ?? (typeof document !== 'undefined' ? document.baseURI : undefined)
   return baseUrl ? resolveImageSources(html, baseUrl) : html
@@ -90,7 +85,7 @@ export async function copyRichText(html: string, text: string): Promise<boolean>
       ])
       return true
     } catch {
-      // Clipboard API 在非安全上下文或旧浏览器上不可用。
+      // The clipboard API is missing in insecure contexts and older browsers.
     }
   }
   return false
@@ -308,7 +303,12 @@ function renderTable(node: MdNode): string {
       .map((cell, column) => {
         const placement = align[column]
         const textAlign = placement ? `text-align:${placement};` : ''
-        const background = rowIndex === 0 ? 'background-color:#fff;' : rowIndex % 2 === 1 ? 'background-color:#f3f4f6;' : 'background-color:#fff;'
+        const background =
+          rowIndex === 0
+            ? 'background-color:#fff;'
+            : rowIndex % 2 === 1
+              ? 'background-color:#f3f4f6;'
+              : 'background-color:#fff;'
         const weight = cellTag === 'th' ? 'font-weight:700;' : ''
         const inner = renderChildren(cell).trim() || '&nbsp;'
         return `<${cellTag} style="border:1px solid #e5e7eb;padding:8px 12px;vertical-align:top;${textAlign}${background}${weight}">${inner}</${cellTag}>`
@@ -335,9 +335,5 @@ function rawText(node: MdNode): string {
 }
 
 function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }

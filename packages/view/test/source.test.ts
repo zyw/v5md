@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from '@v5md/core'
-import { markdownSpans, sourceLines } from '../src/source.ts'
+import { markdownSpans, sourceLines } from '../src/editor/source.ts'
 
 function spans(doc: string) {
   return markdownSpans(doc, parse(doc))

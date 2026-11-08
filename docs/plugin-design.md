@@ -6,7 +6,7 @@
 
 ## 1. 背景
 
-目前 `@v5md/view` 的工具条是固定实现：按钮列表写死在 `packages/view/src/toolbar.ts`，按钮对应的状态和动作写在 `packages/view/src/editor.ts`。这带来两个限制：
+目前 `@v5md/view` 的工具条是固定实现：按钮列表写死在 `packages/view/src/chrome/toolbar.ts`，按钮对应的状态和动作写在 `packages/view/src/editor/editor.ts`。这带来两个限制：
 
 1. 新增一个工具条按钮必须改 `@v5md/view` 本体；
 2. 导出 HTML、导出 PDF、导出图片、设置字号这类能力不一定需要按钮，但需要能被外部调用。
@@ -49,10 +49,10 @@
 
 ### 4.1 工具条
 
-- `packages/view/src/toolbar.ts` 的 `ITEMS` 是固定数组；
+- `packages/view/src/chrome/toolbar.ts` 的 `ITEMS` 是固定数组；
 - `ToolbarCommand` 是固定联合类型；
 - `createToolbar(onCommand, onImage, onPickImage)` 创建固定按钮；
-- `packages/view/src/editor.ts` 的 `mountChrome()` 创建工具条；
+- `packages/view/src/editor/editor.ts` 的 `mountChrome()` 创建工具条；
 - `runToolbar(command)` 用 switch 分发内置命令；
 - `syncToolbarState()` 用硬编码逻辑计算按钮的 `aria-pressed`。
 
@@ -647,8 +647,8 @@ typography.api.setFontSize(18)
 
 文件：
 
-- 修改 `packages/view/src/toolbar.ts`；
-- 修改 `packages/view/src/editor.ts`；
+- 修改 `packages/view/src/chrome/toolbar.ts`；
+- 修改 `packages/view/src/editor/editor.ts`；
 - 修改 `packages/view/test/editor.test.ts`。
 
 内容：
@@ -669,7 +669,7 @@ typography.api.setFontSize(18)
 
 文件：
 
-- 修改 `packages/view/src/editor.ts`；
+- 修改 `packages/view/src/editor/editor.ts`；
 - 修改 `packages/view/src/index.ts`；
 - 新增编辑器插件测试。
 
@@ -693,7 +693,7 @@ typography.api.setFontSize(18)
 文件：
 
 - 修改 `packages/view/src/plugin.ts`；
-- 修改 `packages/view/src/editor.ts`；
+- 修改 `packages/view/src/editor/editor.ts`；
 - 补充测试。
 
 内容：
@@ -755,8 +755,8 @@ typography.api.setFontSize(18)
 
 文件：
 
-- `packages/view/src/toolbar.ts`；
-- `packages/view/src/editor.ts`；
+- `packages/view/src/chrome/toolbar.ts`；
+- `packages/view/src/editor/editor.ts`；
 - 相关测试。
 
 内容：
@@ -787,7 +787,7 @@ typography.api.setFontSize(18)
 - 第 4 步：已完成，插件安装、卸载、`ready`、清理和销毁已接入；
 - 第 5 步：已完成，Vue / React 增加 `plugins` prop 并有封装测试；
 - 第 6 步：已完成，新增 `@v5md/plugin-typography`、`@v5md/plugin-export` 独立包；
-- 第 7 步：已完成，内置按钮和命令迁移到 `packages/view/src/builtins.ts`，与插件命令共用 `runCommand`；
+- 第 7 步：已完成，内置按钮和命令迁移到 `packages/view/src/chrome/builtins.ts`，与插件命令共用 `runCommand`；
 - 第 8 步：已完成，README 和两个 playground 都加入了插件示例。
 - 追加：`exportHtml()` 改为基于当前渲染 DOM，并收集主题/KaTeX 样式，保留公式和 Mermaid 渲染结果；图片会内联为 data URL；新增 `print()` 浏览器打印入口。
 - 追加：工具条支持溢出菜单，`use()` / `dispose()` 改为增量更新按钮，不再整条重建。

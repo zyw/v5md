@@ -71,7 +71,7 @@ describe('find and replace', () => {
       { from: 6, to: 11, index: 2, text: 'hello' },
     ])
     expect(listMatches('云笔记', '笔记', { wholeWord: true }).matches).toEqual([])
-    expect(listMatches('abc', '(' , { regexp: true }).error).toBe('正则无效')
+    expect(listMatches('abc', '(', { regexp: true }).error).toBe('正则无效')
   })
 
   it('wraps in both directions and stays on the current match when asked', () => {

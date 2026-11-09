@@ -8,7 +8,7 @@
 
 同一套编辑器可以嵌进 Vue 3 和 React，也可以直接挂到任意 DOM 元素上。不依赖框架、不接管你的数据流、不生成私有格式——存下来的就是标准 Markdown。
 
-当前版本 `0.0.2`，六个包都是 ESM（`"type": "module"`）。
+当前版本 `0.0.2`，六个包都已发布在 [npm 官方仓库](https://www.npmjs.com/package/@v5md/view)，并且都是 ESM（`"type": "module"`）。
 
 ## 目录
 
@@ -60,22 +60,35 @@
 
 ### 安装
 
-按技术栈选一个装，框架包会自动带上 `@v5md/view` 和 `@v5md/core`：
+从 npm 官方仓库安装，不需要登录，也不需要配置私有源。按用法选一个装。`pnpm`、`yarn` 换对应的安装命令即可，包名相同。
 
 ```bash
-# Vue 3
-npm install @v5md/vue
+# Vue 3。会同时装上 @v5md/view 和 @v5md/core
+npm install vue @v5md/vue
 
-# React
-npm install @v5md/react
+# React。同样会带上 view 和 core；react、react-dom 要自己装
+npm install react react-dom @v5md/react
 
 # 原生 JS / 其他框架
 npm install @v5md/view
+
+# 只解析 Markdown，不画页面
+npm install @v5md/core
+
+# 可选。字号、导出都要单独装，编辑器不会自带
+npm install @v5md/plugin-typography @v5md/plugin-export
 ```
 
-`@v5md/vue` 需要 `vue@^3.4`，`@v5md/react` 需要 `react` / `react-dom` 18 或 19（作为 peer dependency，不会重复安装）。
+| 包 | 什么时候装 |
+| --- | --- |
+| [`@v5md/vue`](https://www.npmjs.com/package/@v5md/vue) | Vue 3 项目。peer dependency 是 `vue@^3.4` |
+| [`@v5md/react`](https://www.npmjs.com/package/@v5md/react) | React 项目。peer dependency 是 `react`、`react-dom` 18 或 19 |
+| [`@v5md/view`](https://www.npmjs.com/package/@v5md/view) | 直接 `new Editor()`。框架包依赖它，一般不用再单独声明 |
+| [`@v5md/core`](https://www.npmjs.com/package/@v5md/core) | 只要 `parse`、大纲或编辑状态，不创建编辑器 |
+| [`@v5md/plugin-typography`](https://www.npmjs.com/package/@v5md/plugin-typography) | 要改正文字号 |
+| [`@v5md/plugin-export`](https://www.npmjs.com/package/@v5md/plugin-export) | 要导出 Markdown、HTML、PDF 或图片 |
 
-主题要单独引入，否则只有结构没有排版：
+主题要在业务代码里引入一次，否则只有结构没有排版：
 
 ```ts
 import '@v5md/view/theme.css'
@@ -83,7 +96,13 @@ import '@v5md/view/theme.css'
 
 KaTeX、lowlight、mermaid 随 `@v5md/view` 一起安装，不用额外处理；`katex/dist/katex.min.css` 由 `@v5md/view` 入口自动引入。
 
-如果公司内网用自己的 npm 仓库，配好 `@v5md` scope 的 registry 后照常 `npm install`，步骤见 [发布教程](发布教程.md)。
+本机 `~/.npmrc` 里如果写了 `@v5md:registry` 指向公司仓库，上面的安装会走那个地址，而不是 npmjs.org。使用官方仓库时删掉这一行。从公司仓库安装的步骤见 [发布教程](发布教程.md)。
+
+装好之后：
+
+1. 全站引入一次 `@v5md/view/theme.css`。
+2. Vue 用下一节的 `V5Editor` 和 `v-model`。React 用 `value` / `onChange`。其他框架用 `new Editor({ element })`。
+3. 要用字号或导出时，再安装对应插件，传给 `plugins` 或 `editor.use()`，见[插件](#插件)。
 
 ### Vue 3
 
@@ -296,6 +315,12 @@ outline.update(editor.getOutline())
 插件可以贡献三样东西：工具条按钮、供外部调用的命令、以及插件自己的 API。也可以只给其中一部分——比如只提供 API，不显示任何按钮。
 
 ### 官方插件
+
+两个插件都要单独安装，编辑器不会自带：
+
+```bash
+npm install @v5md/plugin-typography @v5md/plugin-export
+```
 
 | 包 | 作用 | 工具条按钮 |
 | --- | --- | --- |

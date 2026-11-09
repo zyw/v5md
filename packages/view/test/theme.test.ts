@@ -47,6 +47,14 @@ describe('theme isolation', () => {
     expect(CSS).not.toMatch(/\.(?:is-(?:active|source|source-mode|preview|composing|selected)|md-marker)(?![\w-])/)
   })
 
+  it('centres task checkboxes so the checked mark cannot move the line', () => {
+    // WebKit derives a button's baseline from its content, so baseline alignment
+    // pushed the box and the whole line down as soon as the ::after mark appeared.
+    const clean = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
+    const rule = /\.v5md \.v5-doc \.v5-check\s*\{([^}]*)\}/.exec(clean)?.[1] ?? ''
+    expect(rule).toContain('vertical-align: middle')
+  })
+
   it('keeps the editor shell square for embedding', () => {
     const clean = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
     const shell = /\.v5md \.v5-toolbar\s*\{([^}]*)\}/.exec(clean)?.[1] ?? ''

@@ -15,9 +15,10 @@
     "access": "public",
     "registry": "https://registry.npmjs.org"
   },
+  "homepage": "https://v5md.v5ai.xin",
   "repository": {
     "type": "git",
-    "url": "git+https://onedev.v5ai.xin/v5md.git",
+    "url": "git+https://github.com/zyw/v5md.git",
     "directory": "packages/vue"
   },
   "exports": {

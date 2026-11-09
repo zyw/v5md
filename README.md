@@ -638,7 +638,7 @@ npm run dev:vue     # http://localhost:5173
 npm run dev:react   # http://localhost:5174
 ```
 
-目录分层、命名、注释语言、提交信息等约定写在 [`CONTRIBUTING.md`](CONTRIBUTING.md)；打包与发布流程见 [`发布教程.md`](发布教程.md)。CI 在 GitHub Actions 上跑 lint、format:check、typecheck、build 和 test。
+目录分层、命名、注释语言、提交信息等约定写在 [`CONTRIBUTING.md`](CONTRIBUTING.md)；打包与发布流程见 [`发布教程.md`](发布教程.md)；版本说明见 [`CHANGELOG.md`](CHANGELOG.md)。CI 在 GitHub Actions 上跑 lint、format:check、typecheck、build 和 test。
 
 ## 许可
 

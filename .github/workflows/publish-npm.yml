@@ -1,0 +1,76 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+          scope: '@v5md'
+
+      - run: npm ci
+
+      - name: Check tag matches package versions
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          node <<'EOF'
+          const { readFileSync } = require('node:fs')
+
+          const tag = process.env.RELEASE_TAG.replace(/^v/, '')
+          const specs = [
+            ['packages/core/package.json', []],
+            ['packages/view/package.json', ['@v5md/core']],
+            ['packages/vue/package.json', ['@v5md/view']],
+            ['packages/react/package.json', ['@v5md/view']],
+            ['packages/plugins/typography/package.json', ['@v5md/view']],
+            ['packages/plugins/export/package.json', ['@v5md/view']],
+          ]
+
+          for (const [file, deps] of specs) {
+            const pkg = JSON.parse(readFileSync(file, 'utf8'))
+            if (pkg.version !== tag) {
+              console.error(`${file} version is ${pkg.version}, release tag is ${process.env.RELEASE_TAG}`)
+              process.exit(1)
+            }
+            for (const name of deps) {
+              const version = pkg.dependencies?.[name]
+              if (version !== tag) {
+                console.error(`${file} depends on ${name}@${version}, release tag is ${process.env.RELEASE_TAG}`)
+                process.exit(1)
+              }
+            }
+          }
+
+          console.log(`release ${process.env.RELEASE_TAG} matches package version ${tag}`)
+          EOF
+
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+
+      - name: Publish packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          NPM_CONFIG_TAG: ${{ github.event.release.prerelease && 'next' || 'latest' }}
+        run: npm run publish:npm

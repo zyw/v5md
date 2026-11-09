@@ -5,10 +5,11 @@
 提交前跑一遍，CI 会做同样的事：
 
 ```bash
-npm run lint        # eslint
+npm run typecheck     # tsc -b，按 tsconfig.json 的项目引用编译 6 个包
+npm run lint          # eslint
 npm run format:check  # prettier
-npm run build       # 6 个包依次 tsc
-npm test            # vitest，happy-dom 环境
+npm run build         # 逐包构建 dist（发布用，含主题内联）
+npm test              # vitest，happy-dom 环境
 ```
 
 格式化用 `npm run format`。仓库不在 git 里跟踪 `dist`，也不要在提交里带上它。
@@ -28,6 +29,16 @@ npm test            # vitest，happy-dom 环境
 - 2 空格、单引号、不加分号、行宽 120、trailing comma —— 由 `.prettierrc.json` 固定，不要手写去对齐。
 - 函数与变量用完整单词，不用 `data`、`tmp`、`handle2` 这类名字；布尔量以 `is/should/has` 开头，回调以动词开头。
 - 拆文件优先按「一个模块一件事」，其次才按行数。模块之间用明确的参数或回调通信，不互相读私有字段。
+
+## 测试
+
+- 测试只从包的公共入口导入（`../src/index.ts`、`../src/index`），这样重构内部文件不会连累测试。
+- 确实需要单测内部函数时（渲染、选区装饰、源码分词、快捷键表、工具条控制器），从该包 `test/internals.ts` 转出，不要直接在测试里写 `../src/某个内部文件`。换实现时只改这一个文件。
+- 断言行为优先于断言结构：能通过 `Editor` 的公共方法和 DOM 结果验证的，就不要去摸内部状态。
+
+## 主题
+
+`packages/view/src/theme/` 按组件拆分，`index.css` 用 `@import` 声明顺序；`npm run build -w @v5md/view` 会把它们内联成 `dist/theme.css`。新增样式文件时，同步 `index.css` 的顺序（后面的文件覆盖前面的）和 `theme.test.ts`。
 
 ## 注释
 

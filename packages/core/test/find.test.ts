@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { listMatches, runFind } from '../src/find.ts'
+import { listMatches } from '../src/index.ts'
+import { runFind } from './internals.ts'
 import { createState, findInState, replaceAllMatches, replaceCurrentMatch, undo } from '../src/index.ts'
 
 const caret = { anchor: 0, head: 0 }

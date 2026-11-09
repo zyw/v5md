@@ -1,0 +1,73 @@
+.v5md .v5-doc .v5-marker {
+  display: none;
+  color: #b4b4b4;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.v5md .v5-doc .v5-block.v5-active > .v5-marker,
+.v5md .v5-doc .v5-inline.v5-source-visible > .v5-marker {
+  display: inline;
+  white-space: pre-wrap;
+}
+
+.v5md .v5-doc li.v5-listitem.v5-block.v5-active .v5-marker {
+  display: none;
+}
+
+.v5md .v5-doc :is(h1, h2, h3, h4, h5, h6) > .v5-marker {
+  font-size: 0.55em;
+  letter-spacing: 0;
+}
+
+.v5md .v5-doc .v5-html {
+  color: #6b7280;
+  background: #fafafa;
+}
+
+.v5md .v5-doc .hljs-keyword,
+.v5md .v5-doc .hljs-selector-tag,
+.v5md .v5-doc .hljs-built_in {
+  color: #d73a49;
+}
+
+.v5md .v5-doc .hljs-string,
+.v5md .v5-doc .hljs-attr,
+.v5md .v5-doc .hljs-symbol {
+  color: #032f62;
+}
+
+.v5md .v5-doc .hljs-comment,
+.v5md .v5-doc .hljs-quote {
+  color: #6a737d;
+}
+
+.v5md .v5-doc .hljs-number,
+.v5md .v5-doc .hljs-literal,
+.v5md .v5-doc .hljs-bullet {
+  color: #005cc5;
+}
+
+.v5md .v5-doc .hljs-title,
+.v5md .v5-doc .hljs-section,
+.v5md .v5-doc .hljs-function {
+  color: #6f42c1;
+}
+
+.v5md .v5-doc .hljs-type,
+.v5md .v5-doc .hljs-params {
+  color: #e36209;
+}
+
+.v5md .v5-doc .hljs-name,
+.v5md .v5-doc .hljs-tag,
+.v5md .v5-doc .hljs-selector-class {
+  color: #22863a;
+}
+
+.v5md .v5-doc .hljs-meta,
+.v5md .v5-doc .hljs-variable {
+  color: #6f42c1;
+}

@@ -1,0 +1,223 @@
+/* Content elements carry their own text styles, so a host's global rules for p, li, td and friends cannot override them. */
+.v5md .v5-doc :is(p, li, dt, dd, figcaption, blockquote) {
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+  text-align: start;
+  text-transform: none;
+  text-indent: 0;
+  white-space: pre-wrap;
+}
+
+.v5md .v5-doc :is(td, th) {
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: pre-wrap;
+}
+
+.v5md .v5-doc :is(strong, em, u, del, mark, code) {
+  color: inherit;
+  font-family: inherit;
+  line-height: inherit;
+}
+
+.v5md .v5-doc strong {
+  font-weight: bolder;
+}
+
+.v5md .v5-doc em {
+  font-style: italic;
+}
+
+.v5md .v5-doc :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1.15em 0 0.45em;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  font-weight: 650;
+  font-style: normal;
+  line-height: 1.3;
+  letter-spacing: normal;
+  color: #1f1f1f;
+}
+
+.v5md .v5-doc h1 {
+  font-size: 1.9em;
+}
+.v5md .v5-doc h2 {
+  font-size: 1.5em;
+}
+
+.v5md .v5-doc h1,
+.v5md .v5-doc h2 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #e5e7eb;
+}
+.v5md .v5-doc h3 {
+  font-size: 1.25em;
+}
+.v5md .v5-doc h4,
+.v5md .v5-doc h5,
+.v5md .v5-doc h6 {
+  font-size: 1.05em;
+}
+
+.v5md .v5-doc p {
+  margin: 0.55em 0;
+}
+
+.v5md .v5-doc u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.v5md .v5-doc a {
+  color: #1d4ed8;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.v5md .v5-doc blockquote {
+  margin: 0.8em 0;
+  padding-left: 1em;
+  border-left: 4px solid #e5e7eb;
+  color: #4b5563;
+}
+
+.v5md .v5-doc blockquote > p {
+  display: inline;
+  margin: 0;
+}
+
+.v5md .v5-doc blockquote > p ~ p {
+  display: block;
+  margin-top: 0.4em;
+}
+
+.v5md .v5-doc ul,
+.v5md .v5-doc ol {
+  margin: 0.4em 0;
+  padding-left: 1.5em;
+}
+
+.v5md .v5-doc ul {
+  list-style: disc;
+}
+
+.v5md .v5-doc ol {
+  list-style: decimal;
+}
+
+.v5md .v5-doc li > .v5-item-text {
+  display: inline;
+  margin: 0;
+}
+
+.v5md .v5-doc li > .v5-marker {
+  vertical-align: baseline;
+}
+
+.v5md .v5-doc li.v5-task {
+  list-style: none;
+}
+
+.v5md .v5-doc .v5-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95em;
+  height: 0.95em;
+  margin: 0 0.45em 0 0;
+  padding: 0;
+  border: 1.5px solid #9ca3af;
+  border-radius: 3px;
+  background: #fff;
+  vertical-align: -0.1em;
+  cursor: pointer;
+}
+
+.v5md .v5-doc .v5-check[data-checked='true']::after {
+  content: '';
+  width: 0.28em;
+  height: 0.5em;
+  border: solid #1d4ed8;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.v5md .v5-doc .v5-table {
+  width: 100%;
+  margin: 0.9em 0;
+  border: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.v5md .v5-doc .v5-table th,
+.v5md .v5-doc .v5-table td {
+  border: 1px solid #e5e7eb;
+  padding: 0.4em 0.7em;
+  vertical-align: top;
+}
+
+.v5md .v5-doc .v5-table th {
+  background: #fff;
+  font-weight: 650;
+}
+
+.v5md .v5-doc .v5-table tbody tr:nth-child(odd) td {
+  background: #f3f4f6;
+}
+
+.v5md .v5-doc .v5-table tbody tr:nth-child(even) td {
+  background: #fff;
+}
+
+.v5md .v5-doc .v5-table .v5-marker,
+.v5md .v5-doc .v5-table .v5-block.v5-active > .v5-marker {
+  display: none;
+}
+
+.v5md .v5-doc del {
+  color: #6b7280;
+}
+
+.v5md .v5-doc mark {
+  background: #fef3c7;
+  color: inherit;
+}
+
+.v5md .v5-doc .v5-frontmatter {
+  margin: 0 0 1.1em;
+  padding: 0.7em 0.9em;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  white-space: pre-wrap;
+}
+
+.v5md .v5-doc .v5-math {
+  margin: 0.6em 0;
+}
+
+.v5md .v5-doc .v5-diagram {
+  overflow-x: auto;
+}
+
+.v5md .v5-doc .v5-mermaid:not(.v5-active) > code {
+  display: none;
+}
+
+.v5md .v5-doc .v5-mermaid.v5-active > .v5-diagram {
+  display: none;
+}

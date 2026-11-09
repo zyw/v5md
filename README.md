@@ -99,7 +99,7 @@ src/
 src/
 ├── index.ts              公共出口
 ├── plugin.ts             插件契约与注册表
-├── theme.css             主题，构建时复制到 dist
+├── theme/                主题，按组件拆成 10 个文件，构建时内联为 dist/theme.css
 ├── editor/               文档引擎
 │   ├── editor.ts           Editor：状态、渲染循环、输入分发、公共 API
 │   ├── keymap.ts           快捷键表与派发
@@ -135,6 +135,7 @@ src/
 
 ```bash
 npm install
+npm run typecheck
 npm run lint
 npm run format:check
 npm test
@@ -144,6 +145,7 @@ npm run build
 | 命令 | 作用 |
 | --- | --- |
 | `npm test` | 用 Vitest（happy-dom）跑各包的测试 |
+| `npm run typecheck` | 用 `tsc -b` 按项目引用检查并编译 6 个包 |
 | `npm run lint` | ESLint 检查（`npm run lint:fix` 自动修复） |
 | `npm run format` | Prettier 格式化；`format:check` 只检查不写入 |
 | `npm run build` | 按 core、view、vue、react、plugin-typography、plugin-export 的顺序编译到各自的 `dist` |

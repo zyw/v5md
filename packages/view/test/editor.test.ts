@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from '@v5md/core'
-import { applyChrome } from '../src/editor/selection.ts'
-import { renderDocument } from '../src/editor/render.ts'
-import { Editor } from '../src/editor/editor.ts'
-import { htmlToMarkdown } from '../src/convert/html-to-md.ts'
+import { Editor, htmlToMarkdown } from '../src/index.ts'
+import { applyChrome, renderDocument } from './internals.ts'
 
 function draw(doc: string, head = 0) {
   const element = document.createElement('div')

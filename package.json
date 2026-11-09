@@ -11,6 +11,7 @@
   "scripts": {
     "build": "npm run build -w @v5md/core && npm run build -w @v5md/view && npm run build -w @v5md/vue && npm run build -w @v5md/react && npm run build -w @v5md/plugin-typography && npm run build -w @v5md/plugin-export",
     "test": "vitest run",
+    "typecheck": "tsc -b",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

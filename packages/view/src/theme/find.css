@@ -1,0 +1,36 @@
+.v5md .v5md-find {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 12px 36px 0;
+  white-space: normal;
+}
+
+.v5md .v5md-find[hidden] {
+  display: none;
+}
+
+.v5md .v5md-find input,
+.v5md .v5md-find button {
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f1f1f;
+  font: inherit;
+  font-size: 13px;
+}
+
+.v5md .v5md-find input {
+  width: 140px;
+  padding: 6px 8px;
+}
+
+.v5md .v5md-find button {
+  padding: 6px 10px;
+  cursor: pointer;
+}

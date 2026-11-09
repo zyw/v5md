@@ -2,7 +2,14 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const CSS = readFileSync(path.resolve(process.cwd(), 'packages/view/src/theme.css'), 'utf8')
+const THEME_DIR = path.resolve(process.cwd(), 'packages/view/src/theme')
+
+const IMPORT = /@import\s+['"]\.\/([^'"]+)['"];?/g
+
+const readTheme = (file = 'index.css'): string =>
+  readFileSync(path.join(THEME_DIR, file), 'utf8').replace(IMPORT, (_, name: string) => readTheme(name))
+
+const CSS = readTheme()
 
 /** Splits a selector list while keeping commas inside :is()/:not() intact. */
 function splitSelectors(head: string): string[] {

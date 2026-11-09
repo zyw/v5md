@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { runShortcut, type KeymapHost } from '../src/editor/keymap.js'
+import { runShortcut, type KeymapHost } from './internals.ts'
 
 interface Recorder {
   host: KeymapHost

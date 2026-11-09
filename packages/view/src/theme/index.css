@@ -1,0 +1,15 @@
+/*
+ * Theme entry. Files are inlined in this order by scripts/build-theme.mjs, so
+ * the published package still ships a single dist/theme.css. Later files win
+ * on cascade ties: keep the order when adding a file.
+ */
+@import './base.css';
+@import './typography.css';
+@import './source.css';
+@import './code.css';
+@import './media.css';
+@import './markers.css';
+@import './find.css';
+@import './table-bar.css';
+@import './toolbar.css';
+@import './outline.css';

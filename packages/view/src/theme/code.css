@@ -1,0 +1,34 @@
+.v5md .v5-doc pre {
+  margin: 0.9em 0;
+  padding: 0.85em 1em;
+  overflow-x: auto;
+  border: 0;
+  border-radius: 8px;
+  background: #f6f8fa;
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  letter-spacing: normal;
+}
+
+.v5md .v5-doc code {
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* The fence styles the block on <pre>, so a host's global <code> background and padding cannot bleed into the inner element. */
+.v5md .v5-doc pre code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.v5md .v5-doc pre code .v5-empty-line {
+  display: inline-block;
+  width: 0;
+  height: 1em;
+}

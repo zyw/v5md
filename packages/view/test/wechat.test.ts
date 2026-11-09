@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Editor } from '../src/editor/editor.ts'
-import { copyRichText, toWechatHtml } from '../src/convert/wechat.ts'
+import { Editor, copyRichText, toWechatHtml } from '../src/index.ts'
 
 describe('toWechatHtml', () => {
   it('converts blocks and inline marks to inline-styled html', () => {

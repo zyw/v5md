@@ -1,0 +1,131 @@
+/*
+ * v5md theme
+ *
+ * Every selector starts at the editor root `.v5md` and every class name uses the
+ * `v5-` prefix, so the theme only reaches inside the editor and a host page's
+ * global styles cannot hit the editor's generic class names.
+ * The editor's outer edge (the top of the toolbar and so on) is square so it can
+ * sit in any host container; buttons, menus and code blocks inside keep their radius.
+ * The only exception is the ::highlight() pseudo element below, whose custom name
+ * cannot be scoped by a selector.
+ * To override styles, start your selector at `.v5md`; content lives under `.v5md .v5-doc`.
+ */
+
+::highlight(v5-find) {
+  background: #f3e3a2;
+  color: inherit;
+}
+
+.v5md {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  min-height: 1.7em;
+  color: #2c2c2c;
+  background: #fff;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Songti SC', 'Source Han Serif SC', serif;
+  font-size: 17px;
+  line-height: 1.75;
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  caret-color: #2c2c2c;
+}
+
+.v5md .v5-slash-menu,
+.v5md .v5-block-menu {
+  position: absolute;
+  z-index: 20;
+  display: grid;
+  width: 180px;
+  max-height: 280px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid #dce5dc;
+  border-radius: 9px;
+  background: #fffefa;
+  box-shadow: 0 12px 30px #253b2b25;
+}
+
+.v5md .v5-slash-menu button,
+.v5md .v5-block-menu button {
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  text-align: left;
+  padding: 7px 10px;
+  color: #344b3a;
+  cursor: pointer;
+}
+
+.v5md .v5-slash-menu button:hover,
+.v5md .v5-slash-menu button.v5-selected,
+.v5md .v5-block-menu button:hover {
+  background: #e9f0e8;
+}
+
+.v5md .v5-block-handle {
+  position: absolute;
+  z-index: 10;
+  border: 0;
+  background: transparent;
+  color: #8ca296;
+  cursor: grab;
+  font-size: 20px;
+  line-height: 24px;
+}
+
+.v5md .v5-drop-line {
+  position: absolute;
+  z-index: 11;
+  left: 28px;
+  right: 28px;
+  height: 2px;
+  background: #3d8666;
+  pointer-events: none;
+}
+
+.v5md.v5-preview {
+  cursor: default;
+}
+
+.v5md.v5-preview .v5-doc {
+  cursor: text;
+  user-select: text;
+}
+
+.v5md.v5-preview :is(.v5-block-handle, .v5-block-menu, .v5-slash-menu, .v5-drop-line, .v5-tablebar) {
+  display: none;
+}
+
+.v5md.v5-preview .v5-marker,
+.v5md.v5-preview .v5-block.v5-active > .v5-marker,
+.v5md.v5-preview .v5-inline.v5-source-visible > .v5-marker {
+  display: none;
+}
+
+.v5md .v5-doc {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 1.7em;
+  padding: 22px 36px 28px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.v5md .v5-doc[data-empty='true']::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  color: #a3a3a3;
+  pointer-events: none;
+}
+
+.v5md .v5-doc.v5-composing::before {
+  content: none;
+}

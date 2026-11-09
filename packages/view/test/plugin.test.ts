@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { Editor } from '../src/editor/editor.ts'
-import { PluginRegistry } from '../src/plugin.ts'
-import { BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS } from '../src/chrome/toolbar.ts'
+import { Editor, PluginRegistry } from '../src/index.ts'
+import { BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS } from './internals.ts'
 
 function registry() {
   return new PluginRegistry(BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS)

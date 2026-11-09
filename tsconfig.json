@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/view" },
+    { "path": "packages/vue" },
+    { "path": "packages/react" },
+    { "path": "packages/plugins/typography" },
+    { "path": "packages/plugins/export" }
+  ]
+}

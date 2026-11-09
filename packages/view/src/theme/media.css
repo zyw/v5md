@@ -1,0 +1,120 @@
+.v5md .v5-doc :not(pre) > code,
+.v5md .v5-doc .v5-inlinecode {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: #f3f4f6;
+  font-size: 0.9em;
+}
+
+.v5md .v5-doc hr,
+.v5md .v5-doc .v5-hr hr {
+  margin: 1.4em 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.v5md .v5-doc .v5-image {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  vertical-align: bottom;
+}
+
+.v5md .v5-doc p > .v5-image:only-child {
+  width: 100%;
+}
+
+.v5md .v5-doc .v5-image-caption {
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 0.92em;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.v5md .v5-doc .v5-image img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+.v5md .v5-doc .v5-image-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.v5md .v5-doc .v5-image-resize {
+  display: none;
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  z-index: 2;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  background: #3d8666;
+  cursor: nwse-resize;
+}
+
+.v5md .v5-doc .v5-image.v5-source-visible .v5-image-resize {
+  display: block;
+}
+
+.v5md.v5-preview .v5-image-resize {
+  display: none;
+}
+
+.v5md .v5-doc .v5-image .v5-source,
+.v5md .v5-doc .v5-hr .v5-source,
+.v5md .v5-doc .v5-math .v5-source {
+  display: none;
+}
+
+.v5md .v5-doc .v5-hr.v5-source-visible hr {
+  display: none;
+}
+
+.v5md .v5-doc p > .v5-image:only-child.v5-source-visible {
+  gap: 8px;
+}
+
+.v5md .v5-doc p > .v5-image:only-child.v5-source-visible .v5-source {
+  align-self: stretch;
+  display: block;
+}
+
+.v5md .v5-doc .v5-image.v5-source-visible .v5-source::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  background: center / contain no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16' fill='none' stroke='%236b7280' stroke-width='1.4'%3E%3Crect x='2' y='3' width='12' height='10' rx='1.2'/%3E%3Ccircle cx='6' cy='6.5' r='1'/%3E%3Cpath d='M3.5 11.5 6.5 8.5 9 10.5 11 8l2 3'/%3E%3C/svg%3E");
+}
+
+.v5md .v5-doc .v5-image.v5-source-visible .v5-source,
+.v5md .v5-doc .v5-hr.v5-source-visible .v5-source,
+.v5md .v5-doc .v5-math.v5-source-visible .v5-source,
+.v5md .v5-doc .v5-math.v5-active .v5-source {
+  display: inline;
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  white-space: pre-wrap;
+}
+
+.v5md .v5-doc .v5-math.v5-source-visible .v5-math-preview,
+.v5md .v5-doc .v5-math.v5-active .v5-math-preview {
+  display: none;
+}
+
+.v5md .v5-doc div.v5-math.v5-active .v5-source,
+.v5md .v5-doc div.v5-math.v5-source-visible .v5-source {
+  display: block;
+}

@@ -1,6 +1,6 @@
 {
   "name": "@v5md/vue",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "v5md 的 Vue 3 组件",
   "license": "MIT",
   "type": "module",
@@ -31,7 +31,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@v5md/view": "0.0.1"
+    "@v5md/view": "0.0.2"
   },
   "peerDependencies": {
     "vue": "^3.4.0"

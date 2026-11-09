@@ -1,6 +1,6 @@
 {
   "name": "@v5md/view",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "基于 contenteditable 的所见即所得 Markdown 编辑器",
   "license": "MIT",
   "type": "module",
@@ -35,7 +35,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@v5md/core": "0.0.1",
+    "@v5md/core": "0.0.2",
     "katex": "^0.19.0",
     "lowlight": "^3.3.0",
     "mermaid": "^12.2.0"

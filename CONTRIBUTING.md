@@ -24,6 +24,59 @@ npm test              # vitest，happy-dom 环境
 - 新功能的落点判断：只跟文档模型有关 → `core`；要操作 DOM 但属于编辑器本体 → `editor/`；是编辑器周围的一块界面 → `chrome/`；是格式转换 → `convert/`。
 - 每个包只通过 `src/index.ts` 对外，包内模块之间直接相对导入（带 `.js` 后缀）。
 
+## 源码结构
+
+### `@v5md/core`
+
+```text
+src/
+├── index.ts      公共出口
+├── types.ts      模型类型、偏移与换行工具
+├── parse.ts      markdown → 自定义 AST
+├── history.ts    state 创建、变更应用、undo / redo
+├── text.ts       输入、范围替换、删除、光标边界
+├── format.ts     行内标记、块级格式命令、图片尺寸
+├── table.ts      表格定位、单元格导航、行列增删
+├── block.ts      顶层移动、分块、列表与空块、斜杠命令、缩进
+└── find.ts       查找替换（含正则、全词、state 级替换）
+```
+
+依赖方向：`types ← parse ← history ← {find, text, table}`、`text ← format`、`block → {format, history, parse, table, text}`。
+
+### `@v5md/view`
+
+```text
+src/
+├── index.ts              公共出口
+├── plugin.ts             插件契约与注册表
+├── theme/                主题，按组件拆成 10 个文件，构建时内联为 dist/theme.css
+├── editor/               文档引擎
+│   ├── editor.ts           Editor：状态、渲染循环、输入分发、公共 API
+│   ├── keymap.ts           快捷键表与派发
+│   ├── plugins.ts          插件激活、句柄与销毁
+│   ├── render.ts           AST → DOM
+│   ├── source.ts           源码模式的分词与行
+│   ├── selection.ts        模型偏移 ↔ DOM 位置、选区装饰、查找高亮
+│   ├── highlight.ts        代码高亮
+│   ├── clipboard.ts        富文本复制
+│   ├── diagram.ts          mermaid 渲染与缓存
+│   └── images.ts           图片拖拽缩放
+├── chrome/               编辑器外壳
+│   ├── toolbar.ts          工具条与溢出菜单
+│   ├── toolbar-host.ts     工具条挂载、按钮排序与状态同步
+│   ├── builtins.ts         内置按钮与命令
+│   ├── find-bar.ts         查找替换栏
+│   ├── slash-menu.ts       斜杠命令菜单
+│   ├── block-chrome.ts     块手柄、块菜单、拖拽排序
+│   ├── table-bar.ts        表格工具条及定位
+│   └── outline.ts          大纲
+└── convert/              格式互转
+    ├── wechat.ts           导出公众号 HTML 与复制
+    └── html-to-md.ts       粘贴 HTML → Markdown
+```
+
+拆分原则：`editor.ts` 只保留文档状态、渲染循环、输入分发和公共 API；自成一块的界面部件放进 `chrome/`，纯转换放进 `convert/`。
+
 ## 代码风格
 
 - 2 空格、单引号、不加分号、行宽 120、trailing comma —— 由 `.prettierrc.json` 固定，不要手写去对齐。

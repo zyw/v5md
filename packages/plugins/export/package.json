@@ -1,6 +1,6 @@
 {
   "name": "@v5md/plugin-export",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "v5md 导出插件：Markdown / HTML / PDF / 图片",
   "license": "MIT",
   "type": "module",
@@ -31,7 +31,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@v5md/view": "0.0.1",
+    "@v5md/view": "0.0.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1"
   },

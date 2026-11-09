@@ -283,7 +283,7 @@ editor.toggleBold()         // 行内格式
 
 | 方法 | 说明 |
 | --- | --- |
-| `getWechatHtml()` | 转成只带内联样式的 HTML，可直接粘贴到公众号 |
+| `getWechatHtml(options?)` | 转成只带内联样式的 HTML，可直接粘贴到公众号。`options.baseUrl` 用来把相对图片地址转成绝对地址，不传时用当前页面地址 |
 | `copyForWechat()` | 生成并写入剪贴板，返回是否成功 |
 | `toWechatHtml(markdown, { baseUrl? })` | 同上的纯函数版本 |
 | `copyRichText(html, text)` | 把 HTML 和纯文本写进剪贴板 |

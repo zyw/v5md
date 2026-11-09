@@ -68,6 +68,17 @@ describe('WeChat copy', () => {
     element.remove()
   })
 
+  it('passes baseUrl through getWechatHtml', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '![图](sample.svg)' })
+    expect(editor.getWechatHtml({ baseUrl: 'https://example.com/post/' })).toContain(
+      'src="https://example.com/post/sample.svg"',
+    )
+    editor.destroy()
+    element.remove()
+  })
+
   it('copies rich text and shows the button state', async () => {
     const element = document.createElement('div')
     document.body.append(element)

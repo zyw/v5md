@@ -60,7 +60,7 @@ import {
 } from '../plugin.js'
 import { renderDocument } from './render.js'
 import { applyChrome, clearFindHighlight, domPointToOffset, offsetToDomPoint, paintFindHighlight } from './selection.js'
-import { copyRichText, toWechatHtml } from '../convert/wechat.js'
+import { copyRichText, toWechatHtml, type WechatHtmlOptions } from '../convert/wechat.js'
 
 export interface FindRequest {
   kind: 'find' | 'replace'
@@ -468,8 +468,8 @@ export class Editor {
     this.commit(insertText(this.state, `![${label}](${target})`))
   }
 
-  getWechatHtml(): string {
-    return toWechatHtml(this.state.doc)
+  getWechatHtml(options?: WechatHtmlOptions): string {
+    return toWechatHtml(this.state.doc, options)
   }
 
   async copyForWechat(): Promise<boolean> {

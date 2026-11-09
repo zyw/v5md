@@ -61,7 +61,7 @@ const editor = new Editor({
 | `setPlaceholder(placeholder)` | 更新空文档提示 |
 | `isToolbarVisible` / `setToolbarVisible` | 显示或隐藏工具条 |
 | `isOutlineVisible` / `setOutlineVisible` | 显示或隐藏大纲 |
-| `getWechatHtml()` | 当前文档对应的公众号内联样式 HTML |
+| `getWechatHtml(options?)` | 当前文档对应的公众号内联样式 HTML。`options.baseUrl` 把相对图片地址转成绝对地址，不传时用当前页面地址 |
 | `copyForWechat()` | 生成公众号 HTML 并复制为富文本，返回是否成功 |
 | `getHostElement()` / `getContentElement()` | 根元素 / 正文元素，供插件和导出使用 |
 | `getPluginState()` | 当前插件用状态快照 |
@@ -159,7 +159,7 @@ await editor.runCommand('callout.note')
 直接调用的例子：
 
 ```ts
-const html = editor.getWechatHtml()
+const html = editor.getWechatHtml({ baseUrl: 'https://example.com/notes/' })
 const copied = await editor.copyForWechat()
 ```
 

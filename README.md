@@ -8,7 +8,7 @@
 
 同一套编辑器可以嵌进 Vue 3 和 React，也可以直接挂到任意 DOM 元素上。不依赖框架、不接管你的数据流、不生成私有格式——存下来的就是标准 Markdown。
 
-当前版本 `0.0.2`，六个包都已发布在 [npm 官方仓库](https://www.npmjs.com/package/@v5md/view)，并且都是 ESM（`"type": "module"`）。
+当前版本 `0.0.3`。`0.0.2` 已在 [npm 官方仓库](https://www.npmjs.com/package/@v5md/view)，六个包都是 ESM（`"type": "module"`）。
 
 ## 目录
 

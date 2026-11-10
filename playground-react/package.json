@@ -7,9 +7,9 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@v5md/plugin-export": "0.0.2",
-    "@v5md/plugin-typography": "0.0.2",
-    "@v5md/react": "0.0.2",
+    "@v5md/plugin-export": "0.0.3",
+    "@v5md/plugin-typography": "0.0.3",
+    "@v5md/react": "0.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

@@ -1,5 +1,39 @@
 # 更新日志
 
+## 0.0.3 — 2026-11-10
+
+### 中文
+
+相对 `0.0.2` 没有破坏性改动。六个包的版本号一起改为 `0.0.3`，npm 页面上的主页是 [https://v5md.v5ai.xin](https://v5md.v5ai.xin)，仓库地址是 [https://github.com/zyw/v5md](https://github.com/zyw/v5md)。
+
+**链接**
+
+普通点击链接留在编辑器里，不再直接跳走。打开外部链接用右键，或在 macOS 上用 ⌘ + 点击，其他系统用 Ctrl + 点击。只放行 `http`、`https` 和 `mailto`。相对地址和其他协议留在文档内。浏览器里会用新标签页打开，并带上 `noopener noreferrer`。桌面壳（Tauri）里改为调用 `open_external_url`，交给系统浏览器。链接显示下划线，鼠标为指针，悬停提示写在 `title` 上。
+
+**公众号 HTML**
+
+`getWechatHtml({ baseUrl })` 会把相对图片地址解析成绝对地址。不传 `baseUrl` 时，在浏览器里用当前页面的 `document.baseURI`。已经是绝对地址或 `//` 开头的图片地址保持不变。工具条上的「复制到公众号」仍不接收这个参数。
+
+```ts
+editor.getWechatHtml({ baseUrl: 'https://example.com/notes/' })
+```
+
+### English
+
+No breaking changes from `0.0.2`. All six packages are now `0.0.3`. On npm, the homepage is [https://v5md.v5ai.xin](https://v5md.v5ai.xin) and the repository is [https://github.com/zyw/v5md](https://github.com/zyw/v5md).
+
+**Links**
+
+A plain click stays in the editor. Open an external link with a right-click, or with ⌘+click on macOS and Ctrl+click elsewhere. Only `http`, `https`, and `mailto` leave the document. Relative URLs and other protocols stay inside the note. In a browser the link opens in a new tab with `noopener noreferrer`. In a Tauri shell it calls `open_external_url` so the system browser opens it. Links are underlined, use a pointer cursor, and put the activation hint in `title`.
+
+**WeChat HTML**
+
+`getWechatHtml({ baseUrl })` resolves relative image URLs to absolute ones. When `baseUrl` is omitted, a browser uses the current page's `document.baseURI`. Image URLs that are already absolute, or that start with `//`, are left unchanged. The toolbar action that copies HTML for WeChat does not take this option.
+
+```ts
+editor.getWechatHtml({ baseUrl: 'https://example.com/notes/' })
+```
+
 ## 0.0.2 — 2026-11-09
 
 首次发布。六个包都在 npm 官方仓库，许可为 MIT。主页：[https://v5md.v5ai.xin](https://v5md.v5ai.xin)。源码：[https://github.com/zyw/v5md](https://github.com/zyw/v5md)。

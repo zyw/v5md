@@ -1,6 +1,6 @@
 {
   "name": "@v5md/plugin-typography",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "v5md 字号插件",
   "license": "MIT",
   "type": "module",
@@ -32,7 +32,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@v5md/view": "0.0.2"
+    "@v5md/view": "0.0.3"
   },
   "devDependencies": {
     "typescript": "^5.9.0"

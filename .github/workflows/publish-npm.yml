@@ -2,7 +2,7 @@ name: Publish to npm
 
 on:
   release:
-    types: [published]
+    types: [released]
 
 concurrency:
   group: publish-npm
@@ -72,5 +72,5 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
-          NPM_CONFIG_TAG: ${{ github.event.release.prerelease && 'next' || 'latest' }}
+          NPM_CONFIG_TAG: latest
         run: npm run publish:npm

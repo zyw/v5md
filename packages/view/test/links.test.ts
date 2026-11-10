@@ -122,7 +122,9 @@ describe('external links', () => {
     document.body.append(element)
     const editor = new Editor({ element, value: '[官网](https://example.com/right)\n' })
     try {
-      element.querySelector('a')?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 }))
+      element
+        .querySelector('a')
+        ?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 }))
       await vi.waitFor(() => expect(calls).toEqual(['https://example.com/right']))
     } finally {
       editor.destroy()

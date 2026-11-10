@@ -1,6 +1,7 @@
 import type { MdNode } from '@v5md/core'
 import katex from 'katex'
 import { highlightSpans } from './highlight.js'
+import { externalLinkUrl, linkActivationHint } from './links.js'
 import { sourceLines, type SourceLine, type SourceToken } from './source.js'
 
 export interface RenderOptions {
@@ -11,9 +12,15 @@ export interface RenderOptions {
   sourceMode?: boolean
   /** Show the line numbers column next to the source. Defaults to true. */
   lineNumbers?: boolean
+  /** Hover hint for links. Defaults from the host's preview class and runtime. */
+  linkHint?: string
 }
 
+/** Rendering is synchronous, so this stays stable for the whole renderDocument call. */
+let activeLinkHint = ''
+
 export function renderDocument(container: HTMLElement, options: RenderOptions, tree: MdNode): void {
+  activeLinkHint = options.linkHint ?? linkActivationHint(container.classList.contains('v5-preview'))
   const fragment = document.createDocumentFragment()
   if (options.sourceMode) fragment.append(renderSourceDocument(options.doc, tree, options.lineNumbers !== false))
   else for (const child of tree.children) fragment.append(renderNode(child))
@@ -268,8 +275,16 @@ function textNode(start: number, end: number, text: string): MdNode {
 
 function renderLink(node: MdNode): HTMLElement {
   const anchor = inline('a', node, 'v5-link') as HTMLAnchorElement
-  anchor.href = node.url ?? ''
-  if (node.title) anchor.title = node.title
+  const url = externalLinkUrl(node.url ?? '')
+  const note = node.title?.trim()
+  if (url) {
+    anchor.href = url
+    anchor.target = '_blank'
+    anchor.rel = 'noopener noreferrer'
+    anchor.title = note ? `${note} — ${activeLinkHint}` : activeLinkHint
+  } else if (note) {
+    anchor.title = note
+  }
   return anchor
 }
 

@@ -85,6 +85,12 @@
   text-decoration: none;
 }
 
+.v5md .v5-doc a[href] {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .v5md .v5-doc blockquote {
   margin: 0.8em 0;
   padding-left: 1em;

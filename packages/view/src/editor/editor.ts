@@ -48,6 +48,7 @@ import { createSlashMenu, matchSlashCommands, type SlashMenu } from '../chrome/s
 import { BlockChrome, type TopBlock } from '../chrome/block-chrome.js'
 import { copySelectionAsRich } from './clipboard.js'
 import { paintDiagrams } from './diagram.js'
+import { linkActivationHint, linkAnchor, openExternalLink } from './links.js'
 import { ImageResize } from './images.js'
 import { runShortcut, type KeymapHost } from './keymap.js'
 import { PluginHost } from './plugins.js'
@@ -507,6 +508,17 @@ export class Editor {
     }
     this.element.classList.toggle('v5-preview', !enabled)
     this.syncSurface()
+    this.refreshLinkHints()
+  }
+
+  private refreshLinkHints(): void {
+    const next = linkActivationHint(!this.editable)
+    const previous = linkActivationHint(this.editable)
+    const suffix = ` — ${previous}`
+    for (const anchor of this.element.querySelectorAll<HTMLAnchorElement>('a.v5-link[href]')) {
+      if (anchor.title === previous) anchor.title = next
+      else if (anchor.title.endsWith(suffix)) anchor.title = `${anchor.title.slice(0, -suffix.length)} — ${next}`
+    }
   }
 
   setPlaceholder(placeholder: string): void {
@@ -617,6 +629,7 @@ export class Editor {
     this.element.addEventListener('drop', this.onDrop, { signal })
     this.element.addEventListener('dragend', this.onDragEnd, { signal })
     this.element.addEventListener('click', this.onClick, { signal })
+    this.element.addEventListener('contextmenu', this.onContextMenu, { signal })
     this.element.addEventListener('input', this.onInput, { signal })
     this.surface().addEventListener('focus', this.onFocus, { signal })
     this.surface().addEventListener('blur', this.onBlur, { signal })
@@ -682,6 +695,7 @@ export class Editor {
           placeholder: this.options.placeholder,
           sourceMode: this.sourceMode,
           lineNumbers: this.lineNumbers,
+          linkHint: linkActivationHint(!this.editable),
         },
         parse(this.state.doc),
       )
@@ -970,6 +984,11 @@ export class Editor {
     const target = event.target
     if (!(target instanceof Element) || !this.element.contains(target)) return
     if (target.closest('.v5md-find')) return
+    const link = linkAnchor(target)
+    if (link && this.opensLink(event)) {
+      event.preventDefault()
+      return
+    }
     const lineNumber = target.closest<HTMLElement>('.v5-source-number')
     if (lineNumber) {
       event.preventDefault()
@@ -1038,9 +1057,26 @@ export class Editor {
     this.restoreSelection()
   }
 
+  private opensLink(event: MouseEvent): boolean {
+    if (event.button !== 0 || event.altKey || event.shiftKey) return false
+    return event.metaKey || event.ctrlKey
+  }
+
   private onClick = (event: MouseEvent) => {
-    const target = event.target
-    if (target instanceof Element && target.closest('a')) event.preventDefault()
+    const link = linkAnchor(event.target)
+    if (!link || !this.element.contains(link)) return
+    event.preventDefault()
+    if (!this.opensLink(event)) return
+    openExternalLink(link.getAttribute('href') ?? '')
+  }
+
+  private onContextMenu = (event: MouseEvent) => {
+    const link = linkAnchor(event.target)
+    if (!link || !this.element.contains(link)) return
+    event.preventDefault()
+    // A Ctrl+click also dispatches click. That click opens the link; opening here as well makes two tabs.
+    if (event.ctrlKey || event.metaKey) return
+    openExternalLink(link.getAttribute('href') ?? '')
   }
 
   private onSelectionChange = () => {

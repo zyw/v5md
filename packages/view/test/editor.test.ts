@@ -23,8 +23,7 @@ describe('render', () => {
       const start = Number(leaf.dataset.start)
       const end = Number(leaf.dataset.end)
       const raw = leaf.textContent ?? ''
-      const text =
-        leaf.dataset.caret === 'true' || (leaf.querySelector('br') && raw === '') ? '' : raw
+      const text = leaf.dataset.caret === 'true' || (leaf.querySelector('br') && raw === '') ? '' : raw
       expect(doc.slice(start, end)).toBe(text)
     }
   })

@@ -16,8 +16,10 @@ export function copySelectionAsRich(host: HTMLElement, event: ClipboardEvent): b
   cleanCopiedFragment(holder)
   const html = holder.innerHTML
   const text =
-    (holder.innerText || holder.textContent || '').replace(/\u00a0/g, ' ').replace(/\u200b/g, '').trim() ||
-    selection.toString()
+    (holder.innerText || holder.textContent || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\u200b/g, '')
+      .trim() || selection.toString()
   holder.remove()
   if (!html) return false
   event.preventDefault()

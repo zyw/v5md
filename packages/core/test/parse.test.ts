@@ -149,6 +149,25 @@ describe('parse', () => {
     }
   })
 
+  it('recovers empty task items that GFM leaves as plain bullets', () => {
+    for (const doc of ['- [ ] ', '- [ ]', '* [ ] ', '* []']) {
+      const item = collect(parse(doc), 'listItem')[0]
+      expect(item?.checked).toBe(false)
+      const marker = item?.children.find((node) => node.type === 'marker' && node.marker === 'block')
+      expect(marker?.text).toMatch(/^[-*+]\s+\[(?: |)?\]\s*$/)
+      const paragraph = item?.children.find((node) => node.type === 'paragraph')
+      expect(paragraph?.start).toBe(paragraph?.end)
+      expect(nodeText(paragraph!)).toBe('')
+      for (const leaf of leaves(item!)) {
+        if (leaf.type === 'hardBreak') continue
+        expect(doc.slice(leaf.start, leaf.end)).toBe(leaf.text ?? '')
+      }
+    }
+    expect(collect(parse('- [x] '), 'listItem')[0]?.checked).toBe(true)
+    const continued = collect(parse('- [x] 完成\n- [ ] '), 'listItem')
+    expect(continued.map((node) => node.checked)).toEqual([true, false])
+  })
+
   it('maps every text leaf back onto the source', () => {
     const doc = '# 中英 Title\n\n段落 **bold** 与 `code`。\n\n- 一\n- 二\n'
     const tree = parse(doc)

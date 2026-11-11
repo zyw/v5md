@@ -249,6 +249,21 @@ describe('edit', () => {
     state = { ...state, selection: { anchor: state.doc.length, head: state.doc.length } }
     state = splitBlock(state)
     expect(state.doc).toBe('- [x] 完成\n- [ ] ')
+    const items = parse(state.doc).children[0]?.children.filter((node) => node.type === 'listItem') ?? []
+    expect(items.map((node) => node.checked)).toEqual([true, false])
+    expect(items[1]?.children.some((node) => node.type === 'marker' && /\[ \]/.test(node.text ?? ''))).toBe(true)
+  })
+
+  it('leaves a task list when enter is pressed on an empty task item', () => {
+    let state = createState('- [x] 完成')
+    state = { ...state, selection: { anchor: state.doc.length, head: state.doc.length } }
+    state = splitBlock(state)
+    expect(state.doc).toBe('- [x] 完成\n- [ ] ')
+    state = splitBlock(state)
+    expect(state.doc).toBe('- [x] 完成\n\n')
+    const blank = parse(state.doc).children.find((node) => node.type === 'paragraph' && node.start === node.end)
+    expect(blank).toBeTruthy()
+    expect(state.selection.head).toBe(blank?.start)
   })
 
   it('toggles a task checkbox and wraps strikethrough', () => {

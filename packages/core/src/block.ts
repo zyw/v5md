@@ -186,7 +186,7 @@ export function toggleTask(state: EditorState, offset: number): EditorState {
   if (!located) return state
   const marker = located.children.find((node) => node.type === 'marker' && node.marker === 'block')
   if (!marker?.text) return state
-  const insert = marker.text.replace(/\[(?: |x|X)\]/, located.checked ? '[ ]' : '[x]')
+  const insert = marker.text.replace(/\[(?:[ xX])?\]/, located.checked ? '[ ]' : '[x]')
   if (insert === marker.text) return state
   return applyEdit(state, { from: marker.start, to: marker.end, insert }, state.selection)
 }

@@ -15,7 +15,9 @@ export function copySelectionAsRich(host: HTMLElement, event: ClipboardEvent): b
   document.body.append(holder)
   cleanCopiedFragment(holder)
   const html = holder.innerHTML
-  const text = (holder.innerText || holder.textContent || '').replace(/\u00a0/g, ' ').trim() || selection.toString()
+  const text =
+    (holder.innerText || holder.textContent || '').replace(/\u00a0/g, ' ').replace(/\u200b/g, '').trim() ||
+    selection.toString()
   holder.remove()
   if (!html) return false
   event.preventDefault()
@@ -35,6 +37,9 @@ function cleanCopiedFragment(root: HTMLElement): void {
     const label = check.ownerDocument.createElement('span')
     label.textContent = check.dataset.checked === 'true' ? '✓' : '☐'
     check.replaceWith(label)
+  })
+  root.querySelectorAll('[data-caret="true"]').forEach((element) => {
+    element.textContent = ''
   })
   for (const element of [root, ...root.querySelectorAll<HTMLElement>('*')]) {
     element.removeAttribute('contenteditable')

@@ -22,7 +22,9 @@ describe('render', () => {
       if (leaf.hasAttribute('data-void')) continue
       const start = Number(leaf.dataset.start)
       const end = Number(leaf.dataset.end)
-      const text = leaf.querySelector('br') && leaf.textContent === '' ? '' : (leaf.textContent ?? '')
+      const raw = leaf.textContent ?? ''
+      const text =
+        leaf.dataset.caret === 'true' || (leaf.querySelector('br') && raw === '') ? '' : raw
       expect(doc.slice(start, end)).toBe(text)
     }
   })
@@ -63,6 +65,18 @@ describe('render', () => {
     expect(element.querySelectorAll('td')).toHaveLength(2)
     expect(element.querySelector('td')?.textContent).toBe('c')
     expect(element.querySelector('.katex')).not.toBeNull()
+  })
+
+  it('anchors the caret after an empty task checkbox without a line-breaking br', () => {
+    const doc = '- [ ] 待办\n- [x] 完成\n- [ ] '
+    const element = draw(doc, doc.length)
+    const item = [...element.querySelectorAll('li.v5-task')].at(-1)
+    const text = item?.querySelector('.v5-item-text .v5-text')
+    expect(item?.querySelector('.v5-check')).not.toBeNull()
+    expect(text?.dataset.caret).toBe('true')
+    expect(text?.querySelector('br')).toBeNull()
+    expect(text?.firstChild?.nodeType).toBe(Node.TEXT_NODE)
+    expect(text?.textContent).toBe('\u200b')
   })
 
   it('keeps an empty code block to a single body line', () => {

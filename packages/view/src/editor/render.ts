@@ -104,13 +104,29 @@ function renderListItem(node: MdNode): HTMLElement {
   for (const child of node.children) {
     if (child.type === 'paragraph' && firstParagraph) {
       firstParagraph = false
-      children.push(block('span', child, child.children.map(renderNode), 'v5-item-text'))
+      children.push(block('span', child, child.children.map(renderItemText), 'v5-item-text'))
     } else {
       children.push(renderNode(child))
     }
   }
   const task = typeof node.checked === 'boolean'
   return block('li', node, children, task ? 'v5-listitem v5-task' : 'v5-listitem')
+}
+
+/** Empty item bodies need a text node so the caret sits after the checkbox, not on a `<br>`. */
+function renderItemText(node: MdNode): Node {
+  if (node.type === 'text' && (node.text ?? '') === '') return caretLeaf(node)
+  return renderNode(node)
+}
+
+function caretLeaf(node: MdNode): HTMLElement {
+  const element = document.createElement('span')
+  element.className = 'v5-text'
+  stamp(element, node)
+  element.setAttribute('data-leaf', 'true')
+  element.setAttribute('data-caret', 'true')
+  element.append(document.createTextNode('\u200b'))
+  return element
 }
 
 function taskCheckbox(node: MdNode): HTMLButtonElement {

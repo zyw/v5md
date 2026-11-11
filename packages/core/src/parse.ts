@@ -43,6 +43,7 @@ export function parse(markdown: string): MdNode {
   root.start = 0
   root.end = doc.length
   fillBlankLines(root, doc)
+  recoverEmptyTaskItems(root, doc)
   ensureListItemCaret(root)
   applyUnderline(root)
   applyHighlight(root)
@@ -108,6 +109,34 @@ function ensureListItemCaret(node: MdNode): void {
     node.children.push(emptyParagraph(marker?.end ?? node.end))
   }
   node.children.forEach(ensureListItemCaret)
+}
+
+/**
+ * GFM task items require non-whitespace content after `[ ]` / `[x]`.
+ * Enter / empty format therefore emit `- [ ] `, which micromark leaves as a
+ * plain bullet whose paragraph text is `[ ]`. Fold that fake body back into
+ * the block marker so the view can render a checkbox while the caret stays empty.
+ */
+function recoverEmptyTaskItems(node: MdNode, doc: string): void {
+  if (node.type === 'listItem' && node.checked == null) {
+    const marker = node.children.find((child) => child.type === 'marker' && child.marker === 'block')
+    const paragraph = node.children.find((child) => child.type === 'paragraph')
+    if (marker && paragraph && /^(?:[-*+]|\d+\.)\s+$/.test(marker.text ?? '')) {
+      const body = nodeText(paragraph)
+      const standard = /^\[([ xX])\](\s*)$/.exec(body)
+      const bare = standard ? null : /^\[\](\s*)$/.exec(body)
+      if (standard || bare) {
+        const absorbEnd = paragraph.end
+        marker.end = absorbEnd
+        marker.text = doc.slice(marker.start, absorbEnd)
+        node.checked = standard ? standard[1] === 'x' || standard[1] === 'X' : false
+        paragraph.start = absorbEnd
+        paragraph.end = absorbEnd
+        paragraph.children = [textNode(absorbEnd, absorbEnd, '')]
+      }
+    }
+  }
+  node.children.forEach((child) => recoverEmptyTaskItems(child, doc))
 }
 
 export function emptyParagraph(offset: number): MdNode {

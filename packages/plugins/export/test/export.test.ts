@@ -63,6 +63,29 @@ describe('@v5md/plugin-export', () => {
     element.remove()
   })
 
+  it('snapshots canvas widgets into images in the exported html', async () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({
+      element,
+      value: '图表',
+      plugins: [createExportPlugin()],
+    })
+    const content = editor.getContentElement()
+    const canvas = document.createElement('canvas')
+    canvas.width = 8
+    canvas.height = 8
+    canvas.toDataURL = () => 'data:image/png;base64,canvas-snapshot'
+    content.append(canvas)
+
+    const html = await editor.getPlugin<ExportApi>('export')!.api.exportHtml()
+    expect(html).toContain('src="data:image/png;base64,canvas-snapshot"')
+    expect(html).not.toContain('<canvas')
+
+    editor.destroy()
+    element.remove()
+  })
+
   it('exposes a browser print entry', () => {
     const element = document.createElement('div')
     document.body.append(element)

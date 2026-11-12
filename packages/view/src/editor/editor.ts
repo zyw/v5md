@@ -44,10 +44,10 @@ import { BUILTIN_COMMAND_IDS, BUILTIN_COMMANDS, BUILTIN_TOOLBAR_IDS } from '../c
 import type { ToolbarCommand } from '../chrome/toolbar.js'
 import { ToolbarHost } from '../chrome/toolbar-host.js'
 import { createFindBar, type FindBar } from '../chrome/find-bar.js'
-import { createSlashMenu, matchSlashCommands, type SlashMenu } from '../chrome/slash-menu.js'
+import { createSlashMenu, matchSlashCommands, type SlashMenu, type SlashMenuItem } from '../chrome/slash-menu.js'
 import { BlockChrome, type TopBlock } from '../chrome/block-chrome.js'
+import { BlockHost } from './blocks.js'
 import { copySelectionAsRich } from './clipboard.js'
-import { paintDiagrams } from './diagram.js'
 import { linkActivationHint, linkAnchor, openExternalLink } from './links.js'
 import { ImageResize } from './images.js'
 import { runShortcut, type KeymapHost } from './keymap.js'
@@ -73,6 +73,10 @@ export interface EditorOptions {
   placeholder?: string
   toolbar?: boolean
   outline?: boolean
+  /** Pin the toolbar to the top while scrolling. Defaults to false. */
+  toolbarSticky?: boolean
+  /** Pin the outline while scrolling. Defaults to true. */
+  outlineSticky?: boolean
   /** Shows line numbers next to the source in source mode. Defaults to true. */
   lineNumbers?: boolean
   editable?: boolean
@@ -97,13 +101,14 @@ export class Editor {
   private suppressBreak = false
   private sourceMode = false
   private lineNumbers = true
-  private paintGeneration = 0
   private findBar: FindBar | null = null
   private tableBar: HTMLElement | null = null
   private readonly toolbarHost: ToolbarHost
   private outlinePanel: OutlinePanel | null = null
   private toolbarVisible = true
   private outlineVisible = true
+  private toolbarSticky = false
+  private outlineSticky = true
   private editable = true
   private slash: SlashMenu | null = null
   private slashRange: { from: number; to: number } | null = null
@@ -111,6 +116,7 @@ export class Editor {
   private readonly imageResize: ImageResize
   private readonly pluginRegistry: PluginRegistry
   private readonly plugins: PluginHost
+  private readonly blockHost = new BlockHost()
   private readonly keymap: KeymapHost
   private destroyed = false
 
@@ -119,6 +125,8 @@ export class Editor {
     this.element = options.element
     this.toolbarVisible = options.toolbar !== false
     this.outlineVisible = options.outline !== false
+    this.toolbarSticky = options.toolbarSticky === true
+    this.outlineSticky = options.outlineSticky !== false
     this.lineNumbers = options.lineNumbers !== false
     this.editable = options.editable !== false
     this.pluginRegistry = new PluginRegistry(BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS)
@@ -126,6 +134,11 @@ export class Editor {
       context: () => this.createCommandContext(),
       changed: () => this.toolbarHost.refresh(),
       hasToolbar: () => this.toolbarHost.element.isConnected,
+      onActivate: (plugin) => this.blockHost.registerPlugin(plugin),
+      onDispose: (name) => {
+        this.blockHost.unregisterPlugin(name)
+        if (!this.destroyed) this.render()
+      },
     })
     this.toolbarHost = new ToolbarHost({
       pluginItems: () => this.pluginRegistry.allToolbarItems(),
@@ -194,9 +207,10 @@ export class Editor {
     }
     this.prepare()
     this.mountChrome()
+    this.syncStickyChrome()
+    for (const registration of this.pluginRegistry.list()) this.plugins.activate(registration)
     this.render()
     this.listen()
-    for (const registration of this.pluginRegistry.list()) this.plugins.activate(registration)
   }
 
   getMarkdown(): string {
@@ -263,8 +277,15 @@ export class Editor {
       if (handle) return handle
     }
     const registration = this.pluginRegistry.install(plugin)
-    this.toolbarHost.refresh()
-    return this.plugins.activate(registration)
+    try {
+      const handle = this.plugins.activate(registration)
+      this.toolbarHost.refresh()
+      this.render()
+      return handle
+    } catch (error) {
+      this.pluginRegistry.remove(plugin.name)
+      throw error
+    }
   }
 
   getPlugin<T = undefined>(name: string): V5mdPluginHandle<T> | undefined {
@@ -415,6 +436,7 @@ export class Editor {
     for (const registration of [...this.pluginRegistry.list()].reverse()) {
       this.plugins.dispose(registration.plugin.name, true)
     }
+    this.blockHost.destroyAll()
     this.toolbarHost.destroy()
     this.abort.abort()
     this.hideSlash()
@@ -498,6 +520,24 @@ export class Editor {
     if (this.outlinePanel) this.outlinePanel.element.hidden = !visible
   }
 
+  isToolbarSticky(): boolean {
+    return this.toolbarSticky
+  }
+
+  setToolbarSticky(sticky: boolean): void {
+    this.toolbarSticky = sticky
+    this.syncStickyChrome()
+  }
+
+  isOutlineSticky(): boolean {
+    return this.outlineSticky
+  }
+
+  setOutlineSticky(sticky: boolean): void {
+    this.outlineSticky = sticky
+    this.syncStickyChrome()
+  }
+
   setEditable(enabled: boolean): void {
     if (this.editable === enabled) return
     this.editable = enabled
@@ -550,7 +590,19 @@ export class Editor {
     // uncommitted text sits beside the placeholder. Edit the document itself.
     this.element.contentEditable = 'false'
     this.element.translate = false
+    this.syncStickyChrome()
     this.syncSurface()
+  }
+
+  private syncStickyChrome(): void {
+    this.element.classList.toggle('v5-toolbar-sticky', this.toolbarSticky)
+    this.element.classList.toggle('v5-outline-sticky', this.outlineSticky)
+    const toolbar = this.toolbarHost.element
+    if (this.toolbarSticky && toolbar.isConnected) {
+      this.element.style.setProperty('--v5-sticky-toolbar-height', `${toolbar.offsetHeight || 43}px`)
+    } else {
+      this.element.style.removeProperty('--v5-sticky-toolbar-height')
+    }
   }
 
   private surface(): HTMLElement {
@@ -696,10 +748,12 @@ export class Editor {
           sourceMode: this.sourceMode,
           lineNumbers: this.lineNumbers,
           linkHint: linkActivationHint(!this.editable),
+          editable: this.editable,
+          blocks: this.blockHost,
         },
         parse(this.state.doc),
       )
-      void this.paintDiagrams()
+      this.blockHost.afterRender()
       this.findBar?.attach(this.element)
       this.outlinePanel?.update(this.getOutline())
       this.toolbarHost.sync()
@@ -1033,7 +1087,11 @@ export class Editor {
       this.restoreSelection()
       return
     }
-    if (voidHost?.dataset.void === 'math' || voidHost?.dataset.void === 'diagram') {
+    if (
+      voidHost?.dataset.void === 'math' ||
+      voidHost?.dataset.void === 'diagram' ||
+      voidHost?.dataset.void === 'widget'
+    ) {
       event.preventDefault()
       const host = voidHost.closest<HTMLElement>('[data-start]')
       if (!host) return
@@ -1127,22 +1185,27 @@ export class Editor {
       this.hideSlash()
       return
     }
-    const options = matchSlashCommands(text.slice(1))
+    const options = matchSlashCommands(text.slice(1), this.pluginRegistry.allSlashItems())
     if (options.length === 0) {
       this.hideSlash()
       return
     }
     this.slashRange = { from, to }
-    this.slash ??= createSlashMenu({ onPick: (command) => this.executeSlash(command) })
+    this.slash ??= createSlashMenu({ onPick: (item) => void this.executeSlash(item) })
     this.slash.show(this.element, options, offsetToDomPoint(this.element, to))
   }
 
-  private executeSlash(command: SlashCommand): void {
+  private async executeSlash(item: SlashMenuItem): Promise<void> {
     const range = this.slashRange
     if (!range) return
     this.hideSlash()
     this.focused = true
-    this.commit(applySlashCommand(this.state, range.from, range.to, command))
+    if (item.source === 'builtin') {
+      this.commit(applySlashCommand(this.state, range.from, range.to, item.command as SlashCommand))
+    } else {
+      this.commit(replaceRange(this.state, range.from, range.to, ''))
+      await this.runCommand(item.command)
+    }
     this.focusSurface()
   }
 
@@ -1204,11 +1267,6 @@ export class Editor {
   private onDragEnd = () => {
     this.blockChrome.dragEnd()
   }
-
-  private async paintDiagrams(): Promise<void> {
-    const generation = ++this.paintGeneration
-    await paintDiagrams(this.element, () => generation === this.paintGeneration)
-  }
 }
 
 function imageAltRange(doc: string, start: number, end: number): { anchor: number; head: number } {
@@ -1219,7 +1277,7 @@ function imageAltRange(doc: string, start: number, end: number): { anchor: numbe
 }
 
 function atomicCaret(host: HTMLElement, kind: string): number {
-  if (kind === 'diagram') {
+  if (kind === 'diagram' || kind === 'widget') {
     const code = host.querySelector('code [data-leaf]')
     if (code) return Number(code.getAttribute('data-start') ?? 0)
   }

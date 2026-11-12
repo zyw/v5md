@@ -51,9 +51,9 @@ await exporter.api.print()
 | `downloadImage(fileName?, options?)` | 下载图片 |
 | `downloadPdf(fileName?, options?)` | 下载 PDF |
 
-`exportHtml()` 会导出当前编辑器已经渲染好的内容，因此公式保留 KaTeX 排版、Mermaid 保留渲染后的 SVG，而不是退回源码代码块；图片会先用 `fetch` 转成 data URL，遇到跨域图片时回退为绝对 URL。`exportHtml()` 和 `downloadHtml()` 都是异步的。`exportHtmlFragment()` 仍然输出适合公众号粘贴的内联样式片段。
+`exportHtml()` 会导出当前编辑器已经渲染好的内容，因此公式保留 KaTeX 排版、Mermaid 保留渲染后的 SVG，而不是退回源码代码块；ECharts 等 canvas 图表会先快照成图片再写入 HTML；图片会先用 `fetch` 转成 data URL，遇到跨域图片时回退为绝对 URL。`exportHtml()` 和 `downloadHtml()` 都是异步的。`exportHtmlFragment()` 仍然输出适合公众号粘贴的内联样式片段。
 
-PDF 和图片默认使用 `html2canvas` + `jspdf`，这两个依赖在插件包内部按需动态加载。也可以选择浏览器打印路径：`print()` 会打开打印对话框，由用户在浏览器里选择「另存为 PDF」。需要自定义实现时，通过 `renderer` 替换：
+PDF 和图片默认使用 `html2canvas` + `jspdf`，这两个依赖在插件包内部按需动态加载。PDF 会按块边界切片分页，尽量避免从列表项、图表、表格中间切开。也可以选择浏览器打印路径：`print()` 会打开打印对话框，由用户在浏览器里选择「另存为 PDF」（矢量文字、系统中文字体）。需要自定义实现时，通过 `renderer` 替换：
 
 ```ts
 createExportPlugin({
@@ -64,4 +64,4 @@ createExportPlugin({
 })
 ```
 
-PDF 当前是图片式 PDF（文字不可选中）；需要可选中文字时，可以通过自定义 `renderer.pdf` 接入其他方案。
+`downloadPdf()` 当前是图片式 PDF（保证中文与图表不丢字）；需要可选中文字时请用 `print()`，或通过自定义 `renderer.pdf` 接入其他方案。

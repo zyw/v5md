@@ -53,6 +53,33 @@ export interface ExportApi {
 const DEFAULT_IMAGE_SCALE = 2
 const DEFAULT_PDF_MARGIN = 24
 
+const PRINT_CSS = `@media print {
+  body { margin: 0; padding: 0; background: #fff; }
+  .v5-block,
+  .v5-widget,
+  .v5-echarts,
+  .v5-mermaid,
+  .v5-mindmap,
+  .v5-table,
+  table,
+  pre,
+  blockquote,
+  li,
+  tr,
+  .katex-display,
+  .v5-echarts-preview,
+  .v5-diagram,
+  img,
+  svg {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}`
+
 export function createExportPlugin(options: ExportPluginOptions = {}): V5mdPlugin<ExportApi> {
   return {
     name: options.name ?? 'export',
@@ -120,8 +147,10 @@ function createExportApi(editor: Editor, content: HTMLElement, options: ExportPl
 }
 
 async function buildStandaloneHtml(editor: Editor, title: string): Promise<string> {
-  const clone = editor.getContentElement().cloneNode(true)
+  const live = editor.getContentElement()
+  const clone = live.cloneNode(true)
   if (!(clone instanceof HTMLElement)) throw new Error('editor content is not an element')
+  snapshotCanvases(live, clone)
   cleanContent(clone)
   await inlineImages(clone)
   const styles = collectEditorStyles()
@@ -133,12 +162,45 @@ async function buildStandaloneHtml(editor: Editor, title: string): Promise<strin
 <title>${escapeHtml(title)}</title>
 <style>
 ${styles}
+${PRINT_CSS}
 </style>
 </head>
 <body style="margin:0;padding:32px;background:#fff;">
 <div class="v5md is-preview">${clone.outerHTML}</div>
 </body>
 </html>`
+}
+
+/**
+ * `cloneNode` 不会复制 canvas 像素（ECharts 等会变成空白）。
+ * 按 DOM 顺序把 live canvas 转成 `<img data URL>` 写进克隆树。
+ */
+function snapshotCanvases(liveRoot: HTMLElement, cloneRoot: HTMLElement): void {
+  const liveCanvases = [...liveRoot.querySelectorAll('canvas')]
+  const cloneCanvases = [...cloneRoot.querySelectorAll('canvas')]
+  const count = Math.min(liveCanvases.length, cloneCanvases.length)
+  for (let index = 0; index < count; index += 1) {
+    const live = liveCanvases[index]
+    const clone = cloneCanvases[index]
+    if (!live || !clone) continue
+    let dataUrl = ''
+    try {
+      dataUrl = live.toDataURL('image/png')
+    } catch {
+      continue
+    }
+    if (!dataUrl || dataUrl === 'data:,') continue
+    const image = clone.ownerDocument.createElement('img')
+    image.setAttribute('src', dataUrl)
+    image.setAttribute('alt', '')
+    const width = live.clientWidth || live.width
+    const height = live.clientHeight || live.height
+    if (width) image.style.width = `${width}px`
+    if (height) image.style.height = `${height}px`
+    image.style.display = 'block'
+    image.style.maxWidth = '100%'
+    clone.replaceWith(image)
+  }
 }
 
 function cleanContent(root: HTMLElement): void {
@@ -280,6 +342,11 @@ async function renderImageWithHtml2Canvas(
   return canvasToBlob(canvas, options.type)
 }
 
+/**
+ * 图片式 PDF：用 html2canvas 保留中文与图表，再按块边界切片进页，
+ * 尽量避免从列表项 / 表格行 / 图表中间切开。
+ * 需要可选中矢量文字时，请走 `print()` 用浏览器「另存为 PDF」。
+ */
 async function renderPdfWithJsPdf(element: HTMLElement, options: Required<ExportPdfOptions>): Promise<Blob> {
   const canvas = await renderCanvas(element, options.scale)
   if (canvas.width === 0 || canvas.height === 0) throw new Error('cannot export an empty document')
@@ -292,10 +359,14 @@ async function renderPdfWithJsPdf(element: HTMLElement, options: Required<Export
   const contentHeight = pageHeight - margin * 2
   const scale = contentWidth / canvas.width
   const pageSliceHeight = Math.max(1, Math.floor(contentHeight / scale))
+  const breakPoints = collectPdfBreakPoints(element, canvas.height)
   const ownerDocument = element.ownerDocument
   let offset = 0
   while (offset < canvas.height) {
-    const height = Math.min(pageSliceHeight, canvas.height - offset)
+    const height = Math.min(
+      choosePdfSliceHeight(offset, canvas.height, pageSliceHeight, breakPoints),
+      canvas.height - offset,
+    )
     const pageCanvas = ownerDocument.createElement('canvas')
     pageCanvas.width = canvas.width
     pageCanvas.height = height
@@ -309,6 +380,72 @@ async function renderPdfWithJsPdf(element: HTMLElement, options: Required<Export
     offset += height
   }
   return pdf.output('blob')
+}
+
+const PDF_BREAK_SELECTOR = [
+  '.v5-block',
+  '.v5-widget',
+  '.v5-echarts',
+  '.v5-mermaid',
+  '.v5-mindmap',
+  '.v5-table',
+  'table',
+  'thead',
+  'tr',
+  'li',
+  'p',
+  'pre',
+  'blockquote',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  '.katex-display',
+  '.v5-echarts-preview',
+  '.v5-diagram',
+  'img',
+  'svg',
+].join(',')
+
+/** 收集适合作为分页切线的 canvas Y（元素顶/底），单位与截图像素一致。 */
+function collectPdfBreakPoints(element: HTMLElement, canvasHeight: number): number[] {
+  const sourceHeight = Math.max(element.scrollHeight, element.offsetHeight, 1)
+  const ratio = canvasHeight / sourceHeight
+  const rootRect = element.getBoundingClientRect()
+  const points = new Set<number>([0, canvasHeight])
+  for (const node of element.querySelectorAll<HTMLElement>(PDF_BREAK_SELECTOR)) {
+    const rect = node.getBoundingClientRect()
+    if (rect.height <= 0) continue
+    const top = Math.round((rect.top - rootRect.top + element.scrollTop) * ratio)
+    const bottom = Math.round((rect.bottom - rootRect.top + element.scrollTop) * ratio)
+    if (top > 0 && top < canvasHeight) points.add(top)
+    if (bottom > 0 && bottom < canvasHeight) points.add(bottom)
+  }
+  return [...points].sort((a, b) => a - b)
+}
+
+/**
+ * 在不超过一页高度的前提下，尽量切在块边界上；
+ * 找不到合适边界时退回固定页高，避免死循环。
+ */
+function choosePdfSliceHeight(
+  offset: number,
+  canvasHeight: number,
+  pageSliceHeight: number,
+  breakPoints: number[],
+): number {
+  const limit = Math.min(offset + pageSliceHeight, canvasHeight)
+  if (limit >= canvasHeight) return canvasHeight - offset
+  const minKeep = offset + Math.max(48, Math.floor(pageSliceHeight * 0.45))
+  let best = limit
+  for (const point of breakPoints) {
+    if (point <= minKeep) continue
+    if (point > limit) break
+    best = point
+  }
+  return Math.max(1, best - offset)
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: ExportImageType): Promise<Blob> {

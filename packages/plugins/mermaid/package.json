@@ -1,0 +1,41 @@
+{
+  "name": "@v5md/plugin-mermaid",
+  "version": "0.0.3",
+  "description": "v5md Mermaid 块渲染插件",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "homepage": "https://v5md.v5ai.xin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zyw/v5md.git",
+    "directory": "packages/plugins/mermaid"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist tsconfig.tsbuildinfo && tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@v5md/view": "0.0.3",
+    "mermaid": "^12.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

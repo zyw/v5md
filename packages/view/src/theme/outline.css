@@ -4,15 +4,25 @@
   margin: 0;
   padding: 22px 8px 12px 20px;
   box-sizing: border-box;
-  position: sticky;
-  top: 0;
-  z-index: 4;
   align-self: flex-start;
-  max-height: 100vh;
-  overflow: auto;
   background: #fff;
   white-space: normal;
   user-select: none;
+}
+
+.v5md.v5-outline-sticky .v5-outline {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  /* Only the outline list scrolls when it exceeds the viewport; the editor itself does not. */
+  max-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.v5md.v5-toolbar-sticky.v5-outline-sticky .v5-outline {
+  top: var(--v5-sticky-toolbar-height, 43px);
+  max-height: calc(100vh - var(--v5-sticky-toolbar-height, 43px));
 }
 
 .v5md .v5-outline p {

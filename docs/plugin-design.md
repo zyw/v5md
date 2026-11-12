@@ -792,6 +792,13 @@ typography.api.setFontSize(18)
 - 追加：`exportHtml()` 改为基于当前渲染 DOM，并收集主题/KaTeX 样式，保留公式和 Mermaid 渲染结果；图片会内联为 data URL；新增 `print()` 浏览器打印入口。
 - 追加：工具条支持溢出菜单，`use()` / `dispose()` 改为增量更新按钮，不再整条重建。
 
+## 15.1 块渲染扩展
+
+块级可视化（ECharts、思维导图等）不在本文范围，见独立设计与实现文档：
+
+- [`docs/plugin-block-render.md`](./plugin-block-render.md) — `V5mdPlugin.blocks` / `V5mdBlockRenderer` 冻结接口与落地进度
+- [`docs/plugin-block-render-next.md`](./plugin-block-render-next.md) — 二期及以后开发清单
+
 ## 16. 风险与备选方案
 
 ### 风险
@@ -811,5 +818,5 @@ typography.api.setFontSize(18)
 ## 17. 已确认取舍
 
 - 导出 HTML 同时提供两种形态：`exportHtml()` 返回完整 HTML 文档，`exportHtmlFragment()` 返回可粘贴片段；完整文档保留当前渲染的 KaTeX 公式和 Mermaid SVG。
-- PDF / 图片默认使用 `html2canvas` + `jspdf`，通过 `renderer` 可以替换；另外提供 `print()` 走浏览器打印对话框，由用户选择「另存为 PDF」。
+- PDF / 图片默认使用 `html2canvas` + `jspdf`（PDF 按块智能分页），通过 `renderer` 可以替换；另外提供 `print()` 走浏览器打印对话框，由用户选择「另存为 PDF」。
 - 工具条已实现溢出菜单；可用宽度不足时多余按钮自动进入「更多」菜单。

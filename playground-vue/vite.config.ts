@@ -15,6 +15,18 @@ export default defineConfig({
         find: '@v5md/plugin-typography',
         replacement: path.resolve(__dirname, '../packages/plugins/typography/src/index.ts'),
       },
+      {
+        find: '@v5md/plugin-echarts',
+        replacement: path.resolve(__dirname, '../packages/plugins/echarts/src/index.ts'),
+      },
+      {
+        find: '@v5md/plugin-mermaid',
+        replacement: path.resolve(__dirname, '../packages/plugins/mermaid/src/index.ts'),
+      },
+      {
+        find: '@v5md/plugin-mindmap',
+        replacement: path.resolve(__dirname, '../packages/plugins/mindmap/src/index.ts'),
+      },
       { find: '@v5md/sample', replacement: path.resolve(__dirname, '../samples/demo.ts') },
     ],
   },

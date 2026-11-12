@@ -228,6 +228,44 @@ describe('Editor plugins', () => {
     element.remove()
   })
 
+  it('merges plugin slash items into the menu and executes the command', async () => {
+    const plugin = {
+      name: 'slash-demo',
+      commands: {
+        'slash-demo.insert': {
+          run: ({ insertText }: { insertText(text: string): boolean }) => insertText('plugin-slash\n'),
+        },
+      },
+      slash: [
+        {
+          id: 'slash-demo.insert',
+          command: 'slash-demo.insert',
+          title: '插件斜杠',
+          keywords: ['demo'],
+          order: 10,
+        },
+      ],
+    }
+    const { element, editor } = editorWith({
+      element: document.createElement('div'),
+      value: '\n',
+      plugins: [plugin],
+    })
+    editor.focusAt(0)
+    editor.insertText('/')
+    const option = [...element.querySelectorAll<HTMLButtonElement>('.v5-slash-menu button')].find(
+      (button) => button.dataset.slashId === 'slash-demo.insert',
+    )
+    expect(option).not.toBeNull()
+    expect(option?.dataset.source).toBe('plugin')
+    option?.click()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(editor.getMarkdown()).toContain('plugin-slash')
+    expect(editor.getMarkdown()).not.toContain('/')
+    editor.destroy()
+    element.remove()
+  })
+
   it('wraps selected text through the command context', () => {
     const plugin = {
       name: 'wrap',

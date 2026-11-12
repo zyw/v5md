@@ -6,7 +6,8 @@
 // toolbar controller). They are re-exported here so that a refactor of the
 // internal layout touches this one file instead of every test.
 export { applyChrome } from '../src/editor/selection.ts'
-export { renderDocument } from '../src/editor/render.ts'
+export { BlockHost, BlockRendererRegistry, blockInstanceKey, hashSource } from '../src/editor/blocks.ts'
+export { createFencedWidgetShell, renderDocument } from '../src/editor/render.ts'
 export { markdownSpans, sourceLines } from '../src/editor/source.ts'
 export { runShortcut, type KeymapHost } from '../src/editor/keymap.ts'
 export { createToolbarController } from '../src/chrome/toolbar.ts'

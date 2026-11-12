@@ -229,14 +229,32 @@
   margin: 0.6em 0;
 }
 
-.v5md .v5-doc .v5-diagram {
+.v5md .v5-doc .v5-diagram,
+.v5md .v5-doc .v5-widget-preview {
   overflow-x: auto;
 }
 
-.v5md .v5-doc .v5-mermaid:not(.v5-active) > code {
+.v5md .v5-doc .v5-echarts-preview,
+.v5md .v5-doc .v5-mindmap-preview {
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ECharts canvas is inline by default and can sit 1px taller than the box. */
+.v5md .v5-doc .v5-echarts-preview > canvas,
+.v5md .v5-doc .v5-echarts-preview > div {
+  display: block;
+  max-width: 100%;
+}
+
+.v5md .v5-doc .v5-mermaid:not(.v5-active) > code,
+.v5md .v5-doc .v5-widget:not(.v5-active) > code {
   display: none;
 }
 
-.v5md .v5-doc .v5-mermaid.v5-active > .v5-diagram {
+.v5md .v5-doc .v5-mermaid.v5-active > .v5-diagram,
+.v5md .v5-doc .v5-widget.v5-active > .v5-widget-preview,
+.v5md .v5-doc .v5-widget.v5-active > [data-void='widget'],
+.v5md .v5-doc .v5-widget.v5-active > [data-void='diagram'] {
   display: none;
 }

@@ -19,6 +19,12 @@
   user-select: none;
 }
 
+.v5md.v5-toolbar-sticky .v5-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
 .v5md .v5-toolbar-group {
   display: flex;
   flex: var(--v5-count, 1) 1 0;

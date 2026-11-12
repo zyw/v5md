@@ -729,6 +729,23 @@ describe('Editor', () => {
     editor.destroy()
   })
 
+  it('toggles sticky chrome classes for toolbar and outline', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '# 标题\n', toolbarSticky: true })
+    expect(element.classList.contains('v5-toolbar-sticky')).toBe(true)
+    expect(element.classList.contains('v5-outline-sticky')).toBe(true)
+    expect(editor.isToolbarSticky()).toBe(true)
+    expect(editor.isOutlineSticky()).toBe(true)
+    editor.setToolbarSticky(false)
+    editor.setOutlineSticky(false)
+    expect(element.classList.contains('v5-toolbar-sticky')).toBe(false)
+    expect(element.classList.contains('v5-outline-sticky')).toBe(false)
+    editor.setOutlineSticky(true)
+    expect(element.classList.contains('v5-outline-sticky')).toBe(true)
+    editor.destroy()
+  })
+
   it('jumps to the heading chosen in the outline', () => {
     const element = document.createElement('div')
     document.body.append(element)

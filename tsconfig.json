@@ -6,6 +6,9 @@
     { "path": "packages/vue" },
     { "path": "packages/react" },
     { "path": "packages/plugins/typography" },
-    { "path": "packages/plugins/export" }
+    { "path": "packages/plugins/export" },
+    { "path": "packages/plugins/echarts" },
+    { "path": "packages/plugins/mermaid" },
+    { "path": "packages/plugins/mindmap" }
   ]
 }

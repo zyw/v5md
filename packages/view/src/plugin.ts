@@ -14,6 +14,62 @@ export interface V5mdPluginState {
   outlineVisible: boolean
 }
 
+/** Context passed to a block renderer's synchronous `render()`. */
+export interface BlockRenderContext {
+  node: MdNode
+  /** Full Markdown document. */
+  doc: string
+  /** Fence body without opening/closing fence lines. */
+  source: string
+  /** Normalized lang (lowercase). */
+  lang: string
+  editable: boolean
+  sourceMode: boolean
+  /** Whether this block is the active source-editing block. */
+  active: boolean
+  /** Editor host root (`.v5md`). */
+  host: HTMLElement
+}
+
+export interface BlockHydrateContext extends BlockRenderContext {
+  element: HTMLElement
+  /** False once a newer render pass has started; stale async work must not write. */
+  isCurrent(): boolean
+  signal: AbortSignal
+}
+
+export interface BlockUpdateContext extends BlockHydrateContext {
+  /** Widget root retained from the previous render pass. */
+  previous: HTMLElement
+}
+
+export interface BlockDestroyContext {
+  element: HTMLElement
+  lang: string
+  rendererId: string
+}
+
+/**
+ * Custom fenced-code block renderer.
+ * See `docs/plugin-block-render.md` §0 for the frozen contract.
+ */
+export interface V5mdBlockRenderer {
+  /** Unique renderer id, e.g. `echarts` or `mindmap`. */
+  id: string
+  /** Fenced lang or langs; compared after trim + toLowerCase(). */
+  lang: string | string[]
+  /** Optional matcher beyond lang. First installed match wins. */
+  match?(node: MdNode): boolean
+  /** Synchronous shell only — no heavy IO. */
+  render(ctx: BlockRenderContext): HTMLElement
+  /** Optional async paint; must honor `isCurrent` and `signal`. */
+  hydrate?(ctx: BlockHydrateContext): void | Promise<void>
+  /** Optional reuse when source/key is unchanged. */
+  update?(ctx: BlockUpdateContext): void | Promise<void>
+  /** Cleanup when the instance is dropped or the plugin unloads. */
+  destroy?(ctx: BlockDestroyContext): void
+}
+
 export interface V5mdCommandContext {
   editor: Editor
   host: HTMLElement
@@ -47,6 +103,20 @@ export interface V5mdToolbarItem {
   isDisabled?(state: V5mdPluginState): boolean
 }
 
+/** Slash menu contribution from a plugin. */
+export interface V5mdSlashItem {
+  /** Unique slash entry id; defaults to command. */
+  id?: string
+  /** Display title in the slash menu. */
+  title: string
+  /** Plugin command id (or a built-in slash command id). */
+  command: string
+  /** Extra filter needles besides id/title/command. */
+  keywords?: string[]
+  /** Sort key among plugin slash items; lower first. Defaults by declaration order. */
+  order?: number
+}
+
 export interface V5mdPlugin<TApi = undefined> {
   /** 插件唯一名，建议使用 npm 包名或短横线命名。 */
   name: string
@@ -58,7 +128,11 @@ export interface V5mdPlugin<TApi = undefined> {
   optional?: string[]
 
   toolbar?: V5mdToolbarItem[]
+  /** Slash (`/`) menu entries contributed by this plugin. */
+  slash?: V5mdSlashItem[]
   commands?: Record<string, V5mdCommand>
+  /** Custom fenced-code block renderers for this editor instance. */
+  blocks?: V5mdBlockRenderer[]
   api?: (context: V5mdCommandContext) => TApi
   setup?(context: V5mdCommandContext): void | (() => void) | Promise<void>
   destroy?(): void
@@ -84,18 +158,48 @@ export interface ToolbarItemView {
   isDisabled?(state: V5mdPluginState): boolean
 }
 
+export interface SlashItemView {
+  id: string
+  title: string
+  command: string
+  keywords: readonly string[]
+  order: number
+  source: 'plugin'
+}
+
 export interface PluginRegistration<TApi = undefined> {
   plugin: V5mdPlugin<TApi>
   commands: ReadonlyMap<string, V5mdCommand>
   toolbar: readonly ToolbarItemView[]
+  slash: readonly SlashItemView[]
   cleanup?: () => void
   disposed: boolean
 }
+
+/** Built-in `/` commands handled by `applySlashCommand`. */
+export const BUILTIN_SLASH_COMMAND_IDS: ReadonlySet<string> = new Set([
+  'paragraph',
+  'heading1',
+  'heading2',
+  'heading3',
+  'bulletList',
+  'orderedList',
+  'taskList',
+  'quote',
+  'code',
+  'table',
+  'rule',
+  'link',
+  'math',
+  'inlineMath',
+  'image',
+])
 
 export class PluginRegistry {
   private readonly entries = new Map<string, PluginRegistration<unknown>>()
   private readonly commandOwners = new Map<string, string>()
   private readonly toolbarIds = new Set<string>()
+  private readonly slashIds = new Set<string>()
 
   constructor(
     private readonly builtinCommands: ReadonlySet<string>,
@@ -170,9 +274,35 @@ export class PluginRegistry {
       })
     }
 
+    const slash: SlashItemView[] = []
+    const slashIds = new Set<string>()
+    for (const [index, item] of (plugin.slash ?? []).entries()) {
+      const id = item.id ?? item.command
+      if (!id) throw new Error(`v5md plugin "${name}" has a slash item without an id`)
+      if (!item.command || !item.title) {
+        throw new Error(`v5md plugin "${name}" slash item "${id}" needs command and title`)
+      }
+      if (BUILTIN_SLASH_COMMAND_IDS.has(id) || this.slashIds.has(id) || slashIds.has(id)) {
+        throw new Error(`v5md plugin "${name}" slash id "${id}" is already used`)
+      }
+      if (!knownCommands.has(item.command) && !BUILTIN_SLASH_COMMAND_IDS.has(item.command)) {
+        throw new Error(`v5md plugin "${name}" slash item "${id}" references unknown command "${item.command}"`)
+      }
+      slashIds.add(id)
+      slash.push({
+        id,
+        title: item.title,
+        command: item.command,
+        keywords: item.keywords ?? [],
+        order: item.order ?? 1000 + index,
+        source: 'plugin',
+      })
+    }
+
     for (const id of commands.keys()) this.commandOwners.set(id, name)
     for (const id of toolbarIds) this.toolbarIds.add(id)
-    const registration: PluginRegistration<TApi> = { plugin, commands, toolbar, disposed: false }
+    for (const id of slashIds) this.slashIds.add(id)
+    const registration: PluginRegistration<TApi> = { plugin, commands, toolbar, slash, disposed: false }
     this.entries.set(name, registration as PluginRegistration<unknown>)
     return registration
   }
@@ -183,6 +313,7 @@ export class PluginRegistry {
     this.entries.delete(name)
     for (const id of registration.commands.keys()) this.commandOwners.delete(id)
     for (const item of registration.toolbar) this.toolbarIds.delete(item.id)
+    for (const item of registration.slash) this.slashIds.delete(item.id)
     return registration as PluginRegistration<undefined>
   }
 
@@ -204,6 +335,12 @@ export class PluginRegistry {
 
   allToolbarItems(): ToolbarItemView[] {
     return this.list().flatMap((registration) => [...registration.toolbar])
+  }
+
+  allSlashItems(): SlashItemView[] {
+    return this.list()
+      .flatMap((registration) => [...registration.slash])
+      .sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))
   }
 
   get size(): number {

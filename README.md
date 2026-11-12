@@ -8,7 +8,7 @@
 
 同一套编辑器可以嵌进 Vue 3 和 React，也可以直接挂到任意 DOM 元素上。不依赖框架、不接管你的数据流、不生成私有格式——存下来的就是标准 Markdown。
 
-当前版本 `0.0.3`。`0.0.2` 已在 [npm 官方仓库](https://www.npmjs.com/package/@v5md/view)，六个包都是 ESM（`"type": "module"`）。
+当前版本 `0.0.3`。`0.0.2` 已在 [npm 官方仓库](https://www.npmjs.com/package/@v5md/view)，核心与官方插件包都是 ESM（`"type": "module"`）。
 
 ## 目录
 
@@ -33,9 +33,9 @@
 | **中文输入法友好** | 组合输入期间不重绘 DOM，不会出现候选框错位、拼音上屏丢字。 |
 | **粘贴即转换** | 从网页、Word、飞书复制的富文本，先转成 Markdown 再写入文档。 |
 | **不锁死框架** | `@v5md/vue`、`@v5md/react` 只是薄壳，核心是 `@v5md/view` 里的 `Editor` 类。 |
-| **可插拔** | 工具条按钮、命令、对外 API 都能由插件提供；官方插件目前覆盖字号和导出。 |
+| **可插拔** | 工具条、斜杠菜单、命令、对外 API、块渲染都能由插件提供；官方插件覆盖字号、导出、Mermaid、Mindmap 和 ECharts。 |
 
-支持的内容：段落与一到六级标题、粗体/斜体/下划线/删除线/`==高亮==`/行内代码/链接、有序列表/无序列表/任务列表/引用、围栏代码块（语法高亮）、表格（含对齐）、分割线、图片（可拖拽缩放）、行内公式与公式块（KaTeX）、Mermaid 图表、文首 YAML frontmatter。
+支持的内容：段落与一到六级标题、粗体/斜体/下划线/删除线/`==高亮==`/行内代码/链接、有序列表/无序列表/任务列表/引用、围栏代码块（语法高亮）、表格（含对齐）、分割线、图片（可拖拽缩放）、行内公式与公式块（KaTeX）、文首 YAML frontmatter；Mermaid / Mindmap / ECharts 由官方插件按需提供。
 
 编辑能力：撤销重做、查找替换（支持正则与全词）、带语法高亮和行号的整篇源码模式、大纲跳转、表格行列编辑、图片上传、一键复制为公众号富文本、插件扩展。
 
@@ -75,8 +75,8 @@ npm install @v5md/view
 # 只解析 Markdown，不画页面
 npm install @v5md/core
 
-# 可选。字号、导出都要单独装，编辑器不会自带
-npm install @v5md/plugin-typography @v5md/plugin-export
+# 可选。字号、导出、Mermaid、Mindmap、ECharts 都要单独装，编辑器不会自带
+npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts
 ```
 
 | 包 | 什么时候装 |
@@ -87,6 +87,9 @@ npm install @v5md/plugin-typography @v5md/plugin-export
 | [`@v5md/core`](https://www.npmjs.com/package/@v5md/core) | 只要 `parse`、大纲或编辑状态，不创建编辑器 |
 | [`@v5md/plugin-typography`](https://www.npmjs.com/package/@v5md/plugin-typography) | 要改正文字号 |
 | [`@v5md/plugin-export`](https://www.npmjs.com/package/@v5md/plugin-export) | 要导出 Markdown、HTML、PDF 或图片 |
+| [`@v5md/plugin-mermaid`](https://www.npmjs.com/package/@v5md/plugin-mermaid) | 要渲染 `mermaid` 流程图 |
+| [`@v5md/plugin-mindmap`](https://www.npmjs.com/package/@v5md/plugin-mindmap) | 要渲染 `mindmap` 思维导图 |
+| [`@v5md/plugin-echarts`](https://www.npmjs.com/package/@v5md/plugin-echarts) | 要渲染 `echarts` 围栏图表 |
 
 主题要在业务代码里引入一次，否则只有结构没有排版：
 
@@ -94,7 +97,7 @@ npm install @v5md/plugin-typography @v5md/plugin-export
 import '@v5md/view/theme.css'
 ```
 
-KaTeX、lowlight、mermaid 随 `@v5md/view` 一起安装，不用额外处理；`katex/dist/katex.min.css` 由 `@v5md/view` 入口自动引入。
+KaTeX、lowlight 随 `@v5md/view` 一起安装，不用额外处理；`katex/dist/katex.min.css` 由 `@v5md/view` 入口自动引入。Mermaid / Mindmap / ECharts 留在对应插件包里按需安装。
 
 本机 `~/.npmrc` 里如果写了 `@v5md:registry` 指向公司仓库，上面的安装会走那个地址，而不是 npmjs.org。使用官方仓库时删掉这一行。从公司仓库安装的步骤见 [发布教程](发布教程.md)。
 
@@ -206,7 +209,7 @@ const editor = new Editor({
 editor.destroy()
 ```
 
-`toolbar` 和 `outline` 默认都显示，传 `false` 可以关掉；之后也能用 `setToolbarVisible()` / `setOutlineVisible()` 切换。
+`toolbar` 和 `outline` 默认都显示，传 `false` 可以关掉；之后也能用 `setToolbarVisible()` / `setOutlineVisible()` 切换。`toolbarSticky` / `outlineSticky` 控制滚动时是否钉顶（工具条默认关、大纲默认开），也可用 `setToolbarSticky()` / `setOutlineSticky()` 切换。
 
 ## 常用 API
 
@@ -273,6 +276,8 @@ editor.toggleBold()         // 行内格式
 | `setLineNumbersVisible(on)` / `isLineNumbersVisible()` | 源码模式行号 |
 | `setToolbarVisible(on)` / `isToolbarVisible()` | 工具条显隐 |
 | `setOutlineVisible(on)` / `isOutlineVisible()` | 大纲显隐 |
+| `setToolbarSticky(on)` / `isToolbarSticky()` | 工具条是否钉在滚动顶部，默认关 |
+| `setOutlineSticky(on)` / `isOutlineSticky()` | 大纲是否钉在滚动顶部，默认开 |
 | `setEditable(on)` | 运行时切换只读预览 |
 | `setPlaceholder(text)` | 运行时改提示语 |
 | `getOutline()` | 标题列表 `{ depth, text, start }[]` |
@@ -312,22 +317,25 @@ outline.update(editor.getOutline())
 
 ## 插件
 
-插件可以贡献三样东西：工具条按钮、供外部调用的命令、以及插件自己的 API。也可以只给其中一部分——比如只提供 API，不显示任何按钮。
+插件可以贡献工具条按钮、斜杠菜单项、供外部调用的命令、块渲染器，以及插件自己的 API。也可以只给其中一部分——比如只提供 API，不显示任何按钮。
 
 ### 官方插件
 
-两个插件都要单独安装，编辑器不会自带：
+官方插件都要单独安装，编辑器不会自带：
 
 ```bash
-npm install @v5md/plugin-typography @v5md/plugin-export
+npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts
 ```
 
-| 包 | 作用 | 工具条按钮 |
+| 包 | 作用 | 工具条 / 斜杠 |
 | --- | --- | --- |
 | [`@v5md/plugin-typography`](packages/plugins/typography/README.md) | 调整正文字号 | 无 |
 | [`@v5md/plugin-export`](packages/plugins/export/README.md) | 导出 Markdown / HTML / PDF / 图片 | 无 |
+| [`@v5md/plugin-mermaid`](packages/plugins/mermaid/README.md) | 渲染 ` ```mermaid ` 流程图 | 可选「流程图」/ 斜杠「流程图」 |
+| [`@v5md/plugin-mindmap`](packages/plugins/mindmap/README.md) | 渲染 ` ```mindmap ` Markdown 大纲导图 | 可选「思维导图」/ 斜杠「思维导图」 |
+| [`@v5md/plugin-echarts`](packages/plugins/echarts/README.md) | 渲染 ` ```echarts ` JSON 图表 | 可选「图表」/ 斜杠「图表」 |
 
-两个官方插件都只提供 API，不往工具条里塞按钮：按钮放哪儿、长什么样由页面决定，调用 `handle.api` 即可（两个 playground 就是这么接的，见 [`playground-vue/src/App.vue`](playground-vue/src/App.vue)）。
+字号和导出只提供 API；Mermaid / Mindmap / ECharts 默认带插入按钮与斜杠项，可 `toolbar: false` 关掉工具条按钮。playground 已接入，见 [`playground-vue/src/App.vue`](playground-vue/src/App.vue)。
 
 ### 字号插件
 
@@ -346,6 +354,51 @@ typography.api.resetFontSize()
 | `name` | `typography` | 插件名，用于 `requires` 和 `getPlugin` |
 
 API：`setFontSize(px)`、`getFontSize()`、`resetFontSize()`、`getDefaultSize()`。
+
+### Mermaid 插件
+
+```ts
+import { createMermaidPlugin } from '@v5md/plugin-mermaid'
+
+const editor = new Editor({
+  element,
+  plugins: [createMermaidPlugin()],
+})
+
+await editor.runCommand('mermaid.insert')
+```
+
+未安装时，`mermaid` 围栏按普通代码块高亮显示。完整说明见 [`packages/plugins/mermaid/README.md`](packages/plugins/mermaid/README.md)。
+
+### Mindmap 插件
+
+```ts
+import { createMindmapPlugin } from '@v5md/plugin-mindmap'
+
+const editor = new Editor({
+  element,
+  plugins: [createMindmapPlugin()],
+})
+
+await editor.runCommand('mindmap.insert')
+```
+
+围栏正文是 Markdown 大纲（标题或缩进列表）。完整说明见 [`packages/plugins/mindmap/README.md`](packages/plugins/mindmap/README.md)。
+
+### ECharts 插件
+
+```ts
+import { createEchartsPlugin } from '@v5md/plugin-echarts'
+
+const editor = new Editor({
+  element,
+  plugins: [createEchartsPlugin({ height: 320 })],
+})
+
+await editor.runCommand('echarts.insert')
+```
+
+围栏正文必须是 JSON option（不执行 JS）。完整说明见 [`packages/plugins/echarts/README.md`](packages/plugins/echarts/README.md) 与 [`docs/plugin-block-render.md`](docs/plugin-block-render.md)。
 
 ### 导出插件
 
@@ -425,6 +478,8 @@ export function createWordCountPlugin(): V5mdPlugin<WordCountApi> {
 | `optional` | 可选依赖，不校验，插件内部自己 `getPlugin` |
 | `commands` | `Record<string, { run, isEnabled? }>` |
 | `toolbar` | 工具条按钮定义数组 |
+| `slash` | `/` 斜杠菜单项；选中后清空 `/query` 再执行对应 `command` |
+| `blocks` | 自定义围栏代码块渲染器（如图表 / 思维导图），见下方 |
 | `api` | 返回给外部使用的 API 对象 |
 | `setup` | 挂载后调用，返回的函数作为清理逻辑，也可以返回 Promise |
 | `destroy` | 卸载时调用 |
@@ -523,6 +578,53 @@ editor.destroy()         →  反序卸载所有插件
 
 完整设计与实现记录见 [`docs/plugin-design.md`](docs/plugin-design.md)。
 
+### 自定义块渲染（图表 / 思维导图）
+
+插件可通过 `blocks` 接管指定 `lang` 的 fenced code。宿主会在全量重渲染之间按
+
+`rendererId:lang:hash(source):occurrence`
+
+复用实例，并调用 `hydrate` / `update` / `destroy`。
+
+```ts
+import {
+  createFencedWidgetShell,
+  type V5mdPlugin,
+} from '@v5md/view'
+
+export function createDemoBlockPlugin(): V5mdPlugin {
+  return {
+    name: 'demo-block',
+    blocks: [
+      {
+        id: 'demo',
+        lang: 'demo',
+        render(ctx) {
+          const { root, preview } = createFencedWidgetShell(ctx.node, {
+            blockClass: 'v5-demo',
+            placeholder: '绘制中…',
+          })
+          preview.dataset.source = ctx.source
+          return root
+        },
+        async hydrate(ctx) {
+          if (!ctx.isCurrent() || ctx.signal.aborted) return
+          const preview = ctx.element.querySelector<HTMLElement>('[data-void="widget"]')
+          if (preview) preview.textContent = ctx.source
+        },
+      },
+    ],
+  }
+}
+```
+
+约定：
+
+- 预览槽使用 `data-void="widget"`（或 `diagram`），`contentEditable="false"`
+- 非激活显示预览、激活显示源码（样式类名建议带 `v5-widget`；`createFencedWidgetShell` 已加）
+- 查找优先级：插件注册表 → 普通代码块（`mermaid` 需安装 `@v5md/plugin-mermaid`）
+- 详细接口冻结与路线见 [`docs/plugin-block-render.md`](docs/plugin-block-render.md)
+
 ## 主题与样式
 
 主题是一个独立 CSS 文件：`@v5md/view/theme.css`。整体引入即可，也可以复制进自己的构建流程。
@@ -595,7 +697,7 @@ const state = createState('# 标题\n')       // 编辑状态 + 撤销历史
 
 - 面向现代浏览器（Chrome / Edge / Safari / Firefox 最近两个大版本），依赖 `contenteditable`、`Clipboard API`、`CSS Highlights`。不支持时查找高亮和富文本剪贴板会降级，编辑本身仍可用。
 - 所有包都是 ESM，需要能处理 ESM 的打包器（Vite、webpack 5、Rollup、esbuild）或原生 `import`。
-- mermaid 体积较大，只有文档里真的出现图表时才动态加载；KaTeX 和 lowlight 随包安装。
+- KaTeX 和 lowlight 随 `@v5md/view` 安装；Mermaid / Mindmap / ECharts 随对应插件安装，文档里出现图表时才动态加载。
 - 构建本仓库需要 Node.js `^20.19.0` 或 `>=22.12.0`（Vite 7 的要求），运行时没有 Node 版本要求。
 
 ## 常见问题
@@ -624,6 +726,9 @@ const state = createState('# 标题\n')       // 编辑状态 + 撤销历史
 | [`@v5md/react`](packages/react/README.md) | React 组件 |
 | [`@v5md/plugin-typography`](packages/plugins/typography/README.md) | 字号插件 |
 | [`@v5md/plugin-export`](packages/plugins/export/README.md) | 导出插件 |
+| [`@v5md/plugin-mermaid`](packages/plugins/mermaid/README.md) | Mermaid 流程图插件 |
+| [`@v5md/plugin-mindmap`](packages/plugins/mindmap/README.md) | Markmap 思维导图插件 |
+| [`@v5md/plugin-echarts`](packages/plugins/echarts/README.md) | ECharts 图表插件 |
 
 依赖方向：`core ← view ← {vue, react, plugin-*}`。
 

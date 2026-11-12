@@ -9,14 +9,23 @@ export type { ToolbarCommand } from './chrome/toolbar.js'
 export { htmlToMarkdown } from './convert/html-to-md.js'
 export { copyRichText, toWechatHtml } from './convert/wechat.js'
 export type { WechatHtmlOptions } from './convert/wechat.js'
-export { PLUGIN_API_VERSION, PluginRegistry } from './plugin.js'
+export { BUILTIN_SLASH_COMMAND_IDS, PLUGIN_API_VERSION, PluginRegistry } from './plugin.js'
 export type {
+  BlockDestroyContext,
+  BlockHydrateContext,
+  BlockRenderContext,
+  BlockUpdateContext,
   PluginRegistration,
+  SlashItemView,
   ToolbarItemView,
+  V5mdBlockRenderer,
   V5mdCommand,
   V5mdCommandContext,
   V5mdPlugin,
   V5mdPluginHandle,
   V5mdPluginState,
+  V5mdSlashItem,
   V5mdToolbarItem,
 } from './plugin.js'
+export { blockInstanceKey, hashSource, normalizeBlockLang } from './editor/blocks.js'
+export { createFencedWidgetShell } from './editor/render.js'

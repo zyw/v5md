@@ -34,7 +34,7 @@ function cleanCopiedFragment(root: HTMLElement): void {
       '.md-marker, .v5-marker, .v5-source, .v5-image-resize, .v5-empty-line, .v5-block-handle, .v5-block-menu, .v5-tablebar, .v5-toolbar, .v5-outline, .v5-find',
     )
     .forEach((element) => element.remove())
-  root.querySelectorAll('.v5-mermaid > code').forEach((element) => element.remove())
+  root.querySelectorAll('.v5-mermaid > code, .v5-widget > code').forEach((element) => element.remove())
   root.querySelectorAll<HTMLButtonElement>('button.v5-check').forEach((check) => {
     const label = check.ownerDocument.createElement('span')
     label.textContent = check.dataset.checked === 'true' ? '✓' : '☐'

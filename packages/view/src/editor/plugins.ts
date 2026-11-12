@@ -1,4 +1,4 @@
-import type { PluginRegistration, PluginRegistry, V5mdCommandContext, V5mdPluginHandle } from '../plugin.js'
+import type { PluginRegistration, PluginRegistry, V5mdCommandContext, V5mdPlugin, V5mdPluginHandle } from '../plugin.js'
 
 export interface PluginHostOptions {
   /** Context handed to plugin lifecycle hooks and commands. */
@@ -7,6 +7,10 @@ export interface PluginHostOptions {
   changed(): void
   /** Whether a toolbar is mounted, so a failed install can restore it. */
   hasToolbar(): boolean
+  /** Registers block renderers before setup runs. */
+  onActivate?(plugin: V5mdPlugin<unknown>): void
+  /** Drops block renderers when a plugin is disposed. */
+  onDispose?(name: string): void
 }
 
 /** Owns plugin activation, the handle map and teardown. */
@@ -24,11 +28,19 @@ export class PluginHost {
 
   activate<T>(registration: PluginRegistration<T>): V5mdPluginHandle<T> {
     const plugin = registration.plugin
+    try {
+      this.options.onActivate?.(plugin)
+    } catch (error) {
+      this.registry.remove(plugin.name)
+      if (this.options.hasToolbar()) this.options.changed()
+      throw error
+    }
     const context = this.options.context()
     let api: T
     try {
       api = plugin.api ? plugin.api(context) : (undefined as T)
     } catch (error) {
+      this.options.onDispose?.(plugin.name)
       this.registry.remove(plugin.name)
       if (this.options.hasToolbar()) this.options.changed()
       throw error
@@ -96,6 +108,11 @@ export class PluginHost {
       console.error(`[v5md] plugin "${name}" destroy failed`, error)
     }
     this.registry.remove(name)
+    try {
+      this.options.onDispose?.(name)
+    } catch (error) {
+      console.error(`[v5md] plugin "${name}" block dispose failed`, error)
+    }
     if (!skipRefresh && this.options.hasToolbar()) this.options.changed()
   }
 }

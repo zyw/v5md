@@ -1,5 +1,6 @@
 import type { MdNode } from '@v5md/core'
 import katex from 'katex'
+import type { BlockHost } from './blocks.js'
 import { highlightSpans } from './highlight.js'
 import { externalLinkUrl, linkActivationHint } from './links.js'
 import { sourceLines, type SourceLine, type SourceToken } from './source.js'
@@ -14,24 +15,43 @@ export interface RenderOptions {
   lineNumbers?: boolean
   /** Hover hint for links. Defaults from the host's preview class and runtime. */
   linkHint?: string
+  /** Plugin block host for custom fenced-code renderers. */
+  blocks?: BlockHost
+  /** Whether the editor is editable (affects block render context). */
+  editable?: boolean
 }
 
 /** Rendering is synchronous, so this stays stable for the whole renderDocument call. */
 let activeLinkHint = ''
+let activeBlocks: BlockHost | null = null
 
 export function renderDocument(container: HTMLElement, options: RenderOptions, tree: MdNode): void {
   activeLinkHint = options.linkHint ?? linkActivationHint(container.classList.contains('v5-preview'))
-  const fragment = document.createDocumentFragment()
-  if (options.sourceMode) fragment.append(renderSourceDocument(options.doc, tree, options.lineNumbers !== false))
-  else for (const child of tree.children) fragment.append(renderNode(child))
-  const doc = documentHost(container)
-  doc.replaceChildren(fragment)
-  const empty = options.doc.length === 0 ? 'true' : 'false'
-  doc.dataset.empty = empty
-  container.dataset.empty = empty
-  if (options.placeholder) {
-    doc.dataset.placeholder = options.placeholder
-    container.dataset.placeholder = options.placeholder
+  activeBlocks = options.blocks && !options.sourceMode ? options.blocks : null
+  if (activeBlocks) {
+    activeBlocks.beginRender({
+      doc: options.doc,
+      head: options.head,
+      editable: options.editable ?? !container.classList.contains('v5-preview'),
+      sourceMode: false,
+      host: container,
+    })
+  }
+  try {
+    const fragment = document.createDocumentFragment()
+    if (options.sourceMode) fragment.append(renderSourceDocument(options.doc, tree, options.lineNumbers !== false))
+    else for (const child of tree.children) fragment.append(renderNode(child))
+    const doc = documentHost(container)
+    doc.replaceChildren(fragment)
+    const empty = options.doc.length === 0 ? 'true' : 'false'
+    doc.dataset.empty = empty
+    container.dataset.empty = empty
+    if (options.placeholder) {
+      doc.dataset.placeholder = options.placeholder
+      container.dataset.placeholder = options.placeholder
+    }
+  } finally {
+    activeBlocks = null
   }
 }
 
@@ -142,7 +162,8 @@ function taskCheckbox(node: MdNode): HTMLButtonElement {
 }
 
 function renderCode(node: MdNode): HTMLElement {
-  if ((node.lang ?? '').trim().toLowerCase() === 'mermaid') return renderMermaid(node)
+  const custom = activeBlocks?.render(node)
+  if (custom) return custom
   const pre = block('pre', node, [], 'v5-code')
   const code = document.createElement('code')
   if (node.lang) code.className = `v5-language-${node.lang}`
@@ -156,6 +177,38 @@ function renderCode(node: MdNode): HTMLElement {
   if (close && code.childNodes.length > 0) pre.insertBefore(code, close)
   else pre.append(code)
   return pre
+}
+
+/**
+ * Mermaid-style fenced shell: preview void + editable fence source.
+ * Block plugins can reuse this for charts / mind maps.
+ */
+export function createFencedWidgetShell(
+  node: MdNode,
+  options: {
+    blockClass?: string
+    previewClass?: string
+    voidKind?: 'widget' | 'diagram'
+    placeholder?: string
+  } = {},
+): { root: HTMLElement; preview: HTMLElement } {
+  const root = block('pre', node, [], ['v5-code', 'v5-widget', options.blockClass].filter(Boolean).join(' '))
+  const preview = document.createElement('div')
+  preview.className = options.previewClass ?? 'v5-widget-preview'
+  preview.setAttribute('data-void', options.voidKind ?? 'widget')
+  preview.contentEditable = 'false'
+  if (options.placeholder) preview.textContent = options.placeholder
+  root.append(preview)
+  const code = document.createElement('code')
+  for (const child of node.children) {
+    if (child.type === 'marker') root.append(renderNode(child))
+    else code.append(renderNode(child))
+  }
+  const fence = [...root.querySelectorAll('.v5-marker')]
+  const close = fence.at(-1)
+  if (close && code.childNodes.length > 0) root.insertBefore(code, close)
+  else root.append(code)
+  return { root, preview }
 }
 
 function appendHighlighted(code: HTMLElement, node: MdNode, lang: string | null | undefined): void {
@@ -174,27 +227,6 @@ function appendHighlighted(code: HTMLElement, node: MdNode, lang: string | null 
     code.append(leaf('span', piece, className, span.text))
     offset = end
   }
-}
-
-function renderMermaid(node: MdNode): HTMLElement {
-  const pre = block('pre', node, [], 'v5-code v5-mermaid')
-  const preview = document.createElement('div')
-  preview.className = 'v5-diagram'
-  preview.setAttribute('data-void', 'diagram')
-  const source = node.children.find((child) => child.type === 'text')?.text ?? ''
-  preview.dataset.diagram = source
-  preview.textContent = '正在绘制图表'
-  pre.append(preview)
-  const code = document.createElement('code')
-  for (const child of node.children) {
-    if (child.type === 'marker') pre.append(renderNode(child))
-    else code.append(renderNode(child))
-  }
-  const fence = [...pre.querySelectorAll('.v5-marker')]
-  const close = fence.at(-1)
-  if (close && code.childNodes.length > 0) pre.insertBefore(code, close)
-  else pre.append(code)
-  return pre
 }
 
 function renderTable(node: MdNode): HTMLElement {

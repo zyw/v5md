@@ -44,6 +44,9 @@ jobs:
             ['packages/react/package.json', ['@v5md/view']],
             ['packages/plugins/typography/package.json', ['@v5md/view']],
             ['packages/plugins/export/package.json', ['@v5md/view']],
+            ['packages/plugins/mermaid/package.json', ['@v5md/view']],
+            ['packages/plugins/mindmap/package.json', ['@v5md/view']],
+            ['packages/plugins/echarts/package.json', ['@v5md/view']],
           ]
 
           for (const [file, deps] of specs) {

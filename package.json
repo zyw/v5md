@@ -19,7 +19,10 @@
     "publish:npm": "npm run test && npm publish -w @v5md/core --@v5md:registry=https://registry.npmjs.org && npm publish -w @v5md/view --@v5md:registry=https://registry.npmjs.org && npm publish -w @v5md/vue --@v5md:registry=https://registry.npmjs.org && npm publish -w @v5md/react --@v5md:registry=https://registry.npmjs.org && npm publish -w @v5md/plugin-typography --@v5md:registry=https://registry.npmjs.org && npm publish -w @v5md/plugin-export --@v5md:registry=https://registry.npmjs.org && npm publish -w @v5md/plugin-echarts --@v5md:registry=https://registry.npmjs.org && npm publish -w @v5md/plugin-mermaid --@v5md:registry=https://registry.npmjs.org && npm publish -w @v5md/plugin-mindmap --@v5md:registry=https://registry.npmjs.org",
     "publish:onedev": "npm run test && npm publish -w @v5md/core --@v5md:registry=https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/view --@v5md:registry=https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/vue --@v5md:registry=https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/react --@v5md:registry=https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/plugin-typography --@v5md:registry=https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/plugin-export --@v5md:registry=https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/plugin-echarts --@v5md:registry=https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/plugin-mermaid --@v5md:registry=https://onedev.v5ai.xin/v5md/~npm/ && npm publish -w @v5md/plugin-mindmap --@v5md:registry=https://onedev.v5ai.xin/v5md/~npm/",
     "dev:vue": "npm run dev -w playground-vue",
-    "dev:react": "npm run dev -w playground-react"
+    "dev:react": "npm run dev -w playground-react",
+    "build:vue": "npm run build -w playground-vue",
+    "build:react": "npm run build -w playground-react",
+    "build:playground": "npm run build:vue && npm run build:react"
   },
   "devDependencies": {
     "eslint": "^9.39.4",

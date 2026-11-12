@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>v5md 公众号文案 · 排版预览</title>
+    <style>
+      :root {
+        --ink: #0b1220;
+        --teal: #0f766e;
+        --mist: #f0fdfa;
+        --mint: #5eead4;
+        --mint2: #99f6e4;
+        --line: #e5e7eb;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(1200px 600px at 15% -10%, #ccfbf1 0%, rgba(204, 251, 241, 0) 55%),
+          radial-gradient(900px 500px at 100% 0%, #e0f2fe 0%, rgba(224, 242, 254, 0) 50%), #f8fafc;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC',
+          sans-serif;
+        padding: 28px 24px 64px;
+      }
+      .topbar {
+        max-width: 1180px;
+        margin: 0 auto 22px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .topbar h1 {
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0 8px 0 0;
+        letter-spacing: 0.02em;
+      }
+      .chip {
+        font-size: 12px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid var(--line);
+        color: #475569;
+      }
+      .chip.on {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #fff;
+      }
+      .layout {
+        max-width: 1180px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(320px, 460px) minmax(280px, 1fr);
+        gap: 28px;
+        align-items: start;
+      }
+      .phone {
+        background: #fff;
+        border-radius: 22px;
+        box-shadow:
+          0 24px 60px -18px rgba(11, 18, 32, 0.28),
+          0 2px 6px rgba(11, 18, 32, 0.06);
+        overflow: hidden;
+      }
+      .cover {
+        display: block;
+        width: 100%;
+        aspect-ratio: 900 / 383;
+        object-fit: cover;
+        background: #0b1220;
+      }
+      .article {
+        padding: 26px 24px 34px;
+      }
+      .article .kicker {
+        font-size: 12px;
+        color: var(--teal);
+        letter-spacing: 0.12em;
+        font-weight: 700;
+        margin: 0 0 8px;
+      }
+      .article h1.title {
+        font-size: 23px;
+        line-height: 1.4;
+        margin: 0 0 10px;
+        letter-spacing: -0.01em;
+      }
+      .article .meta {
+        font-size: 12.5px;
+        color: #94a3b8;
+        margin: 0 0 22px;
+      }
+      .body {
+        font-size: 16px;
+        line-height: 1.85;
+        color: #333;
+        letter-spacing: 0.015em;
+      }
+      .body p {
+        margin: 0 0 16px;
+      }
+      .body h2 {
+        font-size: 19px;
+        line-height: 1.5;
+        margin: 34px 0 14px;
+        padding-left: 11px;
+        border-left: 4px solid var(--teal);
+      }
+      .body h3 {
+        font-size: 16.5px;
+        margin: 24px 0 10px;
+        color: var(--ink);
+      }
+      .body strong {
+        color: var(--teal);
+        font-weight: 700;
+      }
+      .body a {
+        color: var(--teal);
+        text-decoration: none;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.3);
+      }
+      .body ul,
+      .body ol {
+        padding-left: 22px;
+        margin: 0 0 16px;
+      }
+      .body li {
+        margin: 6px 0;
+      }
+      .body blockquote {
+        margin: 18px 0;
+        padding: 12px 14px;
+        background: var(--mist);
+        border-left: 3px solid var(--mint);
+        border-radius: 0 8px 8px 0;
+        color: #0f766e;
+        font-size: 15px;
+      }
+      .body blockquote p {
+        margin: 0;
+      }
+      .body pre {
+        background: #0b1220;
+        color: #e2e8f0;
+        padding: 14px 16px;
+        border-radius: 10px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: 1.65;
+        margin: 0 0 16px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .body pre code {
+        background: none;
+        color: inherit;
+        padding: 0;
+        font-size: inherit;
+      }
+      .body code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        background: var(--mist);
+        color: var(--teal);
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.92em;
+      }
+      .shot-tip {
+        margin: 18px 0;
+        padding: 12px 14px;
+        border: 1px dashed #5eead4;
+        border-radius: 10px;
+        background: #f7fffd;
+        color: #0f766e;
+        font-size: 14px;
+        line-height: 1.7;
+      }
+      .shot-tip-label {
+        display: inline-block;
+        margin-right: 8px;
+        padding: 1px 7px;
+        border-radius: 5px;
+        background: var(--teal);
+        color: #fff;
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        vertical-align: 1px;
+      }
+      .shot-tip code {
+        background: #e6fffa;
+      }
+      .end-note {
+        margin: 26px 0 0;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        font-size: 12.5px;
+        color: #94a3b8;
+        line-height: 1.8;
+      }
+      .side {
+        display: grid;
+        gap: 16px;
+        position: sticky;
+        top: 24px;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px 18px;
+        box-shadow: 0 10px 30px -22px rgba(11, 18, 32, 0.5);
+      }
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 13px;
+        letter-spacing: 0.1em;
+        color: #64748b;
+        text-transform: uppercase;
+      }
+      .card ol {
+        margin: 0;
+        padding-left: 20px;
+        font-size: 13.5px;
+        line-height: 1.65;
+        color: #334155;
+      }
+      .card ol li {
+        margin: 8px 0;
+      }
+      .card ol li:first-child {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .digest {
+        font-size: 13px;
+        line-height: 1.75;
+        color: #475569;
+        padding: 10px 12px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin: 0 0 10px;
+      }
+      .thumbs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+      .thumbs figure {
+        margin: 0;
+      }
+      .thumbs img {
+        width: 100%;
+        display: block;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #0b1220;
+      }
+      .thumbs figcaption {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 5px;
+      }
+      .links {
+        display: grid;
+        gap: 8px;
+        font-size: 13px;
+      }
+      .links a {
+        color: var(--teal);
+        text-decoration: none;
+        word-break: break-all;
+      }
+      .links a:hover {
+        text-decoration: underline;
+      }
+      .files {
+        display: grid;
+        gap: 7px;
+        font-size: 13px;
+      }
+      .files a {
+        color: #334155;
+        text-decoration: none;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .files a:hover {
+        color: var(--teal);
+      }
+      .files span {
+        color: #94a3b8;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .note {
+        font-size: 12px;
+        color: #94a3b8;
+        line-height: 1.7;
+        margin: 10px 0 0;
+      }
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .side {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <h1>v5md 公众号文案 · 排版预览</h1>
+      <span class="chip on">2.35:1 封面</span>
+      <span class="chip">正文可拷贝</span>
+      <span class="chip">配图已备好</span>
+      <span class="chip">版本 0.0.4</span>
+    </div>
+    <div class="layout">
+      <div class="phone">
+        <img class="cover" src="images/cover-235x1-dark@2x.png" alt="v5md 公众号封面 2.35:1" />
+        <div class="article">
+          <p class="kicker">示例标题 · 可在后台替换</p>
+          <h1 class="title">左源码右预览写了三年，我换了个不用来回瞟的编辑器</h1>
+          <p class="meta">v5md · 开源 MIT · 2026-11-12 · 全文约 1600 字</p>
+          <div class="body">
+            <p>
+              你有没有这样写过文档：左边源码、右边预览，改一个标点要来回瞟三眼；写完想发公众号，粘过去样式全丢，只能从头刷一遍；换个编辑器，内容又被收进一套只有它能读的私有格式。
+            </p>
+            <p><strong>三个毛病，一个根源：内容和呈现被搅在了一起。</strong> v5md 想把这根线重新理清楚。</p>
+            <p>
+              <strong
+                >一句话说，v5md 是一个开源的所见即所得 Markdown 编辑器：Markdown
+                字符串是唯一数据源，标记只在你需要的时候显形。</strong
+              >
+              MIT 许可，© 2026 zhuyanwei，当前版本 0.0.4（2026-11-12），一共九个 npm 包。
+            </p>
+            <p>想直接上手，地址先摆在这里：</p>
+            <p><strong>GitHub</strong>：<a href="https://github.com/zyw/v5md">github.com/zyw/v5md</a></p>
+            <p><strong>在线 Demo</strong>：<a href="https://v5md-demo.v5ai.xin">v5md-demo.v5ai.xin</a></p>
+            <p>
+              不方便点链接的话，纯文本在这里：<code>https://github.com/zyw/v5md</code>、<code>https://v5md-demo.v5ai.xin</code>、<code>https://v5md.v5ai.xin</code>。
+            </p>
+            <div class="shot-tip">
+              <span class="shot-tip-label">配图建议 · 发布前删除</span>用
+              <a href="screenshots/02-markers-visible.png"><code>screenshots/02-markers-visible.png</code></a
+              >（已截好）。光标停在「段落与行内格式」上，<code>##</code> 正露出来，图下可加一行小字「标记按需显形」。
+            </div>
+            <h2>它到底解决了什么</h2>
+            <h3>Markdown 是唯一数据源</h3>
+            <p>
+              输入、粘贴、工具条命令，改的都只是那一段字符串，再重新解析、重绘页面。<code>getMarkdown()</code>
+              给的就是全文，可以直接入库、走 diff、交给别的 Markdown 渲染器。
+            </p>
+            <p>没有 HTML 模型，没有私有 JSON。<strong>你存下来的，就是标准 Markdown。</strong></p>
+            <h3>标记只在光标落下时显形</h3>
+            <p>
+              平时看到的是排好的版式。光标落进标题、粗体、代码块，<code>#</code>、<code>**</code>、围栏才露出来；改完自动收回去。
+            </p>
+            <p>
+              它没有拿 DOM Range 记选区，而是用字符串偏移
+              <code>{ anchor, head }</code
+              >，标记节点和原文偏移严格一致——所以显形的时机和位置永远对得上，不会出现「标记画歪一格」。
+            </p>
+            <h3>中文输入法不打岔</h3>
+            <p>组合输入期间不重绘 DOM。<strong>候选框不会错位，拼音上屏不丢字。</strong></p>
+            <p>这条听起来基础，但在 contenteditable 上做编辑器，它是最容易翻车的地方之一。</p>
+            <h3>不锁框架，插件可插拔</h3>
+            <p>
+              <code>@v5md/vue</code> 和 <code>@v5md/react</code> 只是薄壳，核心是 <code>@v5md/view</code> 里的
+              <code>Editor</code> 类，也可以 <code>new Editor({ element })</code> 直接挂到任意 DOM 元素上。
+            </p>
+            <p>
+              插件能贡献工具条按钮、斜杠菜单项、命令、对外
+              API，甚至接管围栏代码块的渲染与销毁。官方五个插件（字号、导出、Mermaid、Mindmap、ECharts）都要单独装，编辑器不自带，装哪个用哪个。
+            </p>
+            <h3>一键粘进公众号</h3>
+            <p>
+              <code>copyForWechat()</code> 生成只带内联样式的 HTML 并写进剪贴板；<code>getWechatHtml({ baseUrl })</code>
+              返回同样的 HTML，顺手把相对图片地址转成绝对地址。
+            </p>
+            <p><strong>粘到公众号后台，标题、引用、代码块、表格的样式都还在</strong>，不用再一段段手刷字号和间距。</p>
+            <p>
+              普通复制和公众号复制是分开的：所见即所得模式下复制渲染后的内容（不含标记），源码模式下复制完整 Markdown。
+            </p>
+            <h3>导出与图表，都是插件</h3>
+            <p>
+              导出插件支持 Markdown / HTML / PDF / 图片：PDF 按块边界分页，减少列表项和图表被拦腰截断；HTML 导出会把
+              ECharts 这类 canvas 快照成图片，克隆后不会变成空白。
+            </p>
+            <p>
+              图表写在围栏代码里：<code>mermaid</code> 画流程图、<code>mindmap</code> 用一段 Markdown
+              大纲生成思维导图、<code>echarts</code> 吃一段 JSON
+              option。它们都只在文档里真的出现时才动态加载；没装对应插件时，围栏按普通代码块高亮，不会报错。
+            </p>
+            <div class="shot-tip">
+              <span class="shot-tip-label">配图建议 · 发布前删除</span
+              ><a href="screenshots/03-mermaid.png"><code>screenshots/03-mermaid.png</code></a
+              >、<a href="screenshots/06-mindmap.png"><code>screenshots/06-mindmap.png</code></a
+              >、<a href="screenshots/04-echarts.png"><code>screenshots/04-echarts.png</code></a>
+              任选一到两张放在这段后面。
+            </div>
+            <p>
+              导出图片和 PDF 时可以用插件选项 <code>imageScale</code>（或
+              <code>exportImage({ scale })</code>）调截图倍率；需要可选中矢量文字时走
+              <code>print()</code>，用浏览器「另存为 PDF」。
+            </p>
+            <h3>粘贴即转换</h3>
+            <p>
+              从网页、Word、飞书复制的富文本，会先转成 Markdown 再写进文档。<strong
+                >不用先粘到记事本里洗一遍格式。</strong
+              >
+            </p>
+            <p>这套转换也对外暴露：<code>htmlToMarkdown(html)</code> 可以直接用在别处。</p>
+            <h2>它是怎么运转的</h2>
+            <p>
+              一次编辑的路径很短：输入、粘贴、工具条命令都先改那段 Markdown 字符串（带撤销历史），再交给 micromark /
+              mdast 解析成带偏移的节点树，然后只重绘文档区，并把光标放回对应偏移。
+            </p>
+            <p>
+              <strong>它只重写你实际编辑到的那一段，没碰过的内容原样保留。</strong> 不放心的话，可以先用
+              <code>parse()</code> 校验一遍再写入。
+            </p>
+            <h2>该有的，它都有</h2>
+            <div class="shot-tip">
+              <span class="shot-tip-label">配图建议 · 发布前删除</span>用
+              <a href="screenshots/05-source-mode.png"><code>screenshots/05-source-mode.png</code></a
+              >（源码模式，行号 + 语法高亮）和
+              <a href="screenshots/01-editor-overview.png"><code>screenshots/01-editor-overview.png</code></a>
+              拼一张左右对比图。
+            </div>
+            <p>
+              撤销重做、查找替换（支持正则和全词）、带行号与语法高亮的整篇源码模式、大纲跳转、工具条与大纲钉顶、块级拖拽、表格行列编辑、图片拖拽缩放、KaTeX
+              公式、YAML frontmatter。
+            </p>
+            <p>
+              输入 <code>/</code> 打开斜杠菜单，<code>Mod+F</code> 查找、<code>Mod+Shift+S</code>
+              切源码模式，动作都能落到键盘上。
+            </p>
+            <p>
+              界面中英双语，<code>locale: &#39;zh-CN&#39; | &#39;en&#39;</code
+              >，工具条、斜杠菜单、查找栏、大纲会一起切换。查找高亮用 CSS Custom Highlight
+              API（<code>::highlight()</code>），浏览器不支持时静默降级，编辑本身照常。
+            </p>
+            <p>
+              主题是一个独立 CSS 文件，所有选择器以
+              <code>.v5md</code>
+              开头，<strong>宿主页面的全局样式不会串进编辑器</strong>；编辑器外沿不带圆角，塞进任何容器都不打架。
+            </p>
+            <h2>三十秒跑起来</h2>
+            <pre><code class="language-bash">npm install @v5md/view
+</code></pre>
+            <pre><code class="language-ts">import { Editor } from &#39;@v5md/view&#39;
+import &#39;@v5md/view/theme.css&#39;
+
+const editor = new Editor({
+  element: document.querySelector(&#39;#editor&#39;)!,
+  value: &#39;# 标题\n\n正文&#39;,
+  locale: &#39;zh-CN&#39;,
+  onChange(markdown) { localStorage.setItem(&#39;draft&#39;, markdown) },
+})
+</code></pre>
+            <p>
+              别忘了主题 CSS：不引入 <code>@v5md/view/theme.css</code>，就只有结构没有排版。KaTeX 和 lowlight 随
+              <code>@v5md/view</code> 一起装好，公式和代码高亮不用再配一遍。
+            </p>
+            <p>
+              Vue 3 用 <code>V5Editor</code> 加 <code>v-model</code>，React 用 <code>value</code> 和
+              <code>onChange</code>，装对应的包就行。只想要解析、不要界面，装 <code>@v5md/core</code>——它不依赖
+              DOM，能在 Node 里跑。
+            </p>
+            <div class="shot-tip">
+              <span class="shot-tip-label">配图建议 · 发布前删除</span>用
+              <a href="screenshots/01-editor-overview.png"><code>screenshots/01-editor-overview.png</code></a
+              >，工具条、大纲、正文同框。
+            </div>
+            <h2>几个常被问到的问题</h2>
+            <p>
+              <strong>能只读展示吗？</strong>
+              <code>editable: false</code>，还是同一个编辑器，公式、图表照常渲染，待办还能勾。
+            </p>
+            <p><strong>能做 SSR 吗？</strong> 可以 import，但编辑器只在浏览器挂载，首屏建议先渲染占位。</p>
+            <p><strong>内容会被改坏吗？</strong> 只会重写你编辑到的那一段，其余原样保留。</p>
+            <h2>谁适合，谁不适合</h2>
+            <h3>适合你，如果</h3>
+            <ul>
+              <li>你在 Vue 3 / React 项目里要嵌一个 Markdown 编辑器，又不想把数据交给一套私有格式。</li>
+              <li>你是技术写作者，同一篇稿子要在仓库、博客和公众号各发一遍。</li>
+              <li>你只要解析和编辑状态，想在 Node 里跑。</li>
+            </ul>
+            <h3>可能不适合</h3>
+            <ul>
+              <li>你要多人实时协同编辑。它不是协同编辑器。</li>
+              <li>你是非技术用户，想要拖拽排版的工具。它是 Markdown 编辑器，不是排版软件。</li>
+              <li>你要兼容老浏览器或非 ESM 环境。它全 ESM，面向现代浏览器最近两个大版本。</li>
+            </ul>
+            <h2>最后</h2>
+            <p>三个地址，再放一遍：</p>
+            <ul>
+              <li><strong>GitHub</strong>：<a href="https://github.com/zyw/v5md">github.com/zyw/v5md</a></li>
+              <li><strong>Demo</strong>：<a href="https://v5md-demo.v5ai.xin">v5md-demo.v5ai.xin</a></li>
+              <li><strong>主页</strong>：<a href="https://v5md.v5ai.xin">v5md.v5ai.xin</a></li>
+            </ul>
+            <p>
+              如果它正好解决了你某个下午的烦躁，<strong
+                >去 GitHub 点个 star，或者先到 Demo 里粘一段自己的稿子试试。</strong
+              >
+            </p>
+          </div>
+          <p class="end-note">
+            这是按公众号常见字号（16px / 1.85 行高）做的排版预览，只用于看节奏和密度。真正发布时以
+            <code>v5md-公众号文案.md</code> 里的正文为准。
+          </p>
+        </div>
+      </div>
+      <div class="side">
+        <div class="card">
+          <h2>标题备选</h2>
+          <ol>
+            <li>左源码右预览写了三年，我换了个不用来回瞟的编辑器</li>
+            <li>把 Markdown 粘进公众号，样式终于不丢了</li>
+            <li>好的 Markdown 编辑器，应该让你看不见 Markdown</li>
+            <li>光标落在哪，# 才出现在哪</li>
+            <li>九个 npm 包，一个 Markdown 字符串：v5md 0.0.4</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h2>摘要备选（≤120 字）</h2>
+          <p class="digest">
+            1. 写 Markdown 不用再左右两栏来回瞟：标记只在光标落下时显形，Markdown
+            字符串是唯一数据源，一键复制成能直接粘进公众号的内联样式 HTML。开源 MIT，Vue 3 / React / 原生都能嵌。
+          </p>
+          <p class="digest">
+            2. v5md 0.0.4 发布：九个 npm 包，所见即所得编辑，中文输入法不重绘 DOM，插件可插拔，导出 PDF
+            与图片，mermaid、mindmap、echarts 图表按需接入。
+          </p>
+        </div>
+        <div class="card">
+          <h2>封面</h2>
+          <div class="thumbs">
+            <figure>
+              <img src="images/cover-235x1-dark.png" alt="主封面 900×383" />
+              <figcaption>2.35:1 主封面 900×383</figcaption>
+            </figure>
+            <figure>
+              <img src="images/cover-1x1-dark.png" alt="分享封面 383×383" />
+              <figcaption>1:1 分享图 383×383</figcaption>
+            </figure>
+          </div>
+          <p class="note">标记，按需显形 —— v5md，所见即所得 Markdown 编辑器</p>
+        </div>
+        <div class="card">
+          <h2>地址</h2>
+          <div class="links">
+            <a href="https://github.com/zyw/v5md" target="_blank" rel="noreferrer">github.com/zyw/v5md</a>
+            <a href="https://v5md-demo.v5ai.xin" target="_blank" rel="noreferrer">v5md-demo.v5ai.xin</a>
+            <a href="https://v5md.v5ai.xin" target="_blank" rel="noreferrer">v5md.v5ai.xin</a>
+          </div>
+          <p class="note">公众号正文外链不可点，发布时把 Demo 放进「阅读原文」，或配置关键词自动回复。</p>
+        </div>
+        <div class="card">
+          <h2>素材文件</h2>
+          <div class="files">
+            <a href="v5md-公众号文案.md">v5md-公众号文案.md <span>正文</span></a>
+            <a href="发布清单.md">发布清单.md <span>上线检查</span></a>
+            <a href="README.md">README.md <span>目录说明</span></a>
+            <a href="screenshots/01-editor-overview.png">screenshots/ <span>6 张 1080px</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

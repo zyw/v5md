@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="title">
+  <title id="title">v5md README hero ZH</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B1220"/>
+      <stop offset="55%" stop-color="#0F2F2C"/>
+      <stop offset="100%" stop-color="#0F766E"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  <circle cx="1040" cy="120" r="220" fill="#5EEAD4" fill-opacity="0.08"/>
+  <g transform="translate(96,168) scale(1.15)">
+    <path fill="#5EEAD4" fill-rule="evenodd" d="
+      M 72 24 H 184 A 44 44 0 0 1 228 68 V 180 A 44 44 0 0 1 184 224 H 72 A 44 44 0 0 1 28 180 V 68 A 44 44 0 0 1 72 24 Z
+      M 48 76 A 12 12 0 0 1 60 64 H 60 A 12 12 0 0 1 72 76 V 172 A 12 12 0 0 1 60 184 H 60 A 12 12 0 0 1 48 172 Z
+      M 96 60 H 124 V 188 H 96 Z M 152 60 H 180 V 188 H 152 Z
+      M 80 88 H 96 V 116 H 80 Z M 124 88 H 152 V 116 H 124 Z M 180 88 H 196 V 116 H 180 Z
+      M 80 136 H 96 V 164 H 80 Z M 124 136 H 152 V 164 H 124 Z M 180 136 H 196 V 164 H 180 Z
+    "/>
+  </g>
+  <text x="420" y="250" font-family="PingFang SC, Hiragino Sans GB, Noto Sans SC, sans-serif" font-size="92" font-weight="700" fill="#F0FDFA" letter-spacing="-2">v5md</text>
+  <text x="420" y="330" font-family="PingFang SC, Hiragino Sans GB, Noto Sans SC, sans-serif" font-size="36" font-weight="500" fill="#99F6E4">所见即所得 Markdown 编辑器</text>
+  <text x="420" y="390" font-family="PingFang SC, Hiragino Sans GB, Noto Sans SC, sans-serif" font-size="24" fill="#CCFBF1" fill-opacity="0.9">Markdown 字符串是唯一数据源  ·  标记按需显形  ·  Vue / React / 原生</text>
+  <rect x="420" y="440" width="268" height="48" rx="10" fill="#0F766E"/>
+  <text x="444" y="471" font-family="ui-monospace, Menlo, monospace" font-size="20" fill="#F0FDFA">npm i @v5md/view</text>
+</svg>

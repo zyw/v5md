@@ -1,13 +1,20 @@
 .v5md .v5md-find {
+  position: sticky;
+  top: 0;
+  z-index: 6;
   display: flex;
   flex: 1 0 100%;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   margin: 0;
-  padding: 12px 36px 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e4e4e7;
+  background:
+    linear-gradient(180deg, #fbfbfc 0%, #f4f4f5 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
   white-space: normal;
 }
 
@@ -15,22 +22,202 @@
   display: none;
 }
 
-.v5md .v5md-find input,
-.v5md .v5md-find button {
-  border: 1px solid #e7e5e4;
-  border-radius: 8px;
+.v5md .v5md-find-row {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.v5md .v5md-find-group {
+  display: flex;
+  flex: 1 1 260px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.v5md .v5md-find-field {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 420px;
+  box-sizing: border-box;
+  padding: 3px 4px 3px 8px;
+  border: 1px solid #d4d4d8;
+  border-radius: 9px;
   background: #fff;
-  color: #1f1f1f;
-  font: inherit;
-  font-size: 13px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.v5md .v5md-find-field:hover {
+  border-color: #a1a1aa;
+}
+
+.v5md .v5md-find-field:focus-within {
+  border-color: #0f766e;
+  box-shadow:
+    0 0 0 3px rgb(15 118 110 / 14%),
+    inset 0 1px 0 rgb(255 255 255 / 70%);
 }
 
 .v5md .v5md-find input {
-  width: 140px;
-  padding: 6px 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  margin: 0;
+  padding: 5px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #18181b;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  outline: none;
+  box-shadow: none;
 }
 
-.v5md .v5md-find button {
-  padding: 6px 10px;
+.v5md .v5md-find input::-webkit-search-decoration,
+.v5md .v5md-find input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.v5md .v5md-find-status {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 7.5em;
+  margin: 0;
+  padding: 0 2px;
+  overflow: hidden;
+  color: #71717a;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v5md .v5md-find-status:empty {
+  display: none;
+}
+
+.v5md .v5md-find-toggles {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  padding-left: 2px;
+  border-left: 1px solid #e4e4e7;
+}
+
+.v5md .v5md-find-toggle {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #71717a;
+  font: 600 11px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+  letter-spacing: 0.01em;
   cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.v5md .v5md-find-toggle:hover {
+  background: #f4f4f5;
+  border-color: #e4e4e7;
+  color: #3f3f46;
+}
+
+.v5md .v5md-find-toggle.is-on {
+  background: #ccfbf1;
+  border-color: #99f6e4;
+  color: #0f766e;
+}
+
+.v5md .v5md-find-steps {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.v5md .v5md-find-action {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  background: #fff;
+  color: #3f3f46;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgb(24 24 27 / 3%);
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.v5md .v5md-find-action svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.v5md .v5md-find-action:hover {
+  background: #f4f4f5;
+  border-color: #a1a1aa;
+  color: #18181b;
+}
+
+.v5md .v5md-find-action:active {
+  background: #e4e4e7;
+  box-shadow: none;
+}
+
+.v5md .v5md-find-close {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.v5md .v5md-find-close:hover {
+  background: #ececef;
+  color: #18181b;
+}
+
+.v5md .v5md-find-close svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+/* Keep find hits clear of the sticky find / toolbar chrome. */
+.v5md .v5-doc [data-block],
+.v5md .v5-source-line {
+  scroll-margin-top: calc(var(--v5-sticky-find-height, 0px) + var(--v5-sticky-toolbar-height, 0px) + 16px);
 }

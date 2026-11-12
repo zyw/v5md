@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-labelledby="title">
+  <title id="title">v5md Open Graph</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0FDFA"/>
+      <stop offset="100%" stop-color="#CCFBF1"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="0" y="0" width="18" height="630" fill="#0F766E"/>
+  <g transform="translate(80,170) scale(1.1)">
+    <path fill="#0F766E" fill-rule="evenodd" d="
+      M 72 24 H 184 A 44 44 0 0 1 228 68 V 180 A 44 44 0 0 1 184 224 H 72 A 44 44 0 0 1 28 180 V 68 A 44 44 0 0 1 72 24 Z
+      M 48 76 A 12 12 0 0 1 60 64 H 60 A 12 12 0 0 1 72 76 V 172 A 12 12 0 0 1 60 184 H 60 A 12 12 0 0 1 48 172 Z
+      M 96 60 H 124 V 188 H 96 Z
+      M 152 60 H 180 V 188 H 152 Z
+      M 80 88 H 96 V 116 H 80 Z
+      M 124 88 H 152 V 116 H 124 Z
+      M 180 88 H 196 V 116 H 180 Z
+      M 80 136 H 96 V 164 H 80 Z
+      M 124 136 H 152 V 164 H 124 Z
+      M 180 136 H 196 V 164 H 180 Z
+    "/>
+  </g>
+  <text x="400" y="280" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="96" font-weight="700" fill="#0B1220" letter-spacing="-2">v5md</text>
+  <text x="400" y="360" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="34" fill="#0F766E">Write Markdown. See the result. Keep the source.</text>
+  <text x="400" y="420" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="24" fill="#334155">WYSIWYG  |  single Markdown source  |  Vue / React / vanilla</text>
+</svg>

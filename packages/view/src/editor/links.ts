@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE, formatLinkHint, getMessages, type LocaleMessages } from '../i18n/index.js'
+
 /** Command the desktop shell must expose so a note link opens in the system browser. */
 export const DESKTOP_OPEN_COMMAND = 'open_external_url'
 
@@ -35,18 +37,19 @@ export function externalLinkUrl(raw: string): string | null {
   return url.href
 }
 
-export function modifierLabel(platform = navigator.platform || ''): string {
-  return /mac|iphone|ipad|ipod/i.test(platform) ? '⌘' : 'Ctrl键'
+export function modifierLabel(platform = navigator.platform || '', messages: LocaleMessages = getMessages(DEFAULT_LOCALE)): string {
+  return /mac|iphone|ipad|ipod/i.test(platform) ? '⌘' : messages.link.modifierCtrl
 }
 
 /** Hover text for a link. A plain click never leaves the note. */
 export function linkActivationHint(
   _preview: boolean,
   systemBrowser = isDesktopShell(),
-  modifier = modifierLabel(),
+  modifier?: string,
+  messages: LocaleMessages = getMessages(DEFAULT_LOCALE),
 ): string {
-  const where = systemBrowser ? '系统默认浏览器打开链接' : '在新标签页打开链接'
-  return `鼠标右击 或 ${modifier} + 点击 ${where}`
+  const key = modifier ?? modifierLabel(navigator.platform || '', messages)
+  return formatLinkHint(messages, key, systemBrowser)
 }
 
 export function linkAnchor(target: EventTarget | null): HTMLAnchorElement | null {

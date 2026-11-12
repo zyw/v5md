@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE, getMessages, type LocaleMessages } from '../i18n/index.js'
+
 export interface TopBlock {
   start: number
   end: number
@@ -17,23 +19,24 @@ export interface BlockChromeOptions {
   blocks(): TopBlock[]
   onMove(sourceStart: number, targetStart: number, side: 'before' | 'after'): void
   onAction(action: string): void
+  messages?: LocaleMessages
 }
 
-const BLOCK_ACTIONS: ReadonlyArray<readonly [string, string]> = [
-  ['up', '上移'],
-  ['down', '下移'],
-  ['before', '上方插入'],
-  ['after', '下方插入'],
-  ['paragraph', '正文'],
-  ['heading1', '标题 1'],
-  ['heading2', '标题 2'],
-  ['heading3', '标题 3'],
-  ['bulletList', '无序列表'],
-  ['orderedList', '有序列表'],
-  ['taskList', '待办列表'],
-  ['quote', '引用'],
-  ['delete', '删除块'],
-]
+const BLOCK_ACTION_KEYS = [
+  'up',
+  'down',
+  'before',
+  'after',
+  'paragraph',
+  'heading1',
+  'heading2',
+  'heading3',
+  'bulletList',
+  'orderedList',
+  'taskList',
+  'quote',
+  'delete',
+] as const satisfies ReadonlyArray<keyof LocaleMessages['block']>
 
 const CONVERT_ACTIONS = new Set([
   'paragraph',
@@ -55,8 +58,17 @@ export class BlockChrome {
   private source: number | null = null
   private drag: { start: number; doc: string } | null = null
   private dropLine: HTMLElement | null = null
+  private messages: LocaleMessages
 
-  constructor(private readonly options: BlockChromeOptions) {}
+  constructor(private readonly options: BlockChromeOptions) {
+    this.messages = options.messages ?? getMessages(DEFAULT_LOCALE)
+  }
+
+  setMessages(messages: LocaleMessages): void {
+    this.messages = messages
+    if (this.handle) this.handle.setAttribute('aria-label', messages.block.handle)
+    if (this.menu?.isConnected) this.openMenu()
+  }
 
   /** Start offset of the block the handle points at, if any. */
   currentSource(): number | null {
@@ -114,7 +126,7 @@ export class BlockChrome {
       this.handle.className = 'v5-block-handle'
       this.handle.contentEditable = 'false'
       this.handle.draggable = true
-      this.handle.setAttribute('aria-label', '块操作')
+      this.handle.setAttribute('aria-label', this.messages.block.handle)
       this.handle.textContent = '⠿'
       this.handle.addEventListener('click', () => this.openMenu())
     }
@@ -209,7 +221,7 @@ export class BlockChrome {
     const menu = document.createElement('div')
     menu.className = 'v5-block-menu'
     menu.contentEditable = 'false'
-    for (const [action, label] of BLOCK_ACTIONS) {
+    for (const action of BLOCK_ACTION_KEYS) {
       if (CONVERT_ACTIONS.has(action)) {
         if (!['paragraph', 'heading', 'blockquote', 'list'].includes(block.type)) continue
         if (block.type === 'list' && (block.childCount !== 1 || block.multiLine) && !LIST_ACTIONS.has(action)) continue
@@ -217,7 +229,7 @@ export class BlockChrome {
       const button = document.createElement('button')
       button.type = 'button'
       button.dataset.blockAction = action
-      button.textContent = label
+      button.textContent = this.messages.block[action]
       button.addEventListener('click', () => this.options.onAction(action))
       menu.append(button)
     }

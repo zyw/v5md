@@ -27,7 +27,8 @@ const editor = new Editor({
 | --- | --- |
 | `element` | 挂载点，必填 |
 | `value` | 初始 Markdown，默认空字符串 |
-| `placeholder` | 文档为空时显示的提示 |
+| `placeholder` | 文档为空时显示的提示；不传则跟 `locale` 走 |
+| `locale` | 内置 UI 语言，`'zh-CN'`（默认）或 `'en'`；也可用 `setLocale()` / `getLocale()`。覆盖工具条、斜杠菜单、查找栏、大纲、表格条、块菜单等 |
 | `toolbar` | 是否显示工具条，默认显示 |
 | `outline` | 是否显示大纲，默认显示 |
 | `lineNumbers` | 源码模式下是否显示左侧行号，默认显示 |

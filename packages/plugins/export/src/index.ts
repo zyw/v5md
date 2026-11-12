@@ -1,4 +1,4 @@
-import { toWechatHtml, type Editor, type V5mdPlugin } from '@v5md/view'
+import { resolveLocale, toWechatHtml, type Editor, type LocaleCode, type V5mdPlugin } from '@v5md/view'
 
 export type ExportImageType = 'png' | 'jpeg'
 
@@ -32,6 +32,8 @@ export interface ExportPluginOptions {
   pdfMargin?: number
   /** 替换默认的 html2canvas / jsPDF 实现，便于测试或接入其他渲染器。 */
   renderer?: Partial<ExportRenderer>
+  /** Affects default title / file name when those options are omitted. Defaults to zh-CN. */
+  locale?: LocaleCode | string
 }
 
 export interface ExportApi {
@@ -88,7 +90,8 @@ export function createExportPlugin(options: ExportPluginOptions = {}): V5mdPlugi
 }
 
 function createExportApi(editor: Editor, content: HTMLElement, options: ExportPluginOptions): ExportApi {
-  const title = options.title ?? 'v5md 文档'
+  const locale = resolveLocale(options.locale)
+  const title = options.title ?? (locale === 'en' ? 'v5md document' : 'v5md 文档')
   const baseName = options.fileName ?? 'v5md-document'
   const imageScale = options.imageScale ?? DEFAULT_IMAGE_SCALE
   const pdfMargin = options.pdfMargin ?? DEFAULT_PDF_MARGIN

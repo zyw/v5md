@@ -1,6 +1,6 @@
 {
   "name": "@v5md/plugin-mindmap",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "v5md Markmap 思维导图块渲染插件",
   "license": "MIT",
   "type": "module",
@@ -34,7 +34,7 @@
   "dependencies": {
     "@markmap/parse": "^1.1.0",
     "@markmap/view": "^1.1.0",
-    "@v5md/view": "0.0.3"
+    "@v5md/view": "0.0.4"
   },
   "devDependencies": {
     "typescript": "^5.9.0"

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">v5md Peek symbol colour</title>
+  <path id="symbol" fill="#0F766E" fill-rule="evenodd" d="
+    M 72 24
+    H 184
+    A 44 44 0 0 1 228 68
+    V 180
+    A 44 44 0 0 1 184 224
+    H 72
+    A 44 44 0 0 1 28 180
+    V 68
+    A 44 44 0 0 1 72 24
+    Z
+
+    M 48 76
+    A 12 12 0 0 1 60 64
+    H 60
+    A 12 12 0 0 1 72 76
+    V 172
+    A 12 12 0 0 1 60 184
+    H 60
+    A 12 12 0 0 1 48 172
+    Z
+
+    M 96 60 H 124 V 188 H 96 Z
+    M 152 60 H 180 V 188 H 152 Z
+
+    M 80 88 H 96 V 116 H 80 Z
+    M 124 88 H 152 V 116 H 124 Z
+    M 180 88 H 196 V 116 H 180 Z
+
+    M 80 136 H 96 V 164 H 80 Z
+    M 124 136 H 152 V 164 H 124 Z
+    M 180 136 H 196 V 164 H 180 Z
+  "/>
+</svg>

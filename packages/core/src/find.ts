@@ -88,9 +88,8 @@ export function selectedMatch(
   if (!query) return { match: null, error: null }
   const collected = collectMatches(doc, query, options)
   if (collected.error) return { match: null, error: collected.error }
-  const { from, to } = sortedRange(selection)
   return {
-    match: collected.matches.find((item) => item.from === from && item.to === to) ?? null,
+    match: matchAtSelection(collected.matches, selection),
     error: null,
   }
 }
@@ -183,6 +182,9 @@ function pickMatch(
     const next = current + (direction < 0 ? -1 : 1)
     return matches[(next + matches.length) % matches.length]
   }
+  // Caret / partial selection inside a hit: land on that hit first, then Next can advance.
+  const covering = matchAtSelection(matches, selection)
+  if (covering) return covering
   if (direction < 0) {
     for (let index = matches.length - 1; index >= 0; index -= 1) {
       if (matches[index].to <= from) return matches[index]
@@ -190,6 +192,14 @@ function pickMatch(
     return matches[matches.length - 1]
   }
   return matches.find((match) => match.from >= from) ?? matches[0]
+}
+
+/** Exact hit if selected; otherwise the hit that strictly contains / overlaps the selection. */
+function matchAtSelection(matches: readonly RawMatch[], selection: TextSelection): RawMatch | null {
+  const { from, to } = sortedRange(selection)
+  const exact = matches.find((match) => match.from === from && match.to === to)
+  if (exact) return exact
+  return matches.find((match) => match.from < to && match.to > from) ?? null
 }
 
 function expandReplacement(replacement: string, match: RawMatch): string {
@@ -269,6 +279,9 @@ export function replaceCurrentMatch(
         { from: selected.match.from, to: selected.match.to, insert: expanded.text },
         caret(selected.match.from + expanded.text.length),
       )
+    } else {
+      // Same text (or caret was only inside the hit): move past it so Next/Replace can advance.
+      next = { ...state, selection: caret(selected.match.to) }
     }
   }
   return findInState(next, query, 1, options, true)

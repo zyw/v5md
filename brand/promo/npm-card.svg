@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400" role="img" aria-labelledby="title">
+  <title id="title">v5md npm card</title>
+  <rect width="800" height="400" rx="24" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2"/>
+  <rect x="0" y="0" width="800" height="12" fill="#0F766E"/>
+  <g transform="translate(48,70) scale(0.7)">
+    <path fill="#0F766E" fill-rule="evenodd" d="
+      M 72 24 H 184 A 44 44 0 0 1 228 68 V 180 A 44 44 0 0 1 184 224 H 72 A 44 44 0 0 1 28 180 V 68 A 44 44 0 0 1 72 24 Z
+      M 48 76 A 12 12 0 0 1 60 64 H 60 A 12 12 0 0 1 72 76 V 172 A 12 12 0 0 1 60 184 H 60 A 12 12 0 0 1 48 172 Z
+      M 96 60 H 124 V 188 H 96 Z
+      M 152 60 H 180 V 188 H 152 Z
+      M 80 88 H 96 V 116 H 80 Z
+      M 124 88 H 152 V 116 H 124 Z
+      M 180 88 H 196 V 116 H 180 Z
+      M 80 136 H 96 V 164 H 80 Z
+      M 124 136 H 152 V 164 H 124 Z
+      M 180 136 H 196 V 164 H 180 Z
+    "/>
+  </g>
+  <text x="260" y="140" font-family="ui-sans-serif, system-ui, sans-serif" font-size="56" font-weight="700" fill="#0B1220">@v5md/view</text>
+  <text x="260" y="190" font-family="ui-sans-serif, system-ui, sans-serif" font-size="24" fill="#0F766E">Peek into Markdown - markers on demand</text>
+  <text x="260" y="250" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#475569">npm install @v5md/vue</text>
+  <text x="260" y="290" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#475569">npm install @v5md/react</text>
+  <text x="260" y="340" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18" fill="#94A3B8">MIT  |  ESM  |  framework-thin</text>
+</svg>

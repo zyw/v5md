@@ -566,6 +566,119 @@ describe('Editor', () => {
     const bar = element.querySelector('.v5md-find')
     expect(bar?.parentElement).toBe(element)
     expect(bar?.hasAttribute('hidden')).toBe(false)
+    expect(bar?.querySelector('.v5md-find-row')).not.toBeNull()
+    expect(element.classList.contains('v5-find-open')).toBe(true)
+    expect(element.style.getPropertyValue('--v5-sticky-find-height')).not.toBe('0px')
+    editor.destroy()
+  })
+
+  it('supports Enter / previous and icon actions in the find bar', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: 'one two one' })
+    editor.openFind()
+    const query = element.querySelector<HTMLInputElement>('.v5md-find-query')!
+    const status = element.querySelector('.v5md-find-status')
+    const previous = element.querySelector<HTMLButtonElement>('.v5md-find-steps .v5md-find-action:first-child')
+    const next = element.querySelector<HTMLButtonElement>('.v5md-find-steps .v5md-find-action:last-child')
+    const replace = element.querySelectorAll<HTMLButtonElement>('.v5md-find-group:last-of-type .v5md-find-action')
+    expect(previous?.querySelector('svg')).not.toBeNull()
+    expect(next?.querySelector('svg')).not.toBeNull()
+    expect(replace).toHaveLength(2)
+    expect(replace[0].querySelector('svg')).not.toBeNull()
+    expect(replace[1].querySelector('svg')).not.toBeNull()
+
+    query.value = 'one'
+    query.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(status?.textContent).toBe('1/2')
+    next?.click()
+    expect(status?.textContent).toBe('2/2')
+    previous?.click()
+    expect(status?.textContent).toBe('1/2')
+    query.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true, cancelable: true }),
+    )
+    expect(status?.textContent).toBe('2/2')
+    editor.destroy()
+  })
+
+  it('finds and replaces from a caret inside a match while keeping the find bar focused', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: 'hello hello' })
+    editor.focusAt(2)
+    editor.openFind()
+    const query = element.querySelector<HTMLInputElement>('.v5md-find input[type="search"]')
+    const replacement = element.querySelectorAll<HTMLInputElement>('.v5md-find input')[1]
+    expect(query).toBeTruthy()
+    expect(replacement).toBeTruthy()
+    query!.value = 'hello'
+    replacement!.value = 'hi'
+    expect(editor.findNext()).toBe(true)
+    expect(document.activeElement).toBe(query)
+    editor.replaceNext()
+    expect(editor.getMarkdown()).toBe('hi hello')
+    expect(document.activeElement).toBe(query)
+    editor.destroy()
+  })
+
+  it('keeps find-bar typing out of the document', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: '---\ntitle: x\n---\n' })
+    editor.openFind()
+    const query = element.querySelector<HTMLInputElement>('.v5md-find input[type="search"]')
+    expect(query).toBeTruthy()
+    query!.focus()
+    const before = editor.getMarkdown()
+    query!.dispatchEvent(
+      new InputEvent('beforeinput', {
+        bubbles: true,
+        cancelable: true,
+        inputType: 'insertText',
+        data: 'a',
+      }),
+    )
+    query!.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertText', data: 'a' }))
+    query!.value = 'a'
+    expect(editor.getMarkdown()).toBe(before)
+    expect(document.activeElement).toBe(query)
+    editor.destroy()
+  })
+
+  it('applies case / whole-word / regexp toggles from the find bar', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, value: 'Hello hello\n笔记 云笔记' })
+    editor.openFind()
+    const query = element.querySelector<HTMLInputElement>('.v5md-find-query')!
+    const toggles = [...element.querySelectorAll<HTMLButtonElement>('.v5md-find-toggle')]
+    const status = element.querySelector('.v5md-find-status')
+    expect(toggles).toHaveLength(3)
+
+    query.value = 'hello'
+    expect(editor.findNext()).toBe(true)
+    expect(status?.textContent).toBe('1/2')
+
+    toggles[0].click() // match case — onOptionsChange re-runs find
+    expect(status?.textContent).toBe('1/1')
+    expect(toggles[0].getAttribute('aria-pressed')).toBe('true')
+
+    query.value = '笔记'
+    toggles[1].click() // whole word
+    expect(status?.textContent).toBe('1/1')
+    expect(toggles[1].getAttribute('aria-pressed')).toBe('true')
+
+    query.value = 'h\\w+'
+    toggles[0].click() // case off
+    toggles[1].click() // whole word off
+    toggles[2].click() // regexp on
+    expect(toggles[2].getAttribute('aria-pressed')).toBe('true')
+    expect(status?.textContent).toMatch(/^\d+\/\d+$/)
+
+    query.value = '('
+    expect(editor.findNext()).toBe(false)
+    expect(status?.textContent).toBe('正则无效')
     editor.destroy()
   })
 

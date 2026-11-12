@@ -87,4 +87,29 @@ describe('find and replace', () => {
     const previous = runFind('abc abc', { anchor: 4, head: 7 }, 'abc', -1)
     expect(previous.hit).toEqual({ from: 0, to: 3, index: 1, total: 2 })
   })
+
+  it('selects the match under the caret before advancing past it', () => {
+    const inside = runFind('hello hello', { anchor: 2, head: 2 }, 'hello', 1)
+    expect(inside.hit).toEqual({ from: 0, to: 5, index: 1, total: 2 })
+    const partial = runFind('hello hello', { anchor: 1, head: 3 }, 'hello', 1)
+    expect(partial.hit).toEqual({ from: 0, to: 5, index: 1, total: 2 })
+    const atEnd = runFind('hello hello', { anchor: 5, head: 5 }, 'hello', 1)
+    expect(atEnd.hit).toEqual({ from: 6, to: 11, index: 2, total: 2 })
+    const backwardInside = runFind('hello hello', { anchor: 8, head: 8 }, 'hello', -1)
+    expect(backwardInside.hit).toEqual({ from: 6, to: 11, index: 2, total: 2 })
+  })
+
+  it('replaces the match under the caret then advances to the next one', () => {
+    const state = { ...createState('hello hello'), selection: { anchor: 2, head: 2 } }
+    const replaced = replaceCurrentMatch(state, 'hello', 'hi')
+    expect(replaced.state.doc).toBe('hi hello')
+    expect(replaced.result.hit).toEqual({ from: 3, to: 8, index: 1, total: 1 })
+  })
+
+  it('advances past a no-op replace when the caret sits inside the hit', () => {
+    const state = { ...createState('hello hello'), selection: { anchor: 2, head: 2 } }
+    const replaced = replaceCurrentMatch(state, 'hello', 'hello')
+    expect(replaced.state.doc).toBe('hello hello')
+    expect(replaced.result.hit).toEqual({ from: 6, to: 11, index: 2, total: 2 })
+  })
 })

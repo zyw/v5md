@@ -1,5 +1,6 @@
 import type { MdNode } from '@v5md/core'
 import katex from 'katex'
+import { DEFAULT_LOCALE, getMessages, type LocaleMessages } from '../i18n/index.js'
 import type { BlockHost } from './blocks.js'
 import { highlightSpans } from './highlight.js'
 import { externalLinkUrl, linkActivationHint } from './links.js'
@@ -19,14 +20,18 @@ export interface RenderOptions {
   blocks?: BlockHost
   /** Whether the editor is editable (affects block render context). */
   editable?: boolean
+  messages?: LocaleMessages
 }
 
 /** Rendering is synchronous, so this stays stable for the whole renderDocument call. */
 let activeLinkHint = ''
 let activeBlocks: BlockHost | null = null
+let activeMessages: LocaleMessages = getMessages(DEFAULT_LOCALE)
 
 export function renderDocument(container: HTMLElement, options: RenderOptions, tree: MdNode): void {
-  activeLinkHint = options.linkHint ?? linkActivationHint(container.classList.contains('v5-preview'))
+  activeMessages = options.messages ?? getMessages(DEFAULT_LOCALE)
+  activeLinkHint =
+    options.linkHint ?? linkActivationHint(container.classList.contains('v5-preview'), undefined, undefined, activeMessages)
   activeBlocks = options.blocks && !options.sourceMode ? options.blocks : null
   if (activeBlocks) {
     activeBlocks.beginRender({
@@ -156,7 +161,10 @@ function taskCheckbox(node: MdNode): HTMLButtonElement {
   check.contentEditable = 'false'
   check.dataset.start = String(node.start)
   check.dataset.checked = node.checked ? 'true' : 'false'
-  check.setAttribute('aria-label', node.checked ? '已完成' : '未完成')
+  check.setAttribute(
+    'aria-label',
+    node.checked ? activeMessages.aria.taskChecked : activeMessages.aria.taskUnchecked,
+  )
   check.setAttribute('aria-pressed', node.checked ? 'true' : 'false')
   return check
 }
@@ -362,7 +370,7 @@ function renderImage(node: MdNode): HTMLElement {
   handle.className = 'v5-image-resize'
   handle.tabIndex = -1
   handle.contentEditable = 'false'
-  handle.setAttribute('aria-label', '调整图片大小')
+  handle.setAttribute('aria-label', activeMessages.aria.resizeImage)
   frame.append(image, handle)
   const source = leaf('span', node, 'v5-source', node.children.map((child) => child.text ?? '').join(''))
   host.append(source, frame)

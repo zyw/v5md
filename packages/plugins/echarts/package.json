@@ -1,6 +1,6 @@
 {
   "name": "@v5md/plugin-echarts",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "v5md ECharts 块渲染插件",
   "license": "MIT",
   "type": "module",
@@ -32,7 +32,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@v5md/view": "0.0.3",
+    "@v5md/view": "0.0.4",
     "echarts": "^5.6.0"
   },
   "devDependencies": {

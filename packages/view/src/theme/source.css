@@ -13,7 +13,9 @@
   border-radius: 10px;
   background: #f8fafc;
   white-space: pre-wrap;
+  overflow: visible;
   overflow-wrap: break-word;
+  max-height: none;
 }
 
 .v5md .v5-doc .v5-source-doc[data-line-numbers='true'] {

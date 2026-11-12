@@ -1,20 +1,27 @@
 # v5md
 
+[English](README.en.md) | 简体中文
+
+<p align="center">
+  <img src="brand/promo/hero-readme-zh.png" alt="v5md — 所见即所得 Markdown 编辑器" width="960" />
+</p>
+
 [![CI](https://github.com/zyw/v5md/actions/workflows/ci.yml/badge.svg)](https://github.com/zyw/v5md/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@v5md/view?label=%40v5md%2Fview)](https://www.npmjs.com/package/@v5md/view)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 所见即所得 Markdown 编辑器。**Markdown 字符串是唯一数据源**：输入、粘贴和工具条命令都只改这段字符串，再重新解析、重绘页面。光标进入某个块或行内格式时才显示对应 Markdown 标记，离开后只保留排版结果。
 
-同一套编辑器可以嵌进 Vue 3 和 React，也可以直接挂到任意 DOM 元素上。不依赖框架、不接管你的数据流、不生成私有格式——存下来的就是标准 Markdown。
+同一套编辑器可以嵌进 Vue 3 和 React，也可以直接挂到任意 DOM 元素上。不依赖框架、不接管你的数据流、不生成私有格式——存下来的就是标准 Markdown。内置界面支持简体中文与英文；流程图、思维导图、ECharts 图表通过官方插件按需接入。
 
-当前版本 `0.0.3`。`0.0.2` 已在 [npm 官方仓库](https://www.npmjs.com/package/@v5md/view)，核心与官方插件包都是 ESM（`"type": "module"`）。
+当前版本 `0.0.4`（九个包：`core` / `view` / `vue` / `react` 与五个官方插件）。npm 上见 [@v5md/view](https://www.npmjs.com/package/@v5md/view)；仓库最新能力（国际化、图表插件、导出增强等）以本 README 与 [`CHANGELOG.md`](CHANGELOG.md) 为准。所有包均为 ESM（`"type": "module"`）。
 
 ## 目录
 
 - [为什么用它](#为什么用它)
 - [快速开始](#快速开始)
 - [常用 API](#常用-api)
+- [语言（国际化）](#语言国际化)
 - [插件](#插件)
 - [插件开发](#插件开发)
 - [主题与样式](#主题与样式)
@@ -34,10 +41,11 @@
 | **粘贴即转换** | 从网页、Word、飞书复制的富文本，先转成 Markdown 再写入文档。 |
 | **不锁死框架** | `@v5md/vue`、`@v5md/react` 只是薄壳，核心是 `@v5md/view` 里的 `Editor` 类。 |
 | **可插拔** | 工具条、斜杠菜单、命令、对外 API、块渲染都能由插件提供；官方插件覆盖字号、导出、Mermaid、Mindmap 和 ECharts。 |
+| **中英界面** | `locale: 'zh-CN' \| 'en'` 切换工具条、斜杠菜单、查找栏、大纲等内置文案；官方插件也可传同一 `locale`。 |
 
-支持的内容：段落与一到六级标题、粗体/斜体/下划线/删除线/`==高亮==`/行内代码/链接、有序列表/无序列表/任务列表/引用、围栏代码块（语法高亮）、表格（含对齐）、分割线、图片（可拖拽缩放）、行内公式与公式块（KaTeX）、文首 YAML frontmatter；Mermaid / Mindmap / ECharts 由官方插件按需提供。
+支持的内容：段落与一到六级标题、粗体/斜体/下划线/删除线/`==高亮==`/行内代码/链接、有序列表/无序列表/任务列表/引用、围栏代码块（语法高亮）、表格（含对齐）、分割线、图片（可拖拽缩放）、行内公式与公式块（KaTeX）、文首 YAML frontmatter；` ```mermaid ` / ` ```mindmap ` / ` ```echarts ` 由对应官方插件按需渲染。
 
-编辑能力：撤销重做、查找替换（支持正则与全词）、带语法高亮和行号的整篇源码模式、大纲跳转、表格行列编辑、图片上传、一键复制为公众号富文本、插件扩展。
+编辑能力：撤销重做、查找替换（支持正则与全词）、带语法高亮和行号的整篇源码模式、大纲跳转、工具条/大纲钉顶、块级拖拽与块菜单、表格行列编辑、图片上传与缩放、一键复制为公众号富文本、插件扩展。
 
 ### 工作方式
 
@@ -105,7 +113,7 @@ KaTeX、lowlight 随 `@v5md/view` 一起安装，不用额外处理；`katex/dis
 
 1. 全站引入一次 `@v5md/view/theme.css`。
 2. Vue 用下一节的 `V5Editor` 和 `v-model`。React 用 `value` / `onChange`。其他框架用 `new Editor({ element })`。
-3. 要用字号或导出时，再安装对应插件，传给 `plugins` 或 `editor.use()`，见[插件](#插件)。
+3. 要用字号、导出或图表时，再安装对应插件，传给 `plugins` 或 `editor.use()`，见[插件](#插件)。界面语言见[语言（国际化）](#语言国际化)。
 
 ### Vue 3
 
@@ -116,16 +124,21 @@ KaTeX、lowlight 随 `@v5md/view` 一起安装，不用额外处理；`katex/dis
 import { ref, shallowRef } from 'vue'
 import type { Editor } from '@v5md/view'
 import { V5Editor } from '@v5md/vue'
+import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import '@v5md/view/theme.css'
 
 const markdown = ref('# 标题\n')
 const editor = shallowRef<Editor | null>(null)
+const locale = ref<'zh-CN' | 'en'>('zh-CN')
+const plugins = [createMermaidPlugin({ locale: locale.value })]
 </script>
 
 <template>
   <V5Editor
     v-model="markdown"
+    :locale="locale"
     placeholder="开始编写…"
+    :plugins="plugins"
     :on-upload-image="(file) => URL.createObjectURL(file)"
     :on-ready="(instance) => (editor = instance)"
   />
@@ -136,7 +149,8 @@ const editor = shallowRef<Editor | null>(null)
 | 属性 | 说明 |
 | --- | --- |
 | `v-model` / `modelValue` | Markdown 全文。外部改成不同字符串时会整篇替换并重置历史 |
-| `placeholder` | 空文档提示 |
+| `placeholder` | 空文档提示；不传则随 `locale` 使用默认文案 |
+| `locale` | `'zh-CN'`（默认）或 `'en'`；变化时调用 `setLocale()` |
 | `editable` | 是否可编辑，默认 `true`；`false` 进入只读预览，预览下待办复选框仍可切换 |
 | `plugins` | 插件数组，见[插件](#插件) |
 | `onUploadImage` | 选择或粘贴图片时调用，返回图片地址或 `Promise<string>` |
@@ -154,17 +168,21 @@ const editor = shallowRef<Editor | null>(null)
 import { useState } from 'react'
 import type { Editor } from '@v5md/view'
 import { V5Editor } from '@v5md/react'
+import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import '@v5md/view/theme.css'
 
 export function Page() {
-  const [markdown, setMarkdown] = useState('# 标题\n')
+  const [markdown, setMarkdown] = useState('# Title\n')
+  const [locale] = useState<'zh-CN' | 'en'>('en')
   const [, setEditor] = useState<Editor | null>(null)
 
   return (
     <V5Editor
       value={markdown}
       onChange={setMarkdown}
-      placeholder="开始编写…"
+      locale={locale}
+      placeholder="Start writing…"
+      plugins={[createMermaidPlugin({ locale })]}
       onReady={setEditor}
       onUploadImage={(file) => URL.createObjectURL(file)}
     />
@@ -175,13 +193,14 @@ export function Page() {
 | 属性 | 说明 |
 | --- | --- |
 | `value` / `onChange` | 当前 Markdown 与变更回调 |
-| `placeholder` | 空文档提示 |
+| `placeholder` | 空文档提示；不传则随 `locale` 使用默认文案 |
+| `locale` | `'zh-CN'`（默认）或 `'en'`；变化时调用 `setLocale()` |
 | `className` | 加在宿主元素上（宿主同时带 `v5md-host`） |
 | `editable` | 是否可编辑，默认 `true` |
 | `plugins` | 插件数组 |
 | `onUploadImage` / `onPickImage` / `onFindRequest` / `onReady` | 同 Vue |
 
-`editable` 和 `placeholder` 的后续变化会同步到实例；其余回调只在创建时读取，改函数体即可（内部用 ref 转发，不会重建编辑器）。
+`editable`、`placeholder` 和 `locale` 的后续变化会同步到实例；其余回调只在创建时读取，改函数体即可（内部用 ref 转发，不会重建编辑器）。切换语言且需要更新插件按钮文案时，用新的 `locale` 重建插件（例如给组件加 `key={locale}`）。
 
 ### 原生 JS / 其他框架
 
@@ -189,14 +208,17 @@ export function Page() {
 
 ```ts
 import { Editor } from '@v5md/view'
+import { createEchartsPlugin } from '@v5md/plugin-echarts'
 import '@v5md/view/theme.css'
 
 const editor = new Editor({
   element: document.querySelector('#editor')!,
   value: '# 标题\n\n正文',
+  locale: 'zh-CN',
   placeholder: '开始编写…',
   toolbar: true,
   outline: true,
+  plugins: [createEchartsPlugin({ locale: 'zh-CN' })],
   onChange(markdown) {
     localStorage.setItem('draft', markdown)
   },
@@ -219,9 +241,12 @@ editor.destroy()
 | --- | --- | --- | --- |
 | `element` | `HTMLElement` | 必填 | 承载编辑器的宿主元素 |
 | `value` | `string` | `''` | 初始 Markdown |
-| `placeholder` | `string` | — | 空文档提示 |
+| `placeholder` | `string` | — | 空文档提示；不传则用当前 `locale` 的默认文案 |
+| `locale` | `'zh-CN' \| 'en' \| string` | `'zh-CN'` | 内置 UI 语言（工具条、斜杠菜单、查找栏、大纲、表格条、块菜单等） |
 | `toolbar` | `boolean` | `true` | 是否显示工具条 |
 | `outline` | `boolean` | `true` | 是否显示大纲 |
+| `toolbarSticky` | `boolean` | `false` | 滚动时是否钉住工具条 |
+| `outlineSticky` | `boolean` | `true` | 滚动时是否钉住大纲 |
 | `lineNumbers` | `boolean` | `true` | 源码模式下是否显示行号 |
 | `editable` | `boolean` | `true` | `false` 为只读预览 |
 | `plugins` | `V5mdPlugin[]` | — | 创建时安装的插件 |
@@ -229,6 +254,43 @@ editor.destroy()
 | `onUploadImage` | `(file: File) => string \| Promise<string>` | — | 图片上传，返回值写成 `![文件名](地址)` |
 | `onPickImage` | `() => void \| false` | — | 接管图片按钮；返回 `false` 用系统选择框 |
 | `onFindRequest` | `(request: { kind: 'find' \| 'replace' }) => void` | — | 接管 Mod+F / Mod+H |
+
+### 语言（国际化）
+
+内置界面默认**简体中文**，可切换到**英文**。覆盖范围：工具条、斜杠菜单、查找/替换栏、大纲、表格操作条、块菜单、任务复选框与图片缩放的 `aria-label`、链接悬停提示，以及未自定义时的空文档 `placeholder`。
+
+```ts
+import { Editor } from '@v5md/view'
+import { createMermaidPlugin } from '@v5md/plugin-mermaid'
+import { createMindmapPlugin } from '@v5md/plugin-mindmap'
+import { createEchartsPlugin } from '@v5md/plugin-echarts'
+import { createExportPlugin } from '@v5md/plugin-export'
+
+const locale = 'en'
+
+const editor = new Editor({
+  element,
+  locale,
+  plugins: [
+    createExportPlugin({ locale, title: 'My note' }),
+    createMermaidPlugin({ locale }),
+    createMindmapPlugin({ locale }),
+    createEchartsPlugin({ locale }),
+  ],
+})
+
+editor.setLocale('zh-CN')
+editor.getLocale() // 'zh-CN'
+```
+
+| 能力 | 说明 |
+| --- | --- |
+| `locale` 创建选项 | `'zh-CN'` / `'en'`；也接受 `zh`、`en-US` 等，会规范成上述二者 |
+| `setLocale()` / `getLocale()` | 运行时切换 / 读取；会刷新内置 chrome 文案 |
+| Vue / React `locale` | 属性变化时同步到实例 |
+| 官方插件 `locale` | Mermaid / Mindmap / ECharts / Export 的工具条、斜杠项、状态提示与默认模板跟随语言 |
+
+插件标签在**安装时**写入。只调 `editor.setLocale()` 不会改已安装插件的按钮文案；切换语言时请用新的 `locale` 重建插件（playground 用 `:key="locale"` 重挂载编辑器）。完整中英文文档：[`README.md`](README.md) / [`README.en.md`](README.en.md)。
 
 ### 内容读写
 
@@ -280,6 +342,7 @@ editor.toggleBold()         // 行内格式
 | `setOutlineSticky(on)` / `isOutlineSticky()` | 大纲是否钉在滚动顶部，默认开 |
 | `setEditable(on)` | 运行时切换只读预览 |
 | `setPlaceholder(text)` | 运行时改提示语 |
+| `setLocale(locale)` / `getLocale()` | 切换 / 读取内置 UI 语言（`zh-CN` / `en`） |
 | `getOutline()` | 标题列表 `{ depth, text, start }[]` |
 | `getPluginState()` | 状态快照：`markdown`、`selection`、`path`、`editable`、`sourceMode`、`findOpen` 等 |
 | `getHostElement()` / `getContentElement()` | 宿主元素 / 正文元素 |
@@ -335,7 +398,7 @@ npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5
 | [`@v5md/plugin-mindmap`](packages/plugins/mindmap/README.md) | 渲染 ` ```mindmap ` Markdown 大纲导图 | 可选「思维导图」/ 斜杠「思维导图」 |
 | [`@v5md/plugin-echarts`](packages/plugins/echarts/README.md) | 渲染 ` ```echarts ` JSON 图表 | 可选「图表」/ 斜杠「图表」 |
 
-字号和导出只提供 API；Mermaid / Mindmap / ECharts 默认带插入按钮与斜杠项，可 `toolbar: false` 关掉工具条按钮。playground 已接入，见 [`playground-vue/src/App.vue`](playground-vue/src/App.vue)。
+字号和导出只提供 API；Mermaid / Mindmap / ECharts 默认带插入按钮与斜杠项，可 `toolbar: false` 关掉工具条按钮。各插件均支持 `locale`，与编辑器语言对齐。playground（Vue / React）已接入图表插件与中英切换，见 [`playground-vue/src/App.vue`](playground-vue/src/App.vue)。
 
 ### 字号插件
 
@@ -362,11 +425,20 @@ import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 
 const editor = new Editor({
   element,
-  plugins: [createMermaidPlugin()],
+  locale: 'zh-CN',
+  plugins: [createMermaidPlugin({ locale: 'zh-CN' })],
 })
 
 await editor.runCommand('mermaid.insert')
+// 或输入 /流程图（英文界面为 Flowchart）
 ```
+
+| 选项 | 默认 | 说明 |
+| --- | --- | --- |
+| `locale` | `zh-CN` | 工具条 / 斜杠文案与绘制中提示 |
+| `toolbar` | `true` | 是否显示插入按钮 |
+| `lang` | `mermaid` | 匹配的 fenced lang |
+| `template` | 简单 flowchart | 插入时的默认源码 |
 
 未安装时，`mermaid` 围栏按普通代码块高亮显示。完整说明见 [`packages/plugins/mermaid/README.md`](packages/plugins/mermaid/README.md)。
 
@@ -377,13 +449,13 @@ import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 
 const editor = new Editor({
   element,
-  plugins: [createMindmapPlugin()],
+  plugins: [createMindmapPlugin({ locale: 'en', height: 360 })],
 })
 
 await editor.runCommand('mindmap.insert')
 ```
 
-围栏正文是 Markdown 大纲（标题或缩进列表）。完整说明见 [`packages/plugins/mindmap/README.md`](packages/plugins/mindmap/README.md)。
+围栏正文是 Markdown 大纲（标题或缩进列表）。`locale` 影响按钮文案、状态提示与默认模板。完整说明见 [`packages/plugins/mindmap/README.md`](packages/plugins/mindmap/README.md)。
 
 ### ECharts 插件
 
@@ -392,35 +464,42 @@ import { createEchartsPlugin } from '@v5md/plugin-echarts'
 
 const editor = new Editor({
   element,
-  plugins: [createEchartsPlugin({ height: 320 })],
+  plugins: [createEchartsPlugin({ height: 320, locale: 'zh-CN' })],
 })
 
 await editor.runCommand('echarts.insert')
 ```
 
-围栏正文必须是 JSON option（不执行 JS）。完整说明见 [`packages/plugins/echarts/README.md`](packages/plugins/echarts/README.md) 与 [`docs/plugin-block-render.md`](docs/plugin-block-render.md)。
+围栏正文必须是 JSON option（不执行 JS）。`locale` 影响按钮文案、校验错误提示与默认 option 模板。完整说明见 [`packages/plugins/echarts/README.md`](packages/plugins/echarts/README.md) 与 [`docs/plugin-block-render.md`](docs/plugin-block-render.md)。
 
 ### 导出插件
 
 ```ts
 import { createExportPlugin } from '@v5md/plugin-export'
 
-const exporter = editor.use(createExportPlugin({ fileName: 'note', title: '我的文档' }))
+const exporter = editor.use(createExportPlugin({
+  fileName: 'note',
+  title: '我的文档',
+  locale: 'zh-CN',
+}))
 
 await exporter.api.downloadPdf('note')        // 下载 PDF
-const html = await exporter.api.exportHtml()  // 完整 HTML 文档
+const html = await exporter.api.exportHtml()  // 完整 HTML 文档（含图表快照）
 exporter.api.downloadMarkdown('note')         // 下载 .md
 ```
 
 | 选项 | 默认 | 说明 |
 | --- | --- | --- |
 | `fileName` | `v5md-document` | 默认文件名前缀 |
-| `title` | `v5md 文档` | 导出 HTML 的标题 |
+| `title` | 随 `locale`：`v5md 文档` / `v5md document` | 导出 HTML 的标题 |
+| `locale` | `zh-CN` | 影响默认 `title` |
 | `imageScale` | `2` | 截图倍率 |
 | `pdfMargin` | `24` | PDF 页边距（pt） |
 | `renderer` | — | 替换 html2canvas / jsPDF 实现，便于测试或换渲染器 |
 
 API：`exportMarkdown()`、`exportHtml()`、`exportHtmlFragment()`、`exportImage(options?)`、`exportPdf(options?)`、`print()`、`downloadMarkdown()`、`downloadHtml()`、`downloadImage()`、`downloadPdf()`。
+
+`exportHtml()` 会保留已渲染的 KaTeX / Mermaid SVG，并把 ECharts 等 **canvas 快照成图片** 再写入，避免克隆后空白。`downloadPdf()` 为图片式 PDF（中文与图表不丢字），并按块边界智能分页；需要可选中矢量文字时用 `print()` 走浏览器「另存为 PDF」。详见 [`packages/plugins/export/README.md`](packages/plugins/export/README.md)。
 
 ### 安装、调用与卸载
 
@@ -713,6 +792,10 @@ const state = createState('# 标题\n')       // 编辑状态 + 撤销历史
 **能 SSR 吗？** 可以 import，但编辑器只在浏览器挂载：Vue 组件在 `onMounted`、React 在 `useEffect` 里创建，首屏建议先渲染占位。
 
 **能自定义工具条吗？** 三种方式：用 `createToolbarFromItems()` 自己拼按钮列表；写一个只提供 `toolbar` 的插件；或者 `setToolbarVisible(false)` 关掉内置工具条，把按钮放到页面任意位置调用 `editor.runCommand()`。
+
+**怎么切换中英文？** 创建时传 `locale: 'en'` 或 `'zh-CN'`，运行时用 `setLocale()`；Vue / React 用 `locale` 属性。图表类官方插件也要传同一 `locale`（或重挂载），按钮文案才会一起变。
+
+**图表怎么用？** 分别安装 `@v5md/plugin-mermaid` / `mindmap` / `echarts`，放进 `plugins`。围栏 lang 对应 `mermaid`、`mindmap`、`echarts`；也可用斜杠菜单或工具条插入。
 
 **内容会被编辑器改坏吗？** 只重写你实际编辑到的那一段，没碰过的内容原样保留。不放心的话可以先用 `parse()` 校验一遍再写入。
 

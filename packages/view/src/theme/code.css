@@ -1,4 +1,6 @@
-.v5md .v5-doc pre {
+/* Fence blocks only — source-mode surface is also a <pre>, but must grow with
+   the page (no inner scrollbar). overflow-x:auto would force overflow-y:auto. */
+.v5md .v5-doc pre:not(.v5-source-doc) {
   margin: 0.9em 0;
   padding: 0.85em 1em;
   overflow-x: auto;

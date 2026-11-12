@@ -1,9 +1,11 @@
 import {
   createFencedWidgetShell,
+  resolveLocale,
   type BlockDestroyContext,
   type BlockHydrateContext,
   type BlockRenderContext,
   type BlockUpdateContext,
+  type LocaleCode,
   type V5mdBlockRenderer,
   type V5mdPlugin,
 } from '@v5md/view'
@@ -31,6 +33,8 @@ export interface EchartsPluginOptions {
   template?: object
   /** 替换动态 import，便于测试。 */
   loadEcharts?: () => Promise<EchartsLike>
+  /** UI language for toolbar / slash / status text. Defaults to zh-CN. */
+  locale?: LocaleCode | string
 }
 
 export interface EchartsApi {
@@ -38,22 +42,60 @@ export interface EchartsApi {
   insertTemplate(option?: object): boolean
 }
 
-const DEFAULT_TEMPLATE = {
-  title: { text: '季度营收', left: 'center' },
-  tooltip: { trigger: 'axis' },
-  legend: { bottom: 0 },
-  grid: { left: 48, right: 24, top: 48, bottom: 48 },
-  xAxis: { type: 'category', data: ['Q1', 'Q2', 'Q3', 'Q4'] },
-  yAxis: { type: 'value', name: '万元' },
-  series: [
-    { name: '产品 A', type: 'bar', data: [120, 200, 150, 80], itemStyle: { borderRadius: [4, 4, 0, 0] } },
-    { name: '产品 B', type: 'bar', data: [60, 90, 130, 170], itemStyle: { borderRadius: [4, 4, 0, 0] } },
-  ],
-  color: ['#3b82f6', '#10b981'],
+type EchartsCopy = {
+  title: string
+  drawing: string
+  empty: string
+  notObject: string
+  invalidJson: string
+  template: object
+}
+
+const COPY: Record<LocaleCode, EchartsCopy> = {
+  'zh-CN': {
+    title: '图表',
+    drawing: '正在绘制图表…',
+    empty: '请填写 JSON 格式的 ECharts option',
+    notObject: 'ECharts option 必须是 JSON 对象',
+    invalidJson: 'JSON 无法解析',
+    template: {
+      title: { text: '季度营收', left: 'center' },
+      tooltip: { trigger: 'axis' },
+      legend: { bottom: 0 },
+      grid: { left: 48, right: 24, top: 48, bottom: 48 },
+      xAxis: { type: 'category', data: ['Q1', 'Q2', 'Q3', 'Q4'] },
+      yAxis: { type: 'value', name: '万元' },
+      series: [
+        { name: '产品 A', type: 'bar', data: [120, 200, 150, 80], itemStyle: { borderRadius: [4, 4, 0, 0] } },
+        { name: '产品 B', type: 'bar', data: [60, 90, 130, 170], itemStyle: { borderRadius: [4, 4, 0, 0] } },
+      ],
+      color: ['#3b82f6', '#10b981'],
+    },
+  },
+  en: {
+    title: 'Chart',
+    drawing: 'Drawing chart…',
+    empty: 'Provide a JSON ECharts option',
+    notObject: 'ECharts option must be a JSON object',
+    invalidJson: 'Invalid JSON',
+    template: {
+      title: { text: 'Quarterly revenue', left: 'center' },
+      tooltip: { trigger: 'axis' },
+      legend: { bottom: 0 },
+      grid: { left: 48, right: 24, top: 48, bottom: 48 },
+      xAxis: { type: 'category', data: ['Q1', 'Q2', 'Q3', 'Q4'] },
+      yAxis: { type: 'value', name: 'USD k' },
+      series: [
+        { name: 'Product A', type: 'bar', data: [120, 200, 150, 80], itemStyle: { borderRadius: [4, 4, 0, 0] } },
+        { name: 'Product B', type: 'bar', data: [60, 90, 130, 170], itemStyle: { borderRadius: [4, 4, 0, 0] } },
+      ],
+      color: ['#3b82f6', '#10b981'],
+    },
+  },
 }
 
 const CHART_ICON =
-  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/></svg>'
+  '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4.5 19.2V5.2M4.5 19.2h15"/><path d="M8.2 16.2v-4.6M12 16.2V8.4M15.8 16.2v-2.8"/></svg>'
 
 const charts = new WeakMap<HTMLElement, EchartsInstance>()
 
@@ -61,17 +103,17 @@ function heightCss(height: number | string): string {
   return typeof height === 'number' ? `${height}px` : height
 }
 
-function parseOption(source: string): { option: object } | { error: string } {
+function parseOption(source: string, copy: EchartsCopy): { option: object } | { error: string } {
   const text = source.trim()
-  if (!text) return { error: '请填写 JSON 格式的 ECharts option' }
+  if (!text) return { error: copy.empty }
   try {
     const option = JSON.parse(text) as unknown
     if (!option || typeof option !== 'object' || Array.isArray(option)) {
-      return { error: 'ECharts option 必须是 JSON 对象' }
+      return { error: copy.notObject }
     }
     return { option }
   } catch {
-    return { error: 'JSON 无法解析' }
+    return { error: copy.invalidJson }
   }
 }
 
@@ -92,17 +134,19 @@ async function defaultLoadEcharts(): Promise<EchartsLike> {
 }
 
 function createRenderer(
-  options: Required<Pick<EchartsPluginOptions, 'lang' | 'height'>> & Pick<EchartsPluginOptions, 'loadEcharts'>,
+  options: Required<Pick<EchartsPluginOptions, 'lang' | 'height'>> &
+    Pick<EchartsPluginOptions, 'loadEcharts'> & { copy: EchartsCopy },
 ): V5mdBlockRenderer {
   const langs = Array.isArray(options.lang) ? options.lang : [options.lang]
   const primaryLang = langs[0] ?? 'echarts'
   const load = options.loadEcharts ?? defaultLoadEcharts
+  const { copy } = options
 
   const paint = async (ctx: BlockHydrateContext | BlockUpdateContext, preview: HTMLElement) => {
     preview.style.height = heightCss(options.height)
     preview.style.minHeight = heightCss(options.height)
     preview.style.overflow = 'hidden'
-    const parsed = parseOption(ctx.source)
+    const parsed = parseOption(ctx.source, copy)
     if ('error' in parsed) {
       const existing = charts.get(preview)
       if (existing) {
@@ -137,7 +181,7 @@ function createRenderer(
       const { root, preview } = createFencedWidgetShell(ctx.node, {
         blockClass: 'v5-echarts',
         previewClass: 'v5-echarts-preview',
-        placeholder: '正在绘制图表…',
+        placeholder: copy.drawing,
       })
       preview.style.height = heightCss(options.height)
       preview.style.minHeight = heightCss(options.height)
@@ -170,9 +214,10 @@ export function createEchartsPlugin(options: EchartsPluginOptions = {}): V5mdPlu
   const lang = options.lang ?? 'echarts'
   const primaryLang = (Array.isArray(lang) ? lang[0] : lang)?.trim().toLowerCase() || 'echarts'
   const height = options.height ?? 280
-  const template = options.template ?? DEFAULT_TEMPLATE
+  const copy = COPY[resolveLocale(options.locale)]
+  const template = options.template ?? copy.template
   const showToolbar = options.toolbar !== false
-  const renderer = createRenderer({ lang, height, loadEcharts: options.loadEcharts })
+  const renderer = createRenderer({ lang, height, loadEcharts: options.loadEcharts, copy })
 
   return {
     name,
@@ -190,7 +235,7 @@ export function createEchartsPlugin(options: EchartsPluginOptions = {}): V5mdPlu
       {
         id: 'echarts.insert',
         command: 'echarts.insert',
-        title: '图表',
+        title: copy.title,
         keywords: ['echarts', 'chart', '图'],
         order: 80,
       },
@@ -200,7 +245,7 @@ export function createEchartsPlugin(options: EchartsPluginOptions = {}): V5mdPlu
           {
             id: 'echarts.insert',
             command: 'echarts.insert',
-            label: '图表',
+            label: copy.title,
             icon: CHART_ICON,
             group: 'insert',
             order: 60,

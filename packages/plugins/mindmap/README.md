@@ -44,6 +44,7 @@ Markdown 示例：
 | `lang` | 匹配的 fence lang，默认 `mindmap`；可设为 `['mindmap','markmap']` |
 | `height` | 预览高度，默认 `360` |
 | `toolbar` | 是否显示工具条按钮，默认 `true` |
+| `locale` | UI 语言，`zh-CN`（默认）或 `en`；影响按钮文案、状态提示与默认模板 |
 | `template` | 插入命令默认大纲 |
 | `markmapOptions` | 传给 `Markmap.create` 的选项 |
 | `loadMarkmap` | 自定义加载器（测试或替换实现） |

@@ -50,6 +50,7 @@ Markdown 示例：
 | `lang` | 匹配的 fence lang，默认 `echarts` |
 | `height` | 预览高度，默认 `280` |
 | `toolbar` | 是否显示工具条按钮，默认 `true` |
+| `locale` | UI 语言，`zh-CN`（默认）或 `en`；影响按钮文案、校验提示与默认 option |
 | `template` | 插入命令使用的默认 option |
 | `loadEcharts` | 自定义加载器（测试或替换实现） |
 

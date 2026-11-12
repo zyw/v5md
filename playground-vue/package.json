@@ -7,12 +7,12 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@v5md/plugin-echarts": "0.0.3",
-    "@v5md/plugin-export": "0.0.3",
-    "@v5md/plugin-mermaid": "0.0.3",
-    "@v5md/plugin-mindmap": "0.0.3",
-    "@v5md/plugin-typography": "0.0.3",
-    "@v5md/vue": "0.0.3",
+    "@v5md/plugin-echarts": "0.0.4",
+    "@v5md/plugin-export": "0.0.4",
+    "@v5md/plugin-mermaid": "0.0.4",
+    "@v5md/plugin-mindmap": "0.0.4",
+    "@v5md/plugin-typography": "0.0.4",
+    "@v5md/vue": "0.0.4",
     "vue": "^3.5.0"
   },
   "devDependencies": {

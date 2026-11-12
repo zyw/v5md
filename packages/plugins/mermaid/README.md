@@ -32,6 +32,7 @@ api.insertTemplate('graph TD;A-->B')
 | `name` | 插件名，默认 `mermaid` |
 | `lang` | 匹配的 fence lang，默认 `mermaid` |
 | `toolbar` | 是否显示工具条按钮，默认 `true` |
+| `locale` | UI 语言，`zh-CN`（默认）或 `en`；影响工具条 / 斜杠文案与绘制中提示 |
 | `template` | 插入命令默认源码 |
 | `loadMermaid` | 自定义加载器（测试用） |
 

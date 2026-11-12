@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Editor } from '@v5md/view'
 import { V5Editor } from '@v5md/react'
 import { createEchartsPlugin } from '@v5md/plugin-echarts'
@@ -6,19 +6,19 @@ import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
 import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 import { createTypographyPlugin, type TypographyApi } from '@v5md/plugin-typography'
-import { sample } from '@v5md/sample'
+import {
+  detectPlaygroundLocale,
+  playgroundCopy,
+  type PlaygroundLocale,
+} from '@v5md/playground-ui'
 import '@v5md/view/theme.css'
 
-const plugins = [
-  createTypographyPlugin({ defaultSize: 17 }),
-  createExportPlugin({ title: 'v5md 示例' }),
-  createMermaidPlugin(),
-  createMindmapPlugin(),
-  createEchartsPlugin(),
-]
+const SCROLL_TOP_THRESHOLD = 320
 
 export function App() {
-  const [markdown, setMarkdown] = useState(sample)
+  const [locale, setLocale] = useState<PlaygroundLocale>(() => detectPlaygroundLocale())
+  const copy = useMemo(() => playgroundCopy(locale), [locale])
+  const [markdown, setMarkdown] = useState(copy.sample)
   const [editor, setEditor] = useState<Editor | null>(null)
   const [typography, setTypography] = useState<TypographyApi | null>(null)
   const [exporter, setExporter] = useState<ExportApi | null>(null)
@@ -31,6 +31,32 @@ export function App() {
   const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [fontSize, setFontSize] = useState(17)
   const [exportStatus, setExportStatus] = useState('')
+  const [showScrollTop, setShowScrollTop] = useState(false)
+
+  const plugins = useMemo(
+    () => [
+      createTypographyPlugin({ defaultSize: 17 }),
+      createExportPlugin({ title: copy.exportTitle, locale }),
+      createMermaidPlugin({ locale }),
+      createMindmapPlugin({ locale }),
+      createEchartsPlugin({ locale }),
+    ],
+    [copy.exportTitle, locale],
+  )
+
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > SCROLL_TOP_THRESHOLD)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  function changeLocale(next: PlaygroundLocale) {
+    if (next === locale) return
+    setLocale(next)
+    setMarkdown(playgroundCopy(next).sample)
+    setExportStatus('')
+  }
 
   function changeFontSize(next: number) {
     const size = Math.min(28, Math.max(12, next))
@@ -40,31 +66,64 @@ export function App() {
 
   async function exportFile(kind: 'markdown' | 'html' | 'image' | 'pdf') {
     if (!exporter) return
-    setExportStatus('导出中…')
+    setExportStatus(copy.exporting)
     try {
-      if (kind === 'markdown') exporter.downloadMarkdown('v5md-示例.md')
-      else if (kind === 'html') await exporter.downloadHtml('v5md-示例.html')
-      else if (kind === 'image') await exporter.downloadImage('v5md-示例.png')
-      else await exporter.downloadPdf('v5md-示例.pdf')
-      setExportStatus('已导出')
+      if (kind === 'markdown') exporter.downloadMarkdown(copy.exportFile('md'))
+      else if (kind === 'html') await exporter.downloadHtml(copy.exportFile('html'))
+      else if (kind === 'image') await exporter.downloadImage(copy.exportFile('png'))
+      else await exporter.downloadPdf(copy.exportFile('pdf'))
+      setExportStatus(copy.exported)
     } catch (error) {
-      setExportStatus(error instanceof Error ? error.message : '导出失败')
+      setExportStatus(error instanceof Error ? error.message : copy.exportFailed)
     }
   }
 
-  const modeLabel = preview ? '只读预览' : sourceMode ? '源码模式' : '所见即所得'
+  const modeLabel = preview ? copy.modePreview : sourceMode ? copy.modeSource : copy.modeWysiwyg
 
   return (
     <main className="page">
       <div className="atmosphere" aria-hidden="true" />
       <header className="topbar">
-        <div className="brand">
-          <p className="eyebrow">Playground · React</p>
-          <h1>v5md</h1>
-          <p className="tagline">Markdown 即数据 · 所见即所得</p>
+        <div className="masthead">
+          <div className="brand">
+            <img
+              className="brand-lockup"
+              src="/brand/v5md-horizontal-color.svg"
+              alt="v5md"
+              height={44}
+            />
+            <p className="tagline">{copy.tagline}</p>
+          </div>
+          <div className="masthead-side">
+            <div className="masthead-meta">
+              <span className="playground-badge">{copy.badge('React')}</span>
+              <div className="lang-switch" role="group" aria-label={copy.langGroup}>
+                <button
+                  type="button"
+                  className="chip chip-lang"
+                  aria-pressed={locale === 'zh-CN'}
+                  onClick={() => changeLocale('zh-CN')}
+                >
+                  {copy.langZh}
+                </button>
+                <button
+                  type="button"
+                  className="chip chip-lang"
+                  aria-pressed={locale === 'en'}
+                  onClick={() => changeLocale('en')}
+                >
+                  {copy.langEn}
+                </button>
+              </div>
+            </div>
+            <p className="status">
+              {modeLabel} · {copy.fontSize(fontSize)}
+              {exportStatus ? ` · ${exportStatus}` : ''}
+            </p>
+          </div>
         </div>
         <div className="controls">
-          <div className="control-group" role="group" aria-label="视图">
+          <div className="control-group" role="group" aria-label={copy.view}>
             <button
               type="button"
               className="chip"
@@ -75,7 +134,7 @@ export function App() {
                 editor?.setOutlineVisible(next)
               }}
             >
-              大纲
+              {copy.outline}
             </button>
             <button
               type="button"
@@ -87,7 +146,7 @@ export function App() {
                 editor?.setToolbarVisible(next)
               }}
             >
-              工具条
+              {copy.toolbar}
             </button>
             <button
               type="button"
@@ -102,7 +161,7 @@ export function App() {
                 }
               }}
             >
-              {preview ? '编辑' : '预览'}
+              {preview ? copy.edit : copy.preview}
             </button>
             <button
               type="button"
@@ -115,7 +174,7 @@ export function App() {
                 if (next) setPreview(false)
               }}
             >
-              源码
+              {copy.source}
             </button>
             <button
               type="button"
@@ -128,10 +187,10 @@ export function App() {
                 editor?.setLineNumbersVisible(next)
               }}
             >
-              行号
+              {copy.lineNumbers}
             </button>
           </div>
-          <div className="control-group" role="group" aria-label="钉顶">
+          <div className="control-group" role="group" aria-label={copy.pin}>
             <button
               type="button"
               className="chip"
@@ -143,7 +202,7 @@ export function App() {
                 editor?.setToolbarSticky(next)
               }}
             >
-              钉工具条
+              {copy.pinToolbar}
             </button>
             <button
               type="button"
@@ -156,21 +215,21 @@ export function App() {
                 editor?.setOutlineSticky(next)
               }}
             >
-              钉大纲
+              {copy.pinOutline}
             </button>
           </div>
-          <div className="control-group" role="group" aria-label="编辑">
+          <div className="control-group" role="group" aria-label={copy.editGroup}>
             <button type="button" className="chip" onClick={() => editor?.undo()}>
-              撤销
+              {copy.undo}
             </button>
             <button type="button" className="chip" onClick={() => editor?.redo()}>
-              重做
+              {copy.redo}
             </button>
             <button type="button" className="chip" onClick={() => editor?.openFind()}>
-              查找
+              {copy.find}
             </button>
           </div>
-          <div className="control-group" role="group" aria-label="字号">
+          <div className="control-group" role="group" aria-label={copy.fontGroup}>
             <button
               type="button"
               className="chip"
@@ -189,7 +248,7 @@ export function App() {
               A+
             </button>
           </div>
-          <div className="control-group" role="group" aria-label="导出">
+          <div className="control-group control-group-export" role="group" aria-label={copy.exportGroup}>
             <button type="button" className="chip" onClick={() => exportFile('markdown')}>
               MD
             </button>
@@ -200,20 +259,18 @@ export function App() {
               PDF
             </button>
             <button type="button" className="chip" onClick={() => exportFile('image')}>
-              图片
+              {copy.image}
             </button>
           </div>
         </div>
-        <p className="status">
-          {modeLabel} · 字号 {fontSize}px
-          {exportStatus ? ` · ${exportStatus}` : ''}
-        </p>
       </header>
       <section className="workspace">
         <V5Editor
+          key={locale}
           value={markdown}
           onChange={setMarkdown}
-          placeholder="开始编写…"
+          locale={locale}
+          placeholder={copy.placeholder}
           editable={!preview}
           plugins={plugins}
           onReady={(instance) => {
@@ -232,6 +289,20 @@ export function App() {
           }
         />
       </section>
+      <button
+        type="button"
+        className={`scroll-top${showScrollTop ? ' is-visible' : ''}`}
+        aria-label={locale === 'en' ? 'Back to top' : '回到顶部'}
+        tabIndex={showScrollTop ? 0 : -1}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M12 5.5 5.8 11.7l1.4 1.4L11 9.3V19h2V9.3l3.8 3.8 1.4-1.4z"
+          />
+        </svg>
+      </button>
     </main>
   )
 }

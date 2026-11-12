@@ -1,5 +1,8 @@
+import { DEFAULT_LOCALE, getMessages, type LocaleMessages } from '../i18n/index.js'
 import type { ToolbarItemView } from '../plugin.js'
-import { BUILTIN_TOOLBAR_ITEMS } from './builtins.js'
+import { createBuiltinToolbarItems } from './builtins.js'
+
+export { BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS, BUILTIN_TOOLBAR_ITEMS } from './builtins.js'
 
 export type ToolbarCommand =
   | 'code'
@@ -23,8 +26,6 @@ export type ToolbarCommand =
   | 'highlight'
   | 'wechat'
 
-export { BUILTIN_COMMAND_IDS, BUILTIN_TOOLBAR_IDS, BUILTIN_TOOLBAR_ITEMS } from './builtins.js'
-
 const MIN_ITEM_WIDTH = 30
 const OVERFLOW_ICON =
   '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>'
@@ -33,22 +34,25 @@ export interface ToolbarControllerOptions {
   onCommand: (command: string) => void
   onImage: (file: File) => void
   onPickImage?: () => boolean
+  messages?: LocaleMessages
 }
 
 export interface ToolbarController {
   readonly element: HTMLElement
   setItems(items: readonly ToolbarItemView[]): void
   setHidden(hidden: boolean): void
+  setMessages(messages: LocaleMessages): void
   refresh(): void
   destroy(): void
 }
 
 export function createToolbarController(options: ToolbarControllerOptions): ToolbarController {
+  let messages = options.messages ?? getMessages(DEFAULT_LOCALE)
   const bar = document.createElement('div')
   bar.className = 'v5-toolbar'
   bar.contentEditable = 'false'
   bar.setAttribute('role', 'toolbar')
-  bar.setAttribute('aria-label', '工具条')
+  bar.setAttribute('aria-label', messages.toolbar.aria)
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'
@@ -113,8 +117,8 @@ export function createToolbarController(options: ToolbarControllerOptions): Tool
       moreButton.type = 'button'
       moreButton.tabIndex = -1
       moreButton.dataset.overflow = 'true'
-      moreButton.dataset.label = '更多工具'
-      moreButton.setAttribute('aria-label', '更多工具')
+      moreButton.dataset.label = messages.toolbar.more
+      moreButton.setAttribute('aria-label', messages.toolbar.more)
       moreButton.setAttribute('aria-haspopup', 'menu')
       moreButton.setAttribute('aria-expanded', 'false')
       moreButton.innerHTML = OVERFLOW_ICON
@@ -267,6 +271,14 @@ export function createToolbarController(options: ToolbarControllerOptions): Tool
       bar.hidden = hidden
       if (!hidden) layout()
     },
+    setMessages(next) {
+      messages = next
+      bar.setAttribute('aria-label', messages.toolbar.aria)
+      if (moreButton) {
+        moreButton.dataset.label = messages.toolbar.more
+        moreButton.setAttribute('aria-label', messages.toolbar.more)
+      }
+    },
     refresh: layout,
     destroy() {
       closeMenu()
@@ -282,8 +294,9 @@ export function createToolbarFromItems(
   onCommand: (command: string) => void,
   onImage: (file: File) => void,
   onPickImage?: () => boolean,
+  messages?: LocaleMessages,
 ): HTMLElement {
-  const controller = createToolbarController({ onCommand, onImage, onPickImage })
+  const controller = createToolbarController({ onCommand, onImage, onPickImage, messages })
   controller.setItems(items)
   return controller.element
 }
@@ -292,11 +305,13 @@ export function createToolbar(
   onCommand: (command: ToolbarCommand) => void,
   onImage: (file: File) => void,
   onPickImage?: () => boolean,
+  messages: LocaleMessages = getMessages(DEFAULT_LOCALE),
 ): HTMLElement {
   return createToolbarFromItems(
-    BUILTIN_TOOLBAR_ITEMS,
+    createBuiltinToolbarItems(messages),
     (command) => onCommand(command as ToolbarCommand),
     onImage,
     onPickImage,
+    messages,
   )
 }

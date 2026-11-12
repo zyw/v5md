@@ -15,8 +15,10 @@ import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
 
 const editor = new Editor({
   element,
-  plugins: [createExportPlugin({ title: '我的文章' })],
+  plugins: [createExportPlugin({ title: '我的文章', locale: 'zh-CN' })],
 })
+
+// locale: 'zh-CN' | 'en' — 未传 title 时影响默认文档标题
 
 const exporter = editor.getPlugin<ExportApi>('export')!
 

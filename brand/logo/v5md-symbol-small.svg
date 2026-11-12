@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">v5md Peek symbol (small-size cut)</title>
+  <!--
+    Simplified for 16-32px: thicker caret, thicker hash bars, larger gaps, no tiny wings.
+  -->
+  <path id="symbol" fill="#000000" fill-rule="evenodd" d="
+    M 68 28
+    H 188
+    A 40 40 0 0 1 228 68
+    V 188
+    A 40 40 0 0 1 188 228
+    H 68
+    A 40 40 0 0 1 28 188
+    V 68
+    A 40 40 0 0 1 68 28
+    Z
+
+    M 48 72
+    A 14 14 0 0 1 62 58
+    H 62
+    A 14 14 0 0 1 76 72
+    V 184
+    A 14 14 0 0 1 62 198
+    H 62
+    A 14 14 0 0 1 48 184
+    Z
+
+    M 96 56 H 132 V 200 H 96 Z
+    M 152 56 H 188 V 200 H 152 Z
+
+    M 76 84 H 96 V 124 H 76 Z
+    M 132 84 H 152 V 124 H 132 Z
+    M 188 84 H 208 V 124 H 188 Z
+
+    M 76 140 H 96 V 180 H 76 Z
+    M 132 140 H 152 V 180 H 132 Z
+    M 188 140 H 208 V 180 H 188 Z
+  "/>
+</svg>

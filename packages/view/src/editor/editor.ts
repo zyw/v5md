@@ -46,6 +46,13 @@ import { ToolbarHost } from '../chrome/toolbar-host.js'
 import { createFindBar, type FindBar } from '../chrome/find-bar.js'
 import { createSlashMenu, matchSlashCommands, type SlashMenu, type SlashMenuItem } from '../chrome/slash-menu.js'
 import { BlockChrome, type TopBlock } from '../chrome/block-chrome.js'
+import {
+  DEFAULT_LOCALE,
+  getMessages,
+  resolveLocale,
+  type LocaleCode,
+  type LocaleMessages,
+} from '../i18n/index.js'
 import { BlockHost } from './blocks.js'
 import { copySelectionAsRich } from './clipboard.js'
 import { linkActivationHint, linkAnchor, openExternalLink } from './links.js'
@@ -71,6 +78,8 @@ export interface EditorOptions {
   element: HTMLElement
   value?: string
   placeholder?: string
+  /** UI language. Defaults to `zh-CN`. */
+  locale?: LocaleCode | string
   toolbar?: boolean
   outline?: boolean
   /** Pin the toolbar to the top while scrolling. Defaults to false. */
@@ -119,10 +128,15 @@ export class Editor {
   private readonly blockHost = new BlockHost()
   private readonly keymap: KeymapHost
   private destroyed = false
+  private locale: LocaleCode = DEFAULT_LOCALE
+  private messages: LocaleMessages = getMessages(DEFAULT_LOCALE)
 
   constructor(options: EditorOptions) {
     this.options = options
     this.element = options.element
+    this.locale = resolveLocale(options.locale)
+    this.messages = getMessages(this.locale)
+    if (options.placeholder === undefined) this.options.placeholder = this.messages.placeholder
     this.toolbarVisible = options.toolbar !== false
     this.outlineVisible = options.outline !== false
     this.toolbarSticky = options.toolbarSticky === true
@@ -150,6 +164,7 @@ export class Editor {
         return pick() !== false
       },
       state: () => this.getPluginState(),
+      messages: this.messages,
     })
     for (const plugin of options.plugins ?? []) this.pluginRegistry.install(plugin)
     this.state = createState(options.value ?? '')
@@ -162,6 +177,7 @@ export class Editor {
       blocks: () => this.topBlocks(),
       onMove: (source, target, side) => this.moveBlock(source, target, side),
       onAction: (action) => this.runBlockAction(action),
+      messages: this.messages,
     })
     this.imageResize = new ImageResize({
       host: this.element,
@@ -365,12 +381,48 @@ export class Editor {
     if (!this.findBar) {
       this.findBar = createFindBar({
         onNext: () => this.findNext(),
+        onPrevious: () => this.findPrevious(),
         onReplace: () => this.replaceNext(),
         onReplaceAll: () => this.replaceAll(),
-        onClose: () => this.focusSurface(),
+        onOptionsChange: () => this.findNext(this.findBar?.query.value ?? '', false),
+        onClose: () => {
+          this.syncStickyChrome()
+          this.focusSurface()
+        },
+        messages: this.messages,
       })
     }
     this.findBar.open(this.element)
+    this.syncStickyChrome()
+  }
+
+  getLocale(): LocaleCode {
+    return this.locale
+  }
+
+  /** Switches built-in chrome strings. Plugin labels keep whatever they registered with. */
+  setLocale(locale: LocaleCode | string): void {
+    const next = resolveLocale(locale)
+    if (next === this.locale) return
+    this.locale = next
+    this.messages = getMessages(next)
+    this.options.locale = next
+    this.element.lang = next
+    this.toolbarHost.setMessages(this.messages)
+    this.findBar?.setMessages(this.messages)
+    this.outlinePanel?.setMessages(this.messages)
+    this.blockChrome.setMessages(this.messages)
+    this.tableBar?.remove()
+    this.tableBar = null
+    if (this.options.placeholder === undefined || this.isDefaultPlaceholder(this.options.placeholder)) {
+      this.options.placeholder = this.messages.placeholder
+    }
+    this.refreshLinkHints()
+    this.render()
+  }
+
+  private isDefaultPlaceholder(value: string): boolean {
+    return value === getMessages('zh-CN').placeholder || value === getMessages('en').placeholder
   }
 
   findNextMatch(query: string, options: FindOptions = {}, direction: 1 | -1 = 1, advance = true): FindQueryResult {
@@ -414,20 +466,48 @@ export class Editor {
     this.revealFind({ ...this.state, selection: { anchor: start, head: stop } })
   }
 
-  findNext(query = this.findBar?.query.value ?? ''): boolean {
-    const result = this.findNextMatch(query)
-    if (result.hit) this.focusSurface()
+  findNext(query = this.findBar?.query.value ?? '', advance = true): boolean {
+    // Keep focus in the find bar when it drove the search; revealFind restores outside focus.
+    const result = this.findNextMatch(query, this.findBarOptions(), 1, advance)
+    this.reportFindStatus(query, result)
+    return result.hit !== null
+  }
+
+  findPrevious(query = this.findBar?.query.value ?? '', advance = true): boolean {
+    const result = this.findNextMatch(query, this.findBarOptions(), -1, advance)
+    this.reportFindStatus(query, result)
     return result.hit !== null
   }
 
   replaceNext(query = this.findBar?.query.value ?? '', replacement = this.findBar?.replacement.value ?? ''): void {
-    const result = this.replaceNextMatch(query, replacement)
-    if (result.hit) this.focusSurface()
+    const result = this.replaceNextMatch(query, replacement, this.findBarOptions())
+    this.reportFindStatus(query, result)
   }
 
   replaceAll(query = this.findBar?.query.value ?? '', replacement = this.findBar?.replacement.value ?? ''): void {
-    this.replaceAllMatches(query, replacement)
-    this.focusSurface()
+    const result = this.replaceAllMatches(query, replacement, this.findBarOptions())
+    this.reportFindStatus(query, result)
+  }
+
+  private findBarOptions(): FindOptions {
+    return this.findBar?.getOptions() ?? {}
+  }
+
+  private reportFindStatus(query: string, result: FindQueryResult): void {
+    if (!this.findBar) return
+    if (!query) {
+      this.findBar.setStatus('')
+      return
+    }
+    if (result.error) {
+      this.findBar.setStatus(result.error)
+      return
+    }
+    if (!result.hit) {
+      this.findBar.setStatus(this.messages.find.noResults)
+      return
+    }
+    this.findBar.setStatus(`${result.hit.index}/${result.hit.total}`)
   }
 
   destroy(): void {
@@ -552,8 +632,8 @@ export class Editor {
   }
 
   private refreshLinkHints(): void {
-    const next = linkActivationHint(!this.editable)
-    const previous = linkActivationHint(this.editable)
+    const next = linkActivationHint(!this.editable, undefined, undefined, this.messages)
+    const previous = linkActivationHint(this.editable, undefined, undefined, this.messages)
     const suffix = ` — ${previous}`
     for (const anchor of this.element.querySelectorAll<HTMLAnchorElement>('a.v5-link[href]')) {
       if (anchor.title === previous) anchor.title = next
@@ -584,6 +664,7 @@ export class Editor {
 
   private prepare(): void {
     this.element.classList.add('v5md')
+    this.element.lang = this.locale
     this.element.classList.toggle('v5-preview', !this.editable)
     // The shell is a row flexbox (toolbar, document, outline). A contenteditable
     // flex container turns IME composition into sibling flex items, so the
@@ -597,6 +678,10 @@ export class Editor {
   private syncStickyChrome(): void {
     this.element.classList.toggle('v5-toolbar-sticky', this.toolbarSticky)
     this.element.classList.toggle('v5-outline-sticky', this.outlineSticky)
+    const findOpen = this.findBar?.isOpen() ?? false
+    this.element.classList.toggle('v5-find-open', findOpen)
+    const findHeight = findOpen && this.findBar ? this.findBar.element.offsetHeight || 46 : 0
+    this.element.style.setProperty('--v5-sticky-find-height', `${findHeight}px`)
     const toolbar = this.toolbarHost.element
     if (this.toolbarSticky && toolbar.isConnected) {
       this.element.style.setProperty('--v5-sticky-toolbar-height', `${toolbar.offsetHeight || 43}px`)
@@ -638,7 +723,7 @@ export class Editor {
   }
 
   private mountChrome(): void {
-    this.outlinePanel = createOutline((start) => this.focusAt(start))
+    this.outlinePanel = createOutline((start) => this.focusAt(start), this.messages)
     this.outlinePanel.element.hidden = !this.outlineVisible
     const doc = document.createElement('div')
     doc.className = 'v5-doc'
@@ -738,6 +823,7 @@ export class Editor {
     try {
       this.prepare()
       const active = document.activeElement === this.surface()
+      const chromeFocused = this.isChromeTarget(document.activeElement)
       renderDocument(
         this.element,
         {
@@ -747,24 +833,39 @@ export class Editor {
           placeholder: this.options.placeholder,
           sourceMode: this.sourceMode,
           lineNumbers: this.lineNumbers,
-          linkHint: linkActivationHint(!this.editable),
+          linkHint: linkActivationHint(!this.editable, undefined, undefined, this.messages),
           editable: this.editable,
           blocks: this.blockHost,
+          messages: this.messages,
         },
         parse(this.state.doc),
       )
       this.blockHost.afterRender()
       this.findBar?.attach(this.element)
+      this.syncStickyChrome()
       this.outlinePanel?.update(this.getOutline())
       this.toolbarHost.sync()
       this.updateSlash()
       this.blockChrome.position()
       if (this.focused || active) this.syncChrome()
       if (active) this.focusSurface()
-      this.restoreSelection()
+      // Restoring the model selection into the surface steals focus from the find bar / toolbar.
+      if (!chromeFocused) this.restoreSelection()
     } finally {
       this.rendering = false
     }
+  }
+
+  /** True when the event / focus lives in chrome mounted inside `.v5md` (find bar, toolbar, …). */
+  private isChromeTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof Node)) return false
+    if (this.findBar?.element.contains(target)) return true
+    if (this.toolbarHost.element.contains(target)) return true
+    if (this.outlinePanel?.element.contains(target)) return true
+    if (this.tableBar?.contains(target)) return true
+    if (this.slash?.element.contains(target)) return true
+    if (this.blockChrome.owns(target)) return true
+    return false
   }
 
   private restoreSelection(): void {
@@ -796,6 +897,8 @@ export class Editor {
   }
 
   private onBeforeInput = (event: InputEvent) => {
+    // Find bar / toolbar inputs sit inside `.v5md`; their beforeinput must not edit the doc.
+    if (this.isChromeTarget(event.target)) return
     if (!this.editable) {
       event.preventDefault()
       return
@@ -827,6 +930,7 @@ export class Editor {
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
+    if (this.isChromeTarget(event.target)) return
     if (this.composing || event.isComposing) return
     if (this.handleSlashKeys(event)) return
     if (this.blockChrome.isMenuOpen() && event.key === 'Escape') {
@@ -859,6 +963,7 @@ export class Editor {
   }
 
   private onPaste = (event: ClipboardEvent) => {
+    if (this.isChromeTarget(event.target)) return
     if (!this.editable) {
       event.preventDefault()
       return
@@ -891,6 +996,7 @@ export class Editor {
   }
 
   private onCopy = (event: ClipboardEvent) => {
+    if (this.isChromeTarget(event.target)) return
     if (!this.sourceMode) {
       copySelectionAsRich(this.element, event)
       return
@@ -902,6 +1008,7 @@ export class Editor {
   }
 
   private onCut = (event: ClipboardEvent) => {
+    if (this.isChromeTarget(event.target)) return
     if (!this.editable) {
       this.onCopy(event)
       return
@@ -925,7 +1032,8 @@ export class Editor {
     return this.state.doc.slice(from, to)
   }
 
-  private onCompositionStart = () => {
+  private onCompositionStart = (event: CompositionEvent) => {
+    if (this.isChromeTarget(event.target)) return
     if (!this.editable) return
     this.composing = true
     this.hideSlash()
@@ -934,6 +1042,7 @@ export class Editor {
   }
 
   private onCompositionEnd = (event: CompositionEvent) => {
+    if (this.isChromeTarget(event.target)) return
     if (!this.editable) {
       this.composing = false
       return
@@ -955,6 +1064,7 @@ export class Editor {
   }
 
   private onInput = (event: Event) => {
+    if (this.isChromeTarget(event.target)) return
     if (this.composing || this.rendering) return
     if (event instanceof InputEvent && event.isComposing) return
     this.render()
@@ -1011,7 +1121,7 @@ export class Editor {
     this.tableBar = createTableBar((command: TableCommand) => {
       this.focused = true
       this.commit(editTable(this.state, command))
-    })
+    }, this.messages)
     return this.tableBar
   }
 
@@ -1141,16 +1251,7 @@ export class Editor {
     if (this.rendering || this.composing || this.imageResize.active) return
     const selection = document.getSelection()
     if (!selection?.anchorNode || !this.element.contains(selection.anchorNode)) return
-    if (
-      this.tableBar?.contains(selection.anchorNode) ||
-      this.findBar?.element.contains(selection.anchorNode) ||
-      this.toolbarHost.element.contains(selection.anchorNode) ||
-      this.outlinePanel?.element.contains(selection.anchorNode) ||
-      this.slash?.element.contains(selection.anchorNode) ||
-      this.blockChrome.owns(selection.anchorNode)
-    ) {
-      return
-    }
+    if (this.isChromeTarget(selection.anchorNode)) return
     const anchor = domPointToOffset(this.element, selection.anchorNode, selection.anchorOffset)
     const head = domPointToOffset(this.element, selection.focusNode, selection.focusOffset)
     if (anchor == null || head == null) return
@@ -1185,7 +1286,7 @@ export class Editor {
       this.hideSlash()
       return
     }
-    const options = matchSlashCommands(text.slice(1), this.pluginRegistry.allSlashItems())
+    const options = matchSlashCommands(text.slice(1), this.pluginRegistry.allSlashItems(), this.messages)
     if (options.length === 0) {
       this.hideSlash()
       return

@@ -12,17 +12,17 @@
 
 .v5md.v5-outline-sticky .v5-outline {
   position: sticky;
-  top: 0;
+  top: var(--v5-sticky-find-height, 0px);
   z-index: 4;
   /* Only the outline list scrolls when it exceeds the viewport; the editor itself does not. */
-  max-height: 100vh;
+  max-height: calc(100vh - var(--v5-sticky-find-height, 0px));
   overflow-x: hidden;
   overflow-y: auto;
 }
 
 .v5md.v5-toolbar-sticky.v5-outline-sticky .v5-outline {
-  top: var(--v5-sticky-toolbar-height, 43px);
-  max-height: calc(100vh - var(--v5-sticky-toolbar-height, 43px));
+  top: calc(var(--v5-sticky-find-height, 0px) + var(--v5-sticky-toolbar-height, 43px));
+  max-height: calc(100vh - var(--v5-sticky-find-height, 0px) - var(--v5-sticky-toolbar-height, 43px));
 }
 
 .v5md .v5-outline p {

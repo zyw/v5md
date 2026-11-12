@@ -1,19 +1,30 @@
 import type { OutlineEntry } from '@v5md/core'
+import { DEFAULT_LOCALE, getMessages, type LocaleMessages } from '../i18n/index.js'
 
 export interface OutlinePanel {
   element: HTMLElement
   update(entries: OutlineEntry[]): void
+  setMessages(messages: LocaleMessages): void
 }
 
-export function createOutline(onJump: (start: number) => void): OutlinePanel {
+export function createOutline(
+  onJump: (start: number) => void,
+  messages: LocaleMessages = getMessages(DEFAULT_LOCALE),
+): OutlinePanel {
+  let current = messages
   const nav = document.createElement('nav')
   nav.className = 'v5-outline'
   nav.contentEditable = 'false'
-  nav.setAttribute('aria-label', '大纲')
   const title = document.createElement('p')
-  title.textContent = '大纲'
   const list = document.createElement('div')
   nav.append(title, list)
+
+  const applyMessages = (): void => {
+    nav.setAttribute('aria-label', current.outline.title)
+    title.textContent = current.outline.title
+  }
+  applyMessages()
+
   return {
     element: nav,
     update(entries) {
@@ -32,6 +43,10 @@ export function createOutline(onJump: (start: number) => void): OutlinePanel {
         })
         list.append(button)
       }
+    },
+    setMessages(next) {
+      current = next
+      applyMessages()
     },
   }
 }

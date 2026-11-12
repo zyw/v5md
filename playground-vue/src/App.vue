@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import type { Editor } from '@v5md/view'
 import { V5Editor } from '@v5md/vue'
 import { createEchartsPlugin } from '@v5md/plugin-echarts'
@@ -7,10 +7,18 @@ import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
 import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 import { createTypographyPlugin, type TypographyApi } from '@v5md/plugin-typography'
-import { sample } from '@v5md/sample'
+import {
+  detectPlaygroundLocale,
+  playgroundCopy,
+  type PlaygroundLocale,
+} from '@v5md/playground-ui'
 import '@v5md/view/theme.css'
 
-const markdown = ref(sample)
+const SCROLL_TOP_THRESHOLD = 320
+
+const locale = ref<PlaygroundLocale>(detectPlaygroundLocale())
+const copy = computed(() => playgroundCopy(locale.value))
+const markdown = ref(copy.value.sample)
 const editor = shallowRef<Editor | null>(null)
 const typography = shallowRef<TypographyApi | null>(null)
 const exporter = shallowRef<ExportApi | null>(null)
@@ -23,13 +31,28 @@ const outlineSticky = ref(true)
 const showLineNumbers = ref(true)
 const fontSize = ref(17)
 const exportStatus = ref('')
-const plugins = [
-  createTypographyPlugin({ defaultSize: 17 }),
-  createExportPlugin({ title: 'v5md 示例' }),
-  createMermaidPlugin(),
-  createMindmapPlugin(),
-  createEchartsPlugin(),
-]
+const showScrollTop = ref(false)
+
+const plugins = computed(() => {
+  const lang = locale.value
+  return [
+    createTypographyPlugin({ defaultSize: 17 }),
+    createExportPlugin({ title: copy.value.exportTitle, locale: lang }),
+    createMermaidPlugin({ locale: lang }),
+    createMindmapPlugin({ locale: lang }),
+    createEchartsPlugin({ locale: lang }),
+  ]
+})
+
+watch(locale, (next) => {
+  markdown.value = playgroundCopy(next).sample
+  exportStatus.value = ''
+})
+
+function setLocale(next: PlaygroundLocale) {
+  if (locale.value === next) return
+  locale.value = next
+}
 
 function onReady(instance: Editor) {
   editor.value = instance
@@ -47,15 +70,15 @@ function changeFontSize(next: number) {
 
 async function exportFile(kind: 'markdown' | 'html' | 'image' | 'pdf') {
   if (!exporter.value) return
-  exportStatus.value = '导出中…'
+  exportStatus.value = copy.value.exporting
   try {
-    if (kind === 'markdown') exporter.value.downloadMarkdown('v5md-示例.md')
-    else if (kind === 'html') await exporter.value.downloadHtml('v5md-示例.html')
-    else if (kind === 'image') await exporter.value.downloadImage('v5md-示例.png')
-    else await exporter.value.downloadPdf('v5md-示例.pdf')
-    exportStatus.value = '已导出'
+    if (kind === 'markdown') exporter.value.downloadMarkdown(copy.value.exportFile('md'))
+    else if (kind === 'html') await exporter.value.downloadHtml(copy.value.exportFile('html'))
+    else if (kind === 'image') await exporter.value.downloadImage(copy.value.exportFile('png'))
+    else await exporter.value.downloadPdf(copy.value.exportFile('pdf'))
+    exportStatus.value = copy.value.exported
   } catch (error) {
-    exportStatus.value = error instanceof Error ? error.message : '导出失败'
+    exportStatus.value = error instanceof Error ? error.message : copy.value.exportFailed
   }
 }
 
@@ -105,25 +128,67 @@ function onUploadImage(file: File) {
     reader.readAsDataURL(file)
   })
 }
+
+function onWindowScroll() {
+  showScrollTop.value = window.scrollY > SCROLL_TOP_THRESHOLD
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  onWindowScroll()
+  window.addEventListener('scroll', onWindowScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onWindowScroll)
+})
 </script>
 
 <template>
   <main class="page">
     <div class="atmosphere" aria-hidden="true" />
     <header class="topbar">
-      <div class="brand">
-        <p class="eyebrow">Playground · Vue</p>
-        <h1>v5md</h1>
-        <p class="tagline">Markdown 即数据 · 所见即所得</p>
+      <div class="masthead">
+        <div class="brand">
+          <img class="brand-lockup" src="/brand/v5md-horizontal-color.svg" alt="v5md" height="44" />
+          <p class="tagline">{{ copy.tagline }}</p>
+        </div>
+        <div class="masthead-side">
+          <div class="masthead-meta">
+            <span class="playground-badge">{{ copy.badge('Vue') }}</span>
+            <div class="lang-switch" role="group" :aria-label="copy.langGroup">
+              <button type="button" class="chip chip-lang" :aria-pressed="locale === 'zh-CN'" @click="setLocale('zh-CN')">
+                {{ copy.langZh }}
+              </button>
+              <button type="button" class="chip chip-lang" :aria-pressed="locale === 'en'" @click="setLocale('en')">
+                {{ copy.langEn }}
+              </button>
+            </div>
+          </div>
+          <p class="status">
+            {{ preview ? copy.modePreview : sourceMode ? copy.modeSource : copy.modeWysiwyg }}
+            · {{ copy.fontSize(fontSize) }}
+            <span v-if="exportStatus"> · {{ exportStatus }}</span>
+          </p>
+        </div>
       </div>
       <div class="controls">
-        <div class="control-group" role="group" aria-label="视图">
-          <button type="button" class="chip" :aria-pressed="showOutline" @click="toggleOutline">大纲</button>
-          <button type="button" class="chip" :aria-pressed="showToolbar" @click="toggleToolbar">工具条</button>
-          <button type="button" class="chip" :aria-pressed="preview" @click="togglePreview">
-            {{ preview ? '编辑' : '预览' }}
+        <div class="control-group" role="group" :aria-label="copy.view">
+          <button type="button" class="chip" :aria-pressed="showOutline" @click="toggleOutline">
+            {{ copy.outline }}
           </button>
-          <button type="button" class="chip" :aria-pressed="sourceMode" @click="toggleSource">源码</button>
+          <button type="button" class="chip" :aria-pressed="showToolbar" @click="toggleToolbar">
+            {{ copy.toolbar }}
+          </button>
+          <button type="button" class="chip" :aria-pressed="preview" @click="togglePreview">
+            {{ preview ? copy.edit : copy.preview }}
+          </button>
+          <button type="button" class="chip" :aria-pressed="sourceMode" @click="toggleSource">
+            {{ copy.source }}
+          </button>
           <button
             type="button"
             class="chip"
@@ -131,10 +196,10 @@ function onUploadImage(file: File) {
             :disabled="!sourceMode"
             @click="toggleLineNumbers"
           >
-            行号
+            {{ copy.lineNumbers }}
           </button>
         </div>
-        <div class="control-group" role="group" aria-label="钉顶">
+        <div class="control-group" role="group" :aria-label="copy.pin">
           <button
             type="button"
             class="chip"
@@ -142,7 +207,7 @@ function onUploadImage(file: File) {
             :disabled="!showToolbar"
             @click="toggleToolbarSticky"
           >
-            钉工具条
+            {{ copy.pinToolbar }}
           </button>
           <button
             type="button"
@@ -151,15 +216,15 @@ function onUploadImage(file: File) {
             :disabled="!showOutline"
             @click="toggleOutlineSticky"
           >
-            钉大纲
+            {{ copy.pinOutline }}
           </button>
         </div>
-        <div class="control-group" role="group" aria-label="编辑">
-          <button type="button" class="chip" @click="editor?.undo()">撤销</button>
-          <button type="button" class="chip" @click="editor?.redo()">重做</button>
-          <button type="button" class="chip" @click="editor?.openFind()">查找</button>
+        <div class="control-group" role="group" :aria-label="copy.editGroup">
+          <button type="button" class="chip" @click="editor?.undo()">{{ copy.undo }}</button>
+          <button type="button" class="chip" @click="editor?.redo()">{{ copy.redo }}</button>
+          <button type="button" class="chip" @click="editor?.openFind()">{{ copy.find }}</button>
         </div>
-        <div class="control-group" role="group" aria-label="字号">
+        <div class="control-group" role="group" :aria-label="copy.fontGroup">
           <button type="button" class="chip" :disabled="fontSize <= 12" @click="changeFontSize(fontSize - 1)">
             A−
           </button>
@@ -168,43 +233,56 @@ function onUploadImage(file: File) {
             A+
           </button>
         </div>
-        <div class="control-group" role="group" aria-label="导出">
+        <div class="control-group control-group-export" role="group" :aria-label="copy.exportGroup">
           <button type="button" class="chip" @click="exportFile('markdown')">MD</button>
           <button type="button" class="chip" @click="exportFile('html')">HTML</button>
           <button type="button" class="chip" @click="exportFile('pdf')">PDF</button>
-          <button type="button" class="chip" @click="exportFile('image')">图片</button>
+          <button type="button" class="chip" @click="exportFile('image')">{{ copy.image }}</button>
         </div>
       </div>
-      <p class="status">
-        {{ preview ? '只读预览' : sourceMode ? '源码模式' : '所见即所得' }}
-        · 字号 {{ fontSize }}px
-        <span v-if="exportStatus"> · {{ exportStatus }}</span>
-      </p>
     </header>
     <section class="workspace">
       <V5Editor
+        :key="locale"
         v-model="markdown"
-        placeholder="开始编写…"
+        :locale="locale"
+        :placeholder="copy.placeholder"
         :editable="!preview"
         :plugins="plugins"
         :on-upload-image="onUploadImage"
         :on-ready="onReady"
       />
     </section>
+    <button
+      type="button"
+      class="scroll-top"
+      :class="{ 'is-visible': showScrollTop }"
+      :aria-label="locale === 'en' ? 'Back to top' : '回到顶部'"
+      :tabindex="showScrollTop ? 0 : -1"
+      @click="scrollToTop"
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M12 5.5 5.8 11.7l1.4 1.4L11 9.3V19h2V9.3l3.8 3.8 1.4-1.4z"
+        />
+      </svg>
+    </button>
   </main>
 </template>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
 
 :root {
-  --ink: #14201c;
+  --ink: #0b1220;
   --muted: #5b6b64;
   --line: #d7e0db;
   --panel: rgba(255, 255, 255, 0.78);
   --panel-solid: #fbfdfb;
   --accent: #0f766e;
   --accent-soft: #d8eee9;
+  --mist: #f0fdfa;
   --shadow: 0 18px 50px rgb(20 32 28 / 8%);
   color: var(--ink);
   background: #eef3f0;
@@ -228,7 +306,7 @@ body {
 .page {
   position: relative;
   isolation: isolate;
-  max-width: 1180px;
+  max-width: 1240px;
   margin: 0 auto;
   padding: 28px 20px 48px;
 }
@@ -239,56 +317,117 @@ body {
   z-index: -1;
   background:
     radial-gradient(900px 480px at 8% -10%, #cfe8e0 0%, transparent 55%),
-    radial-gradient(700px 420px at 100% 0%, #f3e7d7 0%, transparent 50%),
-    linear-gradient(180deg, #f4f7f5 0%, #e8efeb 100%);
+    radial-gradient(700px 420px at 100% 0%, #99f6e4 0%, transparent 48%),
+    linear-gradient(180deg, #f0fdfa 0%, #e8efeb 100%);
 }
 
 .topbar {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   margin-bottom: 18px;
+  padding: 18px 18px 16px;
+  border: 1px solid rgb(15 118 110 / 12%);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgb(240 253 250 / 92%) 0%, rgb(255 255 255 / 88%) 48%, rgb(255 255 255 / 78%) 100%);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 90%) inset,
+    var(--shadow);
+}
+
+.masthead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
 }
 
 .brand {
   display: grid;
-  gap: 4px;
+  gap: 8px;
+  min-width: 0;
 }
 
-.eyebrow {
-  margin: 0;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.brand h1 {
-  margin: 0;
-  font-family: 'Source Serif 4', 'Songti SC', serif;
-  font-size: clamp(2.4rem, 4vw, 3.2rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1;
+.brand-lockup {
+  display: block;
+  height: 44px;
+  width: auto;
+  max-width: min(280px, 72vw);
 }
 
 .tagline {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.masthead-side {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  text-align: right;
+}
+
+.masthead-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.playground-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid rgb(15 118 110 / 22%);
+  border-radius: 999px;
+  background: rgb(15 118 110 / 8%);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgb(20 32 28 / 8%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 92%), rgb(255 255 255 / 72%));
+}
+
+.status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .controls {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 2px;
+  border-top: 1px solid rgb(15 118 110 / 10%);
+  overflow: hidden;
 }
 
 .control-group {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 5px;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 4px;
   border: 1px solid rgb(20 32 28 / 8%);
   border-radius: 14px;
   background: linear-gradient(180deg, rgb(255 255 255 / 92%), rgb(255 255 255 / 72%));
@@ -305,13 +444,14 @@ body {
   border-radius: 9px;
   background: transparent;
   color: var(--muted);
-  padding: 8px 13px;
+  padding: 7px 10px;
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1;
+  white-space: nowrap;
   transition:
     background 160ms ease,
     color 160ms ease,
@@ -358,6 +498,12 @@ body {
   outline-offset: 2px;
 }
 
+.chip-lang {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
 .chip-label {
   min-width: 2.4ch;
   margin: 0 2px;
@@ -371,19 +517,13 @@ body {
   text-align: center;
 }
 
-.control-group[aria-label='导出'] .chip {
+.control-group-export .chip {
   color: var(--ink);
 }
 
-.control-group[aria-label='导出'] .chip:hover:not(:disabled) {
+.control-group-export .chip:hover:not(:disabled) {
   background: rgb(194 65 12 / 8%);
   color: #9a3412;
-}
-
-.status {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
 }
 
 .workspace {
@@ -407,18 +547,86 @@ body {
   border-radius: 18px;
 }
 
+.scroll-top {
+  appearance: none;
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgb(11 84 78 / 28%);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #178378, #0f766e);
+  color: #fff;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 22%) inset,
+    0 12px 28px rgb(15 118 110 / 28%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.scroll-top.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.scroll-top:hover {
+  background: linear-gradient(180deg, #1a9184, #11857c);
+}
+
+.scroll-top:focus-visible {
+  outline: 2px solid rgb(15 118 110 / 45%);
+  outline-offset: 3px;
+}
+
 @media (max-width: 720px) {
   .page {
     padding: 20px 14px 36px;
   }
 
-  .brand h1 {
-    font-size: 2.2rem;
+  .topbar {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .masthead {
+    align-items: flex-start;
+  }
+
+  .masthead-side {
+    justify-items: start;
+    text-align: left;
+    width: 100%;
+  }
+
+  .masthead-meta {
+    justify-content: flex-start;
+  }
+
+  .brand-lockup {
+    height: 38px;
+  }
+
+  .controls {
+    flex-wrap: nowrap;
   }
 
   .control-group {
-    width: 100%;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 }
 </style>

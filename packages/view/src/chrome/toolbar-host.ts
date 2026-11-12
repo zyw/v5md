@@ -1,6 +1,7 @@
-import { BUILTIN_TOOLBAR_ITEMS } from './builtins.js'
-import { createToolbarController, type ToolbarController } from './toolbar.js'
+import { DEFAULT_LOCALE, getMessages, type LocaleMessages } from '../i18n/index.js'
 import type { ToolbarItemView, V5mdPluginState } from '../plugin.js'
+import { createBuiltinToolbarItems } from './builtins.js'
+import { createToolbarController, type ToolbarController } from './toolbar.js'
 
 const GROUP_ORDER: Record<string, number> = {
   block: 10,
@@ -20,6 +21,7 @@ export interface ToolbarHostOptions {
   onPickImage(): boolean
   /** State painted onto toggle buttons. */
   state(): V5mdPluginState
+  messages?: LocaleMessages
 }
 
 const sortItems = (items: ToolbarItemView[]): ToolbarItemView[] => {
@@ -44,12 +46,15 @@ export class ToolbarHost {
   readonly element: HTMLElement
   private readonly controller: ToolbarController
   private items: ToolbarItemView[] = []
+  private messages: LocaleMessages
 
   constructor(private readonly options: ToolbarHostOptions) {
+    this.messages = options.messages ?? getMessages(DEFAULT_LOCALE)
     this.controller = createToolbarController({
       onCommand: (command) => options.onCommand(command),
       onImage: (file) => options.onImage(file),
       onPickImage: () => options.onPickImage(),
+      messages: this.messages,
     })
     this.element = this.controller.element
   }
@@ -62,10 +67,16 @@ export class ToolbarHost {
 
   /** Rebuilds the button list, for example after a plugin is added. */
   refresh(): void {
-    this.items = sortItems([...BUILTIN_TOOLBAR_ITEMS, ...this.options.pluginItems()])
+    this.items = sortItems([...createBuiltinToolbarItems(this.messages), ...this.options.pluginItems()])
     this.controller.setItems(this.items)
     this.controller.setHidden(this.element.hidden)
     this.sync()
+  }
+
+  setMessages(messages: LocaleMessages): void {
+    this.messages = messages
+    this.controller.setMessages(messages)
+    this.refresh()
   }
 
   setHidden(hidden: boolean): void {
@@ -93,15 +104,15 @@ export class ToolbarHost {
   flash(copied: boolean): void {
     const button = this.element.querySelector<HTMLButtonElement>('button[data-command="wechat"]')
     if (!button) return
-    const label = copied ? '已复制到公众号' : '复制失败'
+    const label = copied ? this.messages.toolbar.wechatCopied : this.messages.toolbar.wechatFailed
     button.dataset.state = copied ? 'done' : 'error'
     button.dataset.label = label
     button.setAttribute('aria-label', label)
     setTimeout(() => {
       if (!button.isConnected) return
       delete button.dataset.state
-      button.dataset.label = '复制到公众号'
-      button.setAttribute('aria-label', '复制到公众号')
+      button.dataset.label = this.messages.toolbar.wechat
+      button.setAttribute('aria-label', this.messages.toolbar.wechat)
     }, 1600)
   }
 

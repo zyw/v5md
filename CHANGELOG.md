@@ -2,8 +2,123 @@
 
 ## Unreleased
 
-- 导出 HTML 时把 ECharts 等 canvas 快照成图片，避免克隆后空白。
-- PDF 按块边界智能分页，减少列表项/图表被拦腰截断；`downloadPdf()` 仍为图片式 PDF 以保证中文不乱码，可选中矢量文字请用 `print()`。
+## 0.0.4 — 2026-11-12
+
+### 中文
+
+九个包统一升至 `0.0.4`：`core` / `view` / `vue` / `react`，以及 `plugin-typography` / `plugin-export` / `plugin-mermaid` / `plugin-mindmap` / `plugin-echarts`。主页 [https://v5md.v5ai.xin](https://v5md.v5ai.xin)，仓库 [https://github.com/zyw/v5md](https://github.com/zyw/v5md)。英文 README 见 [`README.en.md`](README.en.md)。
+
+**迁移说明（相对 0.0.3）**
+
+` ```mermaid ` 不再由 `@v5md/view` 内置渲染。需要流程图时请安装并注册 `@v5md/plugin-mermaid`，否则围栏会按普通代码块高亮显示。Mindmap / ECharts 同理，按需安装对应官方插件。
+
+```bash
+npm install @v5md/plugin-mermaid
+```
+
+```ts
+import { createMermaidPlugin } from '@v5md/plugin-mermaid'
+
+new Editor({
+  element,
+  plugins: [createMermaidPlugin()],
+})
+```
+
+**块渲染与官方图表插件**
+
+插件可通过 `blocks` 接管围栏代码块的渲染、更新与销毁。斜杠菜单与块渲染器均可由插件注册。官方新增三个块插件：
+
+| 包 | 围栏语言 | 作用 |
+| --- | --- | --- |
+| `@v5md/plugin-mermaid` | `mermaid` | 流程图（从 view 迁出） |
+| `@v5md/plugin-mindmap` | `mindmap` | 思维导图 |
+| `@v5md/plugin-echarts` | `echarts` | ECharts 图表（JSON 配置） |
+
+**国际化**
+
+内置界面支持 `zh-CN`（默认）与 `en`：`locale` / `setLocale()` / `getLocale()` 覆盖工具条、斜杠菜单、查找栏、大纲、表格条、块菜单等。Vue / React 组件增加 `locale` 属性；官方插件也可传同一 `locale`。
+
+```ts
+new Editor({ element, locale: 'en' })
+editor.setLocale('zh-CN')
+```
+
+**工具条钉顶**
+
+新增 `toolbarSticky` 选项与运行时切换，滚动时可将工具条钉在编辑器顶部。
+
+```ts
+new Editor({ element, toolbarSticky: true })
+editor.setToolbarSticky(true)
+```
+
+**导出增强**
+
+- HTML 导出会把 ECharts 等 canvas 快照成图片，避免克隆后空白。
+- PDF 按块边界智能分页，减少列表项 / 图表被拦腰截断；`downloadPdf()` 仍为图片式 PDF 以保证中文不乱码，需要可选中矢量文字请用 `print()`。
+
+**品牌与演示**
+
+补充品牌资产（logo / favicon / 宣传图），playground 接入品牌资源与中英示例内容。
+
+### English
+
+All nine packages are now `0.0.4`: `core` / `view` / `vue` / `react`, plus `plugin-typography` / `plugin-export` / `plugin-mermaid` / `plugin-mindmap` / `plugin-echarts`. Homepage: [https://v5md.v5ai.xin](https://v5md.v5ai.xin). Repository: [https://github.com/zyw/v5md](https://github.com/zyw/v5md). English docs: [`README.en.md`](README.en.md).
+
+**Migration from 0.0.3**
+
+` ```mermaid ` fences are no longer rendered by `@v5md/view`. Install and register `@v5md/plugin-mermaid` for diagrams; otherwise the fence highlights as a normal code block. Mindmap and ECharts follow the same opt-in plugin model.
+
+```bash
+npm install @v5md/plugin-mermaid
+```
+
+```ts
+import { createMermaidPlugin } from '@v5md/plugin-mermaid'
+
+new Editor({
+  element,
+  plugins: [createMermaidPlugin()],
+})
+```
+
+**Block rendering and official chart plugins**
+
+Plugins can take over fenced code blocks via `blocks` (render / update / destroy). Slash-menu items and block renderers are both plugin extension points. Three official block plugins ship in this release:
+
+| Package | Fence lang | Role |
+| --- | --- | --- |
+| `@v5md/plugin-mermaid` | `mermaid` | Flowcharts (moved out of view) |
+| `@v5md/plugin-mindmap` | `mindmap` | Mind maps |
+| `@v5md/plugin-echarts` | `echarts` | ECharts charts (JSON config) |
+
+**Localization**
+
+Built-in UI supports `zh-CN` (default) and `en` through `locale` / `setLocale()` / `getLocale()` — toolbar, slash menu, find bar, outline, table bar, block menus, and more. Vue / React components accept a `locale` prop; official plugins accept the same option.
+
+```ts
+new Editor({ element, locale: 'en' })
+editor.setLocale('zh-CN')
+```
+
+**Sticky toolbar**
+
+New `toolbarSticky` option and runtime toggle pin the toolbar to the top of the editor while scrolling.
+
+```ts
+new Editor({ element, toolbarSticky: true })
+editor.setToolbarSticky(true)
+```
+
+**Export improvements**
+
+- HTML export snapshots ECharts (and similar) canvases to images so clones are not blank.
+- PDF paginates on block boundaries to avoid cutting through list items or charts. `downloadPdf()` remains image-based PDF for reliable CJK glyphs; use `print()` when you need selectable vector text.
+
+**Brand and playground**
+
+Brand assets (logo / favicon / promo art) are included; playgrounds use the brand kit and bilingual sample content.
 
 ## 0.0.3 — 2026-11-10
 

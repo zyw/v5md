@@ -1,4 +1,5 @@
 import type { SlashCommand } from '@v5md/core'
+import { DEFAULT_LOCALE, getMessages, type LocaleMessages } from '../i18n/index.js'
 import type { SlashItemView } from '../plugin.js'
 
 export interface SlashMenuItem {
@@ -9,19 +10,21 @@ export interface SlashMenuItem {
   keywords?: readonly string[]
 }
 
-const BUILTIN: readonly SlashMenuItem[] = [
-  { id: 'paragraph', title: '正文', command: 'paragraph', source: 'builtin' },
-  { id: 'heading1', title: '标题 1', command: 'heading1', source: 'builtin' },
-  { id: 'heading2', title: '标题 2', command: 'heading2', source: 'builtin' },
-  { id: 'heading3', title: '标题 3', command: 'heading3', source: 'builtin' },
-  { id: 'bulletList', title: '无序列表', command: 'bulletList', source: 'builtin' },
-  { id: 'orderedList', title: '有序列表', command: 'orderedList', source: 'builtin' },
-  { id: 'taskList', title: '待办列表', command: 'taskList', source: 'builtin' },
-  { id: 'quote', title: '引用', command: 'quote', source: 'builtin' },
-  { id: 'code', title: '代码块', command: 'code', source: 'builtin' },
-  { id: 'rule', title: '分割线', command: 'rule', source: 'builtin' },
-  { id: 'image', title: '图片', command: 'image', source: 'builtin' },
-]
+export function createBuiltinSlashItems(messages: LocaleMessages = getMessages(DEFAULT_LOCALE)): SlashMenuItem[] {
+  return [
+    { id: 'paragraph', title: messages.slash.paragraph, command: 'paragraph', source: 'builtin' },
+    { id: 'heading1', title: messages.slash.heading1, command: 'heading1', source: 'builtin' },
+    { id: 'heading2', title: messages.slash.heading2, command: 'heading2', source: 'builtin' },
+    { id: 'heading3', title: messages.slash.heading3, command: 'heading3', source: 'builtin' },
+    { id: 'bulletList', title: messages.slash.bulletList, command: 'bulletList', source: 'builtin' },
+    { id: 'orderedList', title: messages.slash.orderedList, command: 'orderedList', source: 'builtin' },
+    { id: 'taskList', title: messages.slash.taskList, command: 'taskList', source: 'builtin' },
+    { id: 'quote', title: messages.slash.quote, command: 'quote', source: 'builtin' },
+    { id: 'code', title: messages.slash.code, command: 'code', source: 'builtin' },
+    { id: 'rule', title: messages.slash.rule, command: 'rule', source: 'builtin' },
+    { id: 'image', title: messages.slash.image, command: 'image', source: 'builtin' },
+  ]
+}
 
 function matchesQuery(item: SlashMenuItem, needle: string): boolean {
   if (!needle) return true
@@ -33,7 +36,11 @@ function matchesQuery(item: SlashMenuItem, needle: string): boolean {
 }
 
 /** Ranks built-in and plugin slash commands against what the user typed after `/`. */
-export function matchSlashCommands(query: string, pluginItems: readonly SlashItemView[] = []): SlashMenuItem[] {
+export function matchSlashCommands(
+  query: string,
+  pluginItems: readonly SlashItemView[] = [],
+  messages: LocaleMessages = getMessages(DEFAULT_LOCALE),
+): SlashMenuItem[] {
   const needle = query.toLowerCase()
   const plugin: SlashMenuItem[] = pluginItems.map((item) => ({
     id: item.id,
@@ -42,7 +49,7 @@ export function matchSlashCommands(query: string, pluginItems: readonly SlashIte
     source: 'plugin' as const,
     keywords: item.keywords,
   }))
-  return [...BUILTIN, ...plugin].filter((item) => matchesQuery(item, needle))
+  return [...createBuiltinSlashItems(messages), ...plugin].filter((item) => matchesQuery(item, needle))
 }
 
 export interface SlashMenuOptions {

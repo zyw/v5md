@@ -1,9 +1,11 @@
 import {
   createFencedWidgetShell,
+  resolveLocale,
   type BlockDestroyContext,
   type BlockHydrateContext,
   type BlockRenderContext,
   type BlockUpdateContext,
+  type LocaleCode,
   type V5mdBlockRenderer,
   type V5mdPlugin,
 } from '@v5md/view'
@@ -24,17 +26,40 @@ export interface MermaidPluginOptions {
   template?: string
   /** 替换动态 import，便于测试。 */
   loadMermaid?: () => Promise<MermaidLike>
+  /** UI language for toolbar / slash / status text. Defaults to zh-CN. */
+  locale?: LocaleCode | string
 }
 
 export interface MermaidApi {
   insertTemplate(source?: string): boolean
 }
 
-const DEFAULT_TEMPLATE = `graph LR
-  A[Markdown] --> B[编辑器]`
+type MermaidCopy = {
+  title: string
+  drawing: string
+  failed: string
+  template: string
+}
+
+const COPY: Record<LocaleCode, MermaidCopy> = {
+  'zh-CN': {
+    title: '流程图',
+    drawing: '正在绘制图表',
+    failed: '图表无法显示',
+    template: `graph LR
+  A[Markdown] --> B[编辑器]`,
+  },
+  en: {
+    title: 'Flowchart',
+    drawing: 'Drawing diagram…',
+    failed: 'Unable to render diagram',
+    template: `graph LR
+  A[Markdown] --> B[Editor]`,
+  },
+}
 
 const FLOW_ICON =
-  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="5" rx="1"/><rect x="14" y="16" width="7" height="5" rx="1"/><path d="M6.5 8v4.5A2.5 2.5 0 0 0 9 15h5.5"/><path d="m12.5 13 2 2-2 2"/></svg>'
+  '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="5.2" rx="1.4"/><rect x="13" y="15.3" width="7.5" height="5.2" rx="1.4"/><path d="M7.2 8.7v3.4A2.8 2.8 0 0 0 10 15h4.2"/><path d="m12.4 13.1 1.9 1.9-1.9 1.9"/></svg>'
 
 const svgCache = new Map<string, string>()
 
@@ -55,10 +80,12 @@ async function defaultLoadMermaid(): Promise<MermaidLike> {
 }
 
 function createRenderer(
-  options: Required<Pick<MermaidPluginOptions, 'lang'>> & Pick<MermaidPluginOptions, 'loadMermaid'>,
+  options: Required<Pick<MermaidPluginOptions, 'lang'>> &
+    Pick<MermaidPluginOptions, 'loadMermaid'> & { copy: MermaidCopy },
 ): V5mdBlockRenderer {
   const langs = Array.isArray(options.lang) ? options.lang : [options.lang]
   const load = options.loadMermaid ?? defaultLoadMermaid
+  const { copy } = options
 
   const paint = async (ctx: BlockHydrateContext | BlockUpdateContext, preview: HTMLElement) => {
     const source = ctx.source
@@ -68,7 +95,7 @@ function createRenderer(
       preview.innerHTML = cached
       return
     }
-    preview.textContent = '正在绘制图表'
+    preview.textContent = copy.drawing
     const mermaid = await load()
     if (!ctx.isCurrent() || ctx.signal.aborted) return
     mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', fontFamily: 'inherit' })
@@ -81,7 +108,7 @@ function createRenderer(
       preview.innerHTML = result.svg
     } catch {
       document.getElementById(id)?.remove()
-      if (ctx.isCurrent() && !ctx.signal.aborted) preview.textContent = '图表无法显示'
+      if (ctx.isCurrent() && !ctx.signal.aborted) preview.textContent = copy.failed
     }
   }
 
@@ -93,7 +120,7 @@ function createRenderer(
         blockClass: 'v5-mermaid',
         previewClass: 'v5-diagram',
         voidKind: 'diagram',
-        placeholder: '正在绘制图表',
+        placeholder: copy.drawing,
       })
       preview.dataset.diagram = ctx.source
       return root
@@ -116,9 +143,10 @@ export function createMermaidPlugin(options: MermaidPluginOptions = {}): V5mdPlu
   const name = options.name ?? 'mermaid'
   const lang = options.lang ?? 'mermaid'
   const primaryLang = (Array.isArray(lang) ? lang[0] : lang)?.trim().toLowerCase() || 'mermaid'
-  const template = options.template ?? DEFAULT_TEMPLATE
+  const copy = COPY[resolveLocale(options.locale)]
+  const template = options.template ?? copy.template
   const showToolbar = options.toolbar !== false
-  const renderer = createRenderer({ lang, loadMermaid: options.loadMermaid })
+  const renderer = createRenderer({ lang, loadMermaid: options.loadMermaid, copy })
 
   return {
     name,
@@ -136,8 +164,8 @@ export function createMermaidPlugin(options: MermaidPluginOptions = {}): V5mdPlu
       {
         id: 'mermaid.insert',
         command: 'mermaid.insert',
-        title: '流程图',
-        keywords: ['mermaid', 'diagram', 'flow', '图'],
+        title: copy.title,
+        keywords: ['mermaid', 'diagram', 'flow', '图', 'flowchart'],
         order: 70,
       },
     ],
@@ -146,7 +174,7 @@ export function createMermaidPlugin(options: MermaidPluginOptions = {}): V5mdPlu
           {
             id: 'mermaid.insert',
             command: 'mermaid.insert',
-            label: '流程图',
+            label: copy.title,
             icon: FLOW_ICON,
             group: 'insert',
             order: 55,

@@ -2,12 +2,7 @@ import 'katex/dist/katex.min.css'
 
 export { Editor } from './editor/editor.js'
 export type { EditorOptions, FindRequest } from './editor/editor.js'
-export {
-  DEFAULT_LOCALE,
-  getMessages,
-  normalizeLocale,
-  resolveLocale,
-} from './i18n/index.js'
+export { DEFAULT_LOCALE, getMessages, normalizeLocale, resolveLocale } from './i18n/index.js'
 export type { LocaleCode, LocaleMessages } from './i18n/index.js'
 export { createOutline } from './chrome/outline.js'
 export type { OutlinePanel } from './chrome/outline.js'

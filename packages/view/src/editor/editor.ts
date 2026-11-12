@@ -46,13 +46,7 @@ import { ToolbarHost } from '../chrome/toolbar-host.js'
 import { createFindBar, type FindBar } from '../chrome/find-bar.js'
 import { createSlashMenu, matchSlashCommands, type SlashMenu, type SlashMenuItem } from '../chrome/slash-menu.js'
 import { BlockChrome, type TopBlock } from '../chrome/block-chrome.js'
-import {
-  DEFAULT_LOCALE,
-  getMessages,
-  resolveLocale,
-  type LocaleCode,
-  type LocaleMessages,
-} from '../i18n/index.js'
+import { DEFAULT_LOCALE, getMessages, resolveLocale, type LocaleCode, type LocaleMessages } from '../i18n/index.js'
 import { BlockHost } from './blocks.js'
 import { copySelectionAsRich } from './clipboard.js'
 import { linkActivationHint, linkAnchor, openExternalLink } from './links.js'

@@ -7,11 +7,7 @@ import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
 import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 import { createTypographyPlugin, type TypographyApi } from '@v5md/plugin-typography'
-import {
-  detectPlaygroundLocale,
-  playgroundCopy,
-  type PlaygroundLocale,
-} from '@v5md/playground-ui'
+import { detectPlaygroundLocale, playgroundCopy, type PlaygroundLocale } from '@v5md/playground-ui'
 import '@v5md/view/theme.css'
 
 const SCROLL_TOP_THRESHOLD = 320
@@ -160,7 +156,12 @@ onUnmounted(() => {
           <div class="masthead-meta">
             <span class="playground-badge">{{ copy.badge('Vue') }}</span>
             <div class="lang-switch" role="group" :aria-label="copy.langGroup">
-              <button type="button" class="chip chip-lang" :aria-pressed="locale === 'zh-CN'" @click="setLocale('zh-CN')">
+              <button
+                type="button"
+                class="chip chip-lang"
+                :aria-pressed="locale === 'zh-CN'"
+                @click="setLocale('zh-CN')"
+              >
                 {{ copy.langZh }}
               </button>
               <button type="button" class="chip chip-lang" :aria-pressed="locale === 'en'" @click="setLocale('en')">
@@ -262,10 +263,7 @@ onUnmounted(() => {
       @click="scrollToTop"
     >
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-        <path
-          fill="currentColor"
-          d="M12 5.5 5.8 11.7l1.4 1.4L11 9.3V19h2V9.3l3.8 3.8 1.4-1.4z"
-        />
+        <path fill="currentColor" d="M12 5.5 5.8 11.7l1.4 1.4L11 9.3V19h2V9.3l3.8 3.8 1.4-1.4z" />
       </svg>
     </button>
   </main>
@@ -328,8 +326,12 @@ body {
   padding: 18px 18px 16px;
   border: 1px solid rgb(15 118 110 / 12%);
   border-radius: 20px;
-  background:
-    linear-gradient(135deg, rgb(240 253 250 / 92%) 0%, rgb(255 255 255 / 88%) 48%, rgb(255 255 255 / 78%) 100%);
+  background: linear-gradient(
+    135deg,
+    rgb(240 253 250 / 92%) 0%,
+    rgb(255 255 255 / 88%) 48%,
+    rgb(255 255 255 / 78%) 100%
+  );
   backdrop-filter: blur(16px);
   box-shadow:
     0 1px 0 rgb(255 255 255 / 90%) inset,

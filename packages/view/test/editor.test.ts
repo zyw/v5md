@@ -595,9 +595,7 @@ describe('Editor', () => {
     expect(status?.textContent).toBe('2/2')
     previous?.click()
     expect(status?.textContent).toBe('1/2')
-    query.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true, cancelable: true }),
-    )
+    query.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true, cancelable: true }))
     expect(status?.textContent).toBe('2/2')
     editor.destroy()
   })
@@ -639,7 +637,9 @@ describe('Editor', () => {
         data: 'a',
       }),
     )
-    query!.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertText', data: 'a' }))
+    query!.dispatchEvent(
+      new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertText', data: 'a' }),
+    )
     query!.value = 'a'
     expect(editor.getMarkdown()).toBe(before)
     expect(document.activeElement).toBe(query)

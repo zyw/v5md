@@ -37,7 +37,10 @@ export function externalLinkUrl(raw: string): string | null {
   return url.href
 }
 
-export function modifierLabel(platform = navigator.platform || '', messages: LocaleMessages = getMessages(DEFAULT_LOCALE)): string {
+export function modifierLabel(
+  platform = navigator.platform || '',
+  messages: LocaleMessages = getMessages(DEFAULT_LOCALE),
+): string {
   return /mac|iphone|ipad|ipod/i.test(platform) ? '⌘' : messages.link.modifierCtrl
 }
 

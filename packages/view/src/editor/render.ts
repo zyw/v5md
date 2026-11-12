@@ -31,7 +31,8 @@ let activeMessages: LocaleMessages = getMessages(DEFAULT_LOCALE)
 export function renderDocument(container: HTMLElement, options: RenderOptions, tree: MdNode): void {
   activeMessages = options.messages ?? getMessages(DEFAULT_LOCALE)
   activeLinkHint =
-    options.linkHint ?? linkActivationHint(container.classList.contains('v5-preview'), undefined, undefined, activeMessages)
+    options.linkHint ??
+    linkActivationHint(container.classList.contains('v5-preview'), undefined, undefined, activeMessages)
   activeBlocks = options.blocks && !options.sourceMode ? options.blocks : null
   if (activeBlocks) {
     activeBlocks.beginRender({
@@ -161,10 +162,7 @@ function taskCheckbox(node: MdNode): HTMLButtonElement {
   check.contentEditable = 'false'
   check.dataset.start = String(node.start)
   check.dataset.checked = node.checked ? 'true' : 'false'
-  check.setAttribute(
-    'aria-label',
-    node.checked ? activeMessages.aria.taskChecked : activeMessages.aria.taskUnchecked,
-  )
+  check.setAttribute('aria-label', node.checked ? activeMessages.aria.taskChecked : activeMessages.aria.taskUnchecked)
   check.setAttribute('aria-pressed', node.checked ? 'true' : 'false')
   return check
 }

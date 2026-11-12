@@ -55,7 +55,9 @@
   background: transparent;
   color: #52525b;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
 }
 
 .v5md .v5-toolbar button svg {

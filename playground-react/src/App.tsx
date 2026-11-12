@@ -6,11 +6,7 @@ import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
 import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 import { createTypographyPlugin, type TypographyApi } from '@v5md/plugin-typography'
-import {
-  detectPlaygroundLocale,
-  playgroundCopy,
-  type PlaygroundLocale,
-} from '@v5md/playground-ui'
+import { detectPlaygroundLocale, playgroundCopy, type PlaygroundLocale } from '@v5md/playground-ui'
 import '@v5md/view/theme.css'
 
 const SCROLL_TOP_THRESHOLD = 320
@@ -86,12 +82,7 @@ export function App() {
       <header className="topbar">
         <div className="masthead">
           <div className="brand">
-            <img
-              className="brand-lockup"
-              src="/brand/v5md-horizontal-color.svg"
-              alt="v5md"
-              height={44}
-            />
+            <img className="brand-lockup" src="/brand/v5md-horizontal-color.svg" alt="v5md" height={44} />
             <p className="tagline">{copy.tagline}</p>
           </div>
           <div className="masthead-side">
@@ -297,10 +288,7 @@ export function App() {
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M12 5.5 5.8 11.7l1.4 1.4L11 9.3V19h2V9.3l3.8 3.8 1.4-1.4z"
-          />
+          <path fill="currentColor" d="M12 5.5 5.8 11.7l1.4 1.4L11 9.3V19h2V9.3l3.8 3.8 1.4-1.4z" />
         </svg>
       </button>
     </main>

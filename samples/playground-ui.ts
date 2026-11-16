@@ -3,7 +3,16 @@ import { sample as sampleEn } from './demo.en.ts'
 
 export type PlaygroundLocale = 'zh-CN' | 'en'
 
-export type PlaygroundThemeId = 'paper' | 'github' | 'nord' | 'tokyo-night' | 'catppuccin'
+export type PlaygroundThemeId =
+  | 'paper'
+  | 'github'
+  | 'nord'
+  | 'tokyo-night'
+  | 'catppuccin'
+  | 'one-dark'
+  | 'dracula'
+  | 'solarized-light'
+  | 'solarized-dark'
 
 export const PLAYGROUND_THEMES: { id: PlaygroundThemeId; labelZh: string; labelEn: string }[] = [
   { id: 'paper', labelZh: 'Paper', labelEn: 'Paper' },
@@ -11,6 +20,10 @@ export const PLAYGROUND_THEMES: { id: PlaygroundThemeId; labelZh: string; labelE
   { id: 'nord', labelZh: 'Nord', labelEn: 'Nord' },
   { id: 'tokyo-night', labelZh: 'Tokyo Night', labelEn: 'Tokyo Night' },
   { id: 'catppuccin', labelZh: 'Catppuccin', labelEn: 'Catppuccin' },
+  { id: 'one-dark', labelZh: 'One Dark', labelEn: 'One Dark' },
+  { id: 'dracula', labelZh: 'Dracula', labelEn: 'Dracula' },
+  { id: 'solarized-light', labelZh: 'Solarized Light', labelEn: 'Solarized Light' },
+  { id: 'solarized-dark', labelZh: 'Solarized Dark', labelEn: 'Solarized Dark' },
 ]
 
 export interface PlaygroundCopy {

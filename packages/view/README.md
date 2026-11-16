@@ -29,7 +29,7 @@ const editor = new Editor({
 | `value` | 初始 Markdown，默认空字符串 |
 | `placeholder` | 文档为空时显示的提示；不传则跟 `locale` 走 |
 | `locale` | 内置 UI 语言，`'zh-CN'`（默认）或 `'en'`；也可用 `setLocale()` / `getLocale()`。覆盖工具条、斜杠菜单、查找栏、大纲、表格条、块菜单等 |
-| `theme` | 视觉主题，默认 `paper`；可选 `github` / `nord` / `tokyo-night` / `catppuccin`。也可用 `setTheme()` / `getTheme()` |
+| `theme` | 视觉主题，默认 `paper`；内置可选 `github` / `nord` / `tokyo-night` / `catppuccin` / `one-dark` / `dracula` / `solarized-light` / `solarized-dark`，也可传任意自定义 id（需自行提供对应 CSS）。也可用 `setTheme()` / `getTheme()` |
 | `toolbar` | 是否显示工具条，默认显示 |
 | `outline` | 是否显示大纲，默认显示 |
 | `lineNumbers` | 源码模式下是否显示左侧行号，默认显示 |

@@ -46,7 +46,18 @@ describe('theme isolation', () => {
   it('ships token defaults and alternate theme packs', () => {
     expect(CSS).toContain('--v5-bg:')
     expect(CSS).toContain('--v5-font-body:')
-    for (const theme of ['github', 'nord', 'tokyo-night', 'catppuccin']) {
+    expect(CSS).toContain('--v5-heading-fg:')
+    expect(CSS).toContain('--v5-quote-border:')
+    for (const theme of [
+      'github',
+      'nord',
+      'tokyo-night',
+      'catppuccin',
+      'one-dark',
+      'dracula',
+      'solarized-light',
+      'solarized-dark',
+    ]) {
       expect(CSS).toContain(`.v5md[data-theme='${theme}']`)
     }
   })

@@ -14,7 +14,7 @@ A WYSIWYG Markdown editor. **The Markdown string is the single source of truth**
 
 The same editor embeds in Vue 3 and React, or mounts on any DOM element. No framework lock-in, no takeover of your data layer, no proprietary format—what you save is standard Markdown. Built-in UI supports Simplified Chinese and English; Mermaid, mind maps, and ECharts charts come from official plugins on demand.
 
-Current version `0.0.4` (nine packages: `core` / `view` / `vue` / `react` plus five official plugins). See [@v5md/view](https://www.npmjs.com/package/@v5md/view) on npm; the latest capabilities in this repo (localization, chart plugins, export improvements, and more) are documented here and in [`CHANGELOG.md`](CHANGELOG.md). All packages are ESM (`"type": "module"`).
+Current version `0.0.5` (nine packages: `core` / `view` / `vue` / `react` plus five official plugins). See [@v5md/view](https://www.npmjs.com/package/@v5md/view) on npm; the latest capabilities in this repo (localization, chart plugins, export improvements, and more) are documented here and in [`CHANGELOG.md`](CHANGELOG.md). All packages are ESM (`"type": "module"`).
 
 ## Table of contents
 
@@ -706,7 +706,7 @@ Conventions:
 
 ## Theme and styling
 
-Theme is a single CSS file: `@v5md/view/theme.css`. Import wholesale or fold into your build. Five built-in themes switch via `data-theme` on the root:
+Theme is a single CSS file: `@v5md/view/theme.css`. Import wholesale or fold into your build. Nine built-in themes switch via `data-theme` on the root:
 
 | id | Look |
 | --- | --- |
@@ -715,6 +715,10 @@ Theme is a single CSS file: `@v5md/view/theme.css`. Import wholesale or fold int
 | `nord` | Cool arctic dark |
 | `tokyo-night` | Blue-violet dark |
 | `catppuccin` | Soft pastel dark |
+| `one-dark` | Atom One Dark charcoal |
+| `dracula` | Dracula purple night |
+| `solarized-light` | Solarized light |
+| `solarized-dark` | Solarized dark |
 
 ```ts
 import { Editor } from '@v5md/view'
@@ -727,6 +731,191 @@ const editor = new Editor({
 ```
 
 Vue / React wrappers accept a `theme` prop. Colors and fonts use CSS variables (`--v5-bg`, `--v5-fg`, `--v5-font-body`, …); hosts can override variables on `.v5md`.
+
+### Custom themes
+
+A theme is just a set of CSS variables: the structural rules in `theme.css` only reference variables and never hard-code colors or fonts. Reassign them under `.v5md[data-theme='<id>']` and you have a new theme.
+
+#### Option 1: tweak a built-in theme
+
+No new theme id required — override just the variables you care about:
+
+```css
+/* Applies to every theme */
+.v5md {
+  --v5-accent: #7c5cff;
+  --v5-link: #6d4aff;
+}
+
+/* Only tweak one built-in theme (higher specificity) */
+.v5md[data-theme='github'] {
+  --v5-link: #0b5cad;
+}
+```
+
+Load custom styles after `@v5md/view/theme.css`, otherwise the default variables can win.
+
+#### Option 2: build a complete theme
+
+Use a kebab-case id (for example `sunset`) and declare a matching `data-theme` selector:
+
+```css
+/* theme-sunset.css */
+.v5md[data-theme='sunset'] {
+  color-scheme: light; /* use dark for dark themes so native scrollbars and controls follow */
+  --v5-bg: #fff7ed;
+  --v5-fg: #431407;
+  --v5-fg-strong: #1c0a02;
+  --v5-border: #fed7aa;
+  --v5-accent: #ea580c;
+  --v5-link: #c2410c;
+  --v5-code-bg: #ffedd5;
+  --v5-inline-code-bg: #fed7aa;
+  --v5-menu-bg: #fffbf5;
+  --v5-menu-border: #fed7aa;
+  --v5-heading-fg: #9a3412;
+  --v5-quote-border: #fb923c;
+  --v5-hl-keyword: #c2410c;
+  --v5-hl-string: #15803d;
+  --v5-hl-comment: #9a6a45;
+  --v5-hl-number: #7c2d12;
+  --v5-hl-title: #0369a1;
+  --v5-hl-type: #a16207;
+  --v5-hl-name: #166534;
+}
+```
+
+```ts
+import { Editor } from '@v5md/view'
+import '@v5md/view/theme.css'
+import './theme-sunset.css'
+
+const editor = new Editor({
+  element,
+  theme: 'sunset', // any non-empty id; or call editor.setTheme('sunset') later
+})
+```
+
+A complete, ready-to-run example lives in [`samples/theme-sunset.css`](samples/theme-sunset.css).
+
+`theme` / `setTheme()` accept any non-empty string: the theme applies as soon as CSS with the matching `[data-theme='…']` exists. Without matching CSS the editor falls back to the default `paper` variables, so you can wire the id first and iterate on colors later. `editor.getTheme()` returns the current id, and HTML export writes it into `data-theme`.
+
+> Tip: if the custom theme CSS is loaded through a `<style>` element or a same-origin stylesheet, HTML export collects the rules starting with `.v5md`, so exported pages usually keep the custom look. Cross-origin stylesheets cannot be read and must be added to the exported page manually.
+
+#### Variable reference
+
+All variables are listed below; the defaults come from the `paper` theme (`packages/view/src/theme/tokens.css`). A custom theme only needs to override the variables it changes — everything else inherits the defaults.
+
+**Base and body**
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `--v5-bg` | Editor background | `#ffffff` |
+| `--v5-fg` | Body text | `#2c2c2c` |
+| `--v5-fg-strong` | Strong text (heading fallback) | `#1f1f1f` |
+| `--v5-fg-muted` | Secondary text | `#6b7280` |
+| `--v5-fg-subtle` | Faint hints | `#a3a3a3` |
+| `--v5-border` | Regular border | `#e5e7eb` |
+| `--v5-border-strong` | Strong border | `#d4d4d8` |
+| `--v5-surface` | Panel surface | `#f7f7f8` |
+| `--v5-surface-2` | Secondary surface / table stripes | `#f3f4f6` |
+| `--v5-surface-hover` | Hover surface | `#ececef` |
+| `--v5-surface-active` | Active surface | `#e4e4e7` |
+| `--v5-surface-raised` | Raised surface (table head / even rows) | `#ffffff` |
+| `--v5-accent` | Accent (focus, drop line) | `#3d8666` |
+| `--v5-link` | Links | `#1d4ed8` |
+| `--v5-danger` | Danger / error | `#b91c1c` |
+| `--v5-danger-soft` | Danger tint | `#fef2f2` |
+| `--v5-success` | Success | `#15803d` |
+| `--v5-success-soft` | Success tint | `#ecfdf3` |
+| `--v5-mark` | `<mark>` background | `#fef3c7` |
+| `--v5-heading-fg` | Heading color | `#1f1f1f` |
+| `--v5-quote-border` | Blockquote left border | `#e5e7eb` |
+| `--v5-blockquote-fg` | Blockquote text | `#4b5563` |
+| `--v5-marker` | Source markers (`#`, `>` …) | `#b4b4b4` |
+
+**Code and syntax highlighting**
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `--v5-code-bg` | Fenced code background | `#f6f8fa` |
+| `--v5-inline-code-bg` | Inline code background | `#f3f4f6` |
+| `--v5-frontmatter-bg` | Frontmatter background | `#fafafa` |
+| `--v5-hl-keyword` | Keywords | `#d73a49` |
+| `--v5-hl-string` | Strings | `#032f62` |
+| `--v5-hl-comment` | Comments | `#6a737d` |
+| `--v5-hl-number` | Numbers | `#005cc5` |
+| `--v5-hl-title` | Functions / titles | `#6f42c1` |
+| `--v5-hl-type` | Types | `#e36209` |
+| `--v5-hl-name` | Names / tags | `#22863a` |
+
+**Toolbar, menus, find and tables**
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `--v5-menu-bg` | Dropdown menu background | `#fffefa` |
+| `--v5-menu-border` | Menu border | `#dce5dc` |
+| `--v5-menu-fg` | Menu text | `#344b3a` |
+| `--v5-menu-hover` | Menu hover | `#e9f0e8` |
+| `--v5-menu-shadow` | Menu shadow | `0 12px 30px #253b2b25` |
+| `--v5-handle` | Block handle color | `#8ca296` |
+| `--v5-tooltip-bg` | Tooltip background | `#3f3f46` |
+| `--v5-tooltip-fg` | Tooltip text | `#ffffff` |
+| `--v5-find-bg-top` | Find bar gradient top | `#fbfbfc` |
+| `--v5-find-bg-bottom` | Find bar gradient bottom | `#f4f4f5` |
+| `--v5-find-focus` | Find input focus | `#0f766e` |
+| `--v5-find-focus-ring` | Focus ring | `rgb(15 118 110 / 14%)` |
+| `--v5-find-on-bg` | Find toggle background | `#ccfbf1` |
+| `--v5-find-on-border` | Find toggle border | `#99f6e4` |
+| `--v5-find-on-fg` | Find toggle text | `#0f766e` |
+| `--v5-field-inset` | Input inset shadow | `inset 0 1px 0 rgb(255 255 255 / 70%)` |
+| `--v5-action-shadow` | Button shadow | `0 1px 0 rgb(24 24 27 / 3%)` |
+| `--v5-tablebar-bg` | Table toolbar background | `#f5f5f4` |
+| `--v5-tablebar-border` | Table toolbar border | `#e7e5e4` |
+| `--v5-tablebar-shadow` | Table toolbar shadow | `0 8px 24px rgb(0 0 0 / 8%)` |
+| `--v5-tablebar-pressed` | Table button pressed | `#d6d3d1` |
+| `--v5-check-border` | Task checkbox border | `#9ca3af` |
+| `--v5-check-bg` | Task checkbox background | `#ffffff` |
+| `--v5-check-mark` | Check mark | `#1d4ed8` |
+
+**Source mode**
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `--v5-source-bg` | Source-mode background | `#f8fafc` |
+| `--v5-source-border` | Source-mode border | `#e9edf2` |
+| `--v5-source-number` | Line numbers | `#b3bcc9` |
+| `--v5-source-number-hover` | Line number hover | `#8a94a3` |
+| `--v5-source-heading` | Heading markers in source | `#1f2328` |
+| `--v5-source-highlight` | Source selection highlight | `#fff3bf` |
+| `--v5-source-inline-bg` | Source inline-code background | `#eef2f7` |
+| `--v5-source-inline-fg` | Source inline-code text | `#0a3069` |
+| `--v5-source-link` | Source links | `#0969da` |
+| `--v5-source-url` | Source URLs | `#0a3069` |
+| `--v5-source-image` | Source images | `#953800` |
+| `--v5-source-math` | Source math | `#8250df` |
+| `--v5-source-frontmatter` | Source frontmatter | `#6e7781` |
+| `--v5-source-html` | Source HTML | `#116329` |
+| `--v5-source-rule` | Source horizontal rules | `#8c959f` |
+| `--v5-source-marker` | Source markers | `#a8b1c2` |
+
+**Fonts**
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `--v5-font-body` | Body | `'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Songti SC', 'Source Han Serif SC', serif` |
+| `--v5-font-heading` | Headings | `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif` |
+| `--v5-font-ui` | Toolbar / menu UI | `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif` |
+| `--v5-font-mono` | Code / monospace | `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace` |
+
+#### Ground rules
+
+- Override colors, fonts and shadows only. Do not change layout properties such as `margin`, `padding`, `display`, `content` or indentation — caret placement and block structure depend on them.
+- Start every selector at `.v5md`; internal classes use the `v5-` prefix, which keeps the editor isolated from host-page styles.
+- `data-theme` lives on the editor root `.v5md`; one stylesheet can define several `[data-theme='…']` themes.
+- Dark themes must set `color-scheme: dark`, otherwise native scrollbars and inputs stay light.
+- Use lower-case letters, digits and hyphens for custom ids; avoid spaces and special characters.
+- Switch themes with `editor.setTheme('sunset')` and read the current value with `editor.getTheme()`.
 
 Conventions:
 

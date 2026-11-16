@@ -1,6 +1,28 @@
 # 更新日志
 
-## Unreleased
+## 0.0.5 — 2026-11-16
+
+### 中文
+
+九个包统一升至 `0.0.5`。本次更新聚焦主题体系：
+
+- 重做 GitHub / Nord / Tokyo Night / Catppuccin 四套内置主题，对齐各自经典的背景、正文与强调色，并让标题使用主题强调色。
+- 新增 One Dark、Dracula、Solarized Light、Solarized Dark 四套主题，内置主题增至九套。
+- 支持传入任意非空 `theme` id 使用宿主自定义 CSS 主题（新增 `resolveTheme`），并提供完整的《自定义主题》开发文档与变量表。
+- 新增 `--v5-heading-fg` 与 `--v5-quote-border` 变量，主题可独立控制标题与引用边框颜色。
+- 新增可直接运行的示例主题 [`samples/theme-sunset.css`](samples/theme-sunset.css)。
+- 修复两个 Playground 在深色主题下编辑区背景仍为浅色、正文几乎不可读的问题。
+
+### English
+
+All nine packages are now on `0.0.5`. This release focuses on the theming system:
+
+- Reworked the GitHub / Nord / Tokyo Night / Catppuccin themes to match their classic palettes, with accent-colored headings.
+- Added One Dark, Dracula, Solarized Light and Solarized Dark, bringing the built-in count to nine.
+- `theme` now accepts any non-empty custom id (new `resolveTheme`), backed by the new “Custom themes” guide and full variable reference in the README.
+- Added `--v5-heading-fg` and `--v5-quote-border` so themes can control heading color and blockquote border independently.
+- Added a ready-to-run sample theme at [`samples/theme-sunset.css`](samples/theme-sunset.css).
+- Fixed both playgrounds so dark themes use the theme background instead of a light host panel, which previously made body text nearly unreadable.
 
 ## 0.0.4 — 2026-11-12
 

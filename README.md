@@ -14,7 +14,7 @@
 
 同一套编辑器可以嵌进 Vue 3 和 React，也可以直接挂到任意 DOM 元素上。不依赖框架、不接管你的数据流、不生成私有格式——存下来的就是标准 Markdown。内置界面支持简体中文与英文；流程图、思维导图、ECharts 图表通过官方插件按需接入。
 
-当前版本 `0.0.4`（九个包：`core` / `view` / `vue` / `react` 与五个官方插件）。npm 上见 [@v5md/view](https://www.npmjs.com/package/@v5md/view)；仓库最新能力（国际化、图表插件、导出增强等）以本 README 与 [`CHANGELOG.md`](CHANGELOG.md) 为准。所有包均为 ESM（`"type": "module"`）。
+当前版本 `0.0.5`（九个包：`core` / `view` / `vue` / `react` 与五个官方插件）。npm 上见 [@v5md/view](https://www.npmjs.com/package/@v5md/view)；仓库最新能力（国际化、图表插件、导出增强等）以本 README 与 [`CHANGELOG.md`](CHANGELOG.md) 为准。所有包均为 ESM（`"type": "module"`）。
 
 ## 目录
 
@@ -706,7 +706,7 @@ export function createDemoBlockPlugin(): V5mdPlugin {
 
 ## 主题与样式
 
-主题是一个独立 CSS 文件：`@v5md/view/theme.css`。整体引入即可，也可以复制进自己的构建流程。内置五套主题，通过根元素 `data-theme` 切换：
+主题是一个独立 CSS 文件：`@v5md/view/theme.css`。整体引入即可，也可以复制进自己的构建流程。内置九套主题，通过根元素 `data-theme` 切换：
 
 | id | 风格 |
 | --- | --- |
@@ -715,6 +715,10 @@ export function createDemoBlockPlugin(): V5mdPlugin {
 | `nord` | 北极冷色暗色 |
 | `tokyo-night` | 深蓝紫暗色 |
 | `catppuccin` | 柔和粉彩暗色 |
+| `one-dark` | Atom One Dark 炭灰暗色 |
+| `dracula` | Dracula 紫夜暗色 |
+| `solarized-light` | Solarized 浅色 |
+| `solarized-dark` | Solarized 深色 |
 
 ```ts
 import { Editor } from '@v5md/view'
@@ -727,6 +731,191 @@ const editor = new Editor({
 ```
 
 Vue / React 包装同样支持 `theme` prop。颜色与字体走 CSS 变量（`--v5-bg`、`--v5-fg`、`--v5-font-body` 等），宿主可在 `.v5md` 上覆盖变量做微调。
+
+### 自定义主题
+
+主题本质上就是一组 CSS 变量：`theme.css` 里的结构样式只引用变量，不写死颜色和字体。因此给 `.v5md[data-theme='<id>']` 重新赋值，就能得到一套新主题。
+
+#### 方式一：在现有主题上微调
+
+不新增主题，只覆盖少量变量即可：
+
+```css
+/* 所有主题都会生效 */
+.v5md {
+  --v5-accent: #7c5cff;
+  --v5-link: #6d4aff;
+}
+
+/* 只微调某个内置主题（选择器更具体，优先级更高） */
+.v5md[data-theme='github'] {
+  --v5-link: #0b5cad;
+}
+```
+
+自定义样式应在 `@v5md/view/theme.css` 之后加载，否则可能被默认变量覆盖。
+
+#### 方式二：新建一套完整主题
+
+自定义主题 id 用短横线命名（如 `sunset`），在 CSS 里声明同名的 `data-theme` 选择器：
+
+```css
+/* theme-sunset.css */
+.v5md[data-theme='sunset'] {
+  color-scheme: light; /* 深色主题请写 dark，原生滚动条和控件会跟随 */
+  --v5-bg: #fff7ed;
+  --v5-fg: #431407;
+  --v5-fg-strong: #1c0a02;
+  --v5-border: #fed7aa;
+  --v5-accent: #ea580c;
+  --v5-link: #c2410c;
+  --v5-code-bg: #ffedd5;
+  --v5-inline-code-bg: #fed7aa;
+  --v5-menu-bg: #fffbf5;
+  --v5-menu-border: #fed7aa;
+  --v5-heading-fg: #9a3412;
+  --v5-quote-border: #fb923c;
+  --v5-hl-keyword: #c2410c;
+  --v5-hl-string: #15803d;
+  --v5-hl-comment: #9a6a45;
+  --v5-hl-number: #7c2d12;
+  --v5-hl-title: #0369a1;
+  --v5-hl-type: #a16207;
+  --v5-hl-name: #166534;
+}
+```
+
+```ts
+import { Editor } from '@v5md/view'
+import '@v5md/view/theme.css'
+import './theme-sunset.css'
+
+const editor = new Editor({
+  element,
+  theme: 'sunset', // 任意非空 id；也可以之后 editor.setTheme('sunset')
+})
+```
+
+完整、可直接运行的主题示例见 [`samples/theme-sunset.css`](samples/theme-sunset.css)。
+
+`theme` / `setTheme()` 接受任意非空字符串：只要有对应的 `[data-theme='…']` CSS 就会生效；暂时没有对应样式时按默认 `paper` 变量渲染，所以可以先接好 id 再迭代配色。`editor.getTheme()` 会返回当前 id，HTML 导出也会把它写进 `data-theme`。
+
+> 提示：自定义主题 CSS 如果通过 `<style>` 或同源样式表加载，导出 HTML 时会自动收集其中以 `.v5md` 开头的规则，导出页面通常能保留自定义外观；跨域样式表无法读取，需要自行把 CSS 一并放进导出页面。
+
+#### 主题变量一览
+
+下表列出全部变量，默认值为 `paper` 主题（源码见 `packages/view/src/theme/tokens.css`）。自定义主题只需覆盖需要的变量，其余会自动继承默认值。
+
+**基础与正文**
+
+| 变量 | 作用 | 默认值 |
+| --- | --- | --- |
+| `--v5-bg` | 编辑器背景 | `#ffffff` |
+| `--v5-fg` | 正文文字 | `#2c2c2c` |
+| `--v5-fg-strong` | 强调文字（标题兜底色） | `#1f1f1f` |
+| `--v5-fg-muted` | 次要文字 | `#6b7280` |
+| `--v5-fg-subtle` | 更弱的提示文字 | `#a3a3a3` |
+| `--v5-border` | 常规边框 | `#e5e7eb` |
+| `--v5-border-strong` | 强边框 | `#d4d4d8` |
+| `--v5-surface` | 面板表面 | `#f7f7f8` |
+| `--v5-surface-2` | 次级表面 / 表格斑马纹 | `#f3f4f6` |
+| `--v5-surface-hover` | 悬停表面 | `#ececef` |
+| `--v5-surface-active` | 激活表面 | `#e4e4e7` |
+| `--v5-surface-raised` | 抬起表面（表头 / 偶数行） | `#ffffff` |
+| `--v5-accent` | 强调色（焦点、拖拽线） | `#3d8666` |
+| `--v5-link` | 链接 | `#1d4ed8` |
+| `--v5-danger` | 危险 / 错误 | `#b91c1c` |
+| `--v5-danger-soft` | 危险浅底 | `#fef2f2` |
+| `--v5-success` | 成功 | `#15803d` |
+| `--v5-success-soft` | 成功浅底 | `#ecfdf3` |
+| `--v5-mark` | 高亮 mark 背景 | `#fef3c7` |
+| `--v5-heading-fg` | 标题颜色 | `#1f1f1f` |
+| `--v5-quote-border` | 引用块左边框 | `#e5e7eb` |
+| `--v5-blockquote-fg` | 引用块文字 | `#4b5563` |
+| `--v5-marker` | 源码标记（`#`、`>` 等） | `#b4b4b4` |
+
+**代码与语法高亮**
+
+| 变量 | 作用 | 默认值 |
+| --- | --- | --- |
+| `--v5-code-bg` | 围栏代码块背景 | `#f6f8fa` |
+| `--v5-inline-code-bg` | 行内代码背景 | `#f3f4f6` |
+| `--v5-frontmatter-bg` | frontmatter 背景 | `#fafafa` |
+| `--v5-hl-keyword` | 关键字 | `#d73a49` |
+| `--v5-hl-string` | 字符串 | `#032f62` |
+| `--v5-hl-comment` | 注释 | `#6a737d` |
+| `--v5-hl-number` | 数字 | `#005cc5` |
+| `--v5-hl-title` | 函数 / 标题 | `#6f42c1` |
+| `--v5-hl-type` | 类型 | `#e36209` |
+| `--v5-hl-name` | 名称 / 标签 | `#22863a` |
+
+**工具条、菜单、查找与表格**
+
+| 变量 | 作用 | 默认值 |
+| --- | --- | --- |
+| `--v5-menu-bg` | 下拉菜单背景 | `#fffefa` |
+| `--v5-menu-border` | 菜单边框 | `#dce5dc` |
+| `--v5-menu-fg` | 菜单文字 | `#344b3a` |
+| `--v5-menu-hover` | 菜单悬停 | `#e9f0e8` |
+| `--v5-menu-shadow` | 菜单阴影 | `0 12px 30px #253b2b25` |
+| `--v5-handle` | 块手柄颜色 | `#8ca296` |
+| `--v5-tooltip-bg` | 提示框背景 | `#3f3f46` |
+| `--v5-tooltip-fg` | 提示框文字 | `#ffffff` |
+| `--v5-find-bg-top` | 查找栏渐变顶部 | `#fbfbfc` |
+| `--v5-find-bg-bottom` | 查找栏渐变底部 | `#f4f4f5` |
+| `--v5-find-focus` | 查找输入聚焦色 | `#0f766e` |
+| `--v5-find-focus-ring` | 聚焦光环 | `rgb(15 118 110 / 14%)` |
+| `--v5-find-on-bg` | 查找开关背景 | `#ccfbf1` |
+| `--v5-find-on-border` | 查找开关边框 | `#99f6e4` |
+| `--v5-find-on-fg` | 查找开关文字 | `#0f766e` |
+| `--v5-field-inset` | 输入框内阴影 | `inset 0 1px 0 rgb(255 255 255 / 70%)` |
+| `--v5-action-shadow` | 按钮阴影 | `0 1px 0 rgb(24 24 27 / 3%)` |
+| `--v5-tablebar-bg` | 表格工具条背景 | `#f5f5f4` |
+| `--v5-tablebar-border` | 表格工具条边框 | `#e7e5e4` |
+| `--v5-tablebar-shadow` | 表格工具条阴影 | `0 8px 24px rgb(0 0 0 / 8%)` |
+| `--v5-tablebar-pressed` | 表格按钮按下态 | `#d6d3d1` |
+| `--v5-check-border` | 待办复选框边框 | `#9ca3af` |
+| `--v5-check-bg` | 待办复选框背景 | `#ffffff` |
+| `--v5-check-mark` | 勾选标记 | `#1d4ed8` |
+
+**源码模式**
+
+| 变量 | 作用 | 默认值 |
+| --- | --- | --- |
+| `--v5-source-bg` | 源码模式背景 | `#f8fafc` |
+| `--v5-source-border` | 源码模式边框 | `#e9edf2` |
+| `--v5-source-number` | 行号 | `#b3bcc9` |
+| `--v5-source-number-hover` | 行号悬停 | `#8a94a3` |
+| `--v5-source-heading` | 源码中的标题标记 | `#1f2328` |
+| `--v5-source-highlight` | 源码选中高亮 | `#fff3bf` |
+| `--v5-source-inline-bg` | 源码行内代码背景 | `#eef2f7` |
+| `--v5-source-inline-fg` | 源码行内代码文字 | `#0a3069` |
+| `--v5-source-link` | 源码链接 | `#0969da` |
+| `--v5-source-url` | 源码 URL | `#0a3069` |
+| `--v5-source-image` | 源码图片 | `#953800` |
+| `--v5-source-math` | 源码公式 | `#8250df` |
+| `--v5-source-frontmatter` | 源码 frontmatter | `#6e7781` |
+| `--v5-source-html` | 源码 HTML | `#116329` |
+| `--v5-source-rule` | 源码分割线 | `#8c959f` |
+| `--v5-source-marker` | 源码标记 | `#a8b1c2` |
+
+**字体**
+
+| 变量 | 作用 | 默认值 |
+| --- | --- | --- |
+| `--v5-font-body` | 正文 | `'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Songti SC', 'Source Han Serif SC', serif` |
+| `--v5-font-heading` | 标题 | `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif` |
+| `--v5-font-ui` | 工具条 / 菜单等 UI | `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif` |
+| `--v5-font-mono` | 代码 / 等宽文字 | `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace` |
+
+#### 编写要点
+
+- 只覆盖颜色、字体、阴影。不要改 `margin`、`padding`、`display`、`content`、缩进这些布局属性，光标定位和块结构依赖它们。
+- 选择器从 `.v5md` 开始，编辑器内部类名统一 `v5-` 前缀，避免和宿主页面互相污染。
+- `data-theme` 挂在编辑器根元素 `.v5md` 上；同一份 CSS 可以同时定义多套 `[data-theme='…']`。
+- 深色主题务必设置 `color-scheme: dark`，否则滚动条、输入框等原生控件仍是浅色。
+- 自定义主题 id 建议只用小写字母、数字和短横线，避免空格和特殊字符。
+- 切换主题用 `editor.setTheme('sunset')`；读取当前值用 `editor.getTheme()`。
 
 样式约定：
 

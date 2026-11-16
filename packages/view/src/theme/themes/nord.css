@@ -1,10 +1,10 @@
-/* Nord — cool arctic palette (Polar Night + Snow Storm). */
+/* Nord — cool arctic palette (Polar Night, Snow Storm, Frost, Aurora). */
 .v5md[data-theme='nord'] {
   color-scheme: dark;
   --v5-bg: #2e3440;
   --v5-fg: #d8dee9;
   --v5-fg-strong: #eceff4;
-  --v5-fg-muted: #aeb6c5;
+  --v5-fg-muted: #a9b3c4;
   --v5-fg-subtle: #7b88a1;
   --v5-border: #3b4252;
   --v5-border-strong: #4c566a;
@@ -14,20 +14,20 @@
   --v5-surface-active: #4c566a;
   --v5-surface-raised: #3b4252;
   --v5-accent: #88c0d0;
-  --v5-link: #81a1c1;
+  --v5-link: #88c0d0;
   --v5-danger: #bf616a;
   --v5-danger-soft: #3f2a2e;
   --v5-success: #a3be8c;
   --v5-success-soft: #334033;
   --v5-mark: #4c566a;
-  --v5-code-bg: #3b4252;
+  --v5-code-bg: #2b303b;
   --v5-inline-code-bg: #434c5e;
   --v5-frontmatter-bg: #3b4252;
   --v5-menu-bg: #3b4252;
   --v5-menu-border: #4c566a;
   --v5-menu-fg: #eceff4;
   --v5-menu-hover: #434c5e;
-  --v5-menu-shadow: 0 12px 30px rgb(46 52 64 / 55%);
+  --v5-menu-shadow: 0 12px 30px rgb(20 24 31 / 55%);
   --v5-handle: #7b88a1;
   --v5-tooltip-bg: #eceff4;
   --v5-tooltip-fg: #2e3440;
@@ -47,6 +47,8 @@
   --v5-check-border: #7b88a1;
   --v5-check-bg: #3b4252;
   --v5-check-mark: #88c0d0;
+  --v5-heading-fg: #88c0d0;
+  --v5-quote-border: #5e81ac;
   --v5-blockquote-fg: #aeb6c5;
   --v5-marker: #7b88a1;
   --v5-source-bg: #3b4252;
@@ -57,8 +59,8 @@
   --v5-source-highlight: #4c566a;
   --v5-source-inline-bg: #434c5e;
   --v5-source-inline-fg: #8fbcbb;
-  --v5-source-link: #81a1c1;
-  --v5-source-url: #88c0d0;
+  --v5-source-link: #88c0d0;
+  --v5-source-url: #8fbcbb;
   --v5-source-image: #d08770;
   --v5-source-math: #b48ead;
   --v5-source-frontmatter: #7b88a1;
@@ -72,10 +74,8 @@
   --v5-hl-title: #8fbcbb;
   --v5-hl-type: #ebcb8b;
   --v5-hl-name: #88c0d0;
-  --v5-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC',
-    sans-serif;
-  --v5-font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC',
-    sans-serif;
+  --v5-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --v5-font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
   --v5-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
   --v5-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }

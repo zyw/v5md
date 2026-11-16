@@ -56,6 +56,8 @@
   --v5-check-border: #9ca3af;
   --v5-check-bg: #ffffff;
   --v5-check-mark: #1d4ed8;
+  --v5-heading-fg: #1f1f1f;
+  --v5-quote-border: #e5e7eb;
   --v5-blockquote-fg: #4b5563;
   --v5-marker: #b4b4b4;
   --v5-source-bg: #f8fafc;
@@ -81,10 +83,8 @@
   --v5-hl-title: #6f42c1;
   --v5-hl-type: #e36209;
   --v5-hl-name: #22863a;
-  --v5-font-body: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Songti SC',
-    'Source Han Serif SC', serif;
-  --v5-font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC',
-    sans-serif;
+  --v5-font-body: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Songti SC', 'Source Han Serif SC', serif;
+  --v5-font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
   --v5-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
   --v5-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }

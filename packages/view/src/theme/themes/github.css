@@ -1,21 +1,21 @@
-/* GitHub — clean sans-serif light theme. */
+/* GitHub — clean sans-serif light theme inspired by Primer. */
 .v5md[data-theme='github'] {
   color-scheme: light;
   --v5-bg: #ffffff;
   --v5-fg: #1f2328;
   --v5-fg-strong: #1f2328;
-  --v5-fg-muted: #656d76;
-  --v5-fg-subtle: #8c959f;
-  --v5-border: #d0d7de;
-  --v5-border-strong: #afb8c1;
+  --v5-fg-muted: #59636e;
+  --v5-fg-subtle: #818b98;
+  --v5-border: #d1d9e0;
+  --v5-border-strong: #b7c0c8;
   --v5-surface: #f6f8fa;
   --v5-surface-2: #f6f8fa;
-  --v5-surface-hover: #eaeef2;
-  --v5-surface-active: #d0d7de;
+  --v5-surface-hover: #eef1f4;
+  --v5-surface-active: #e6eaef;
   --v5-surface-raised: #ffffff;
   --v5-accent: #0969da;
   --v5-link: #0969da;
-  --v5-danger: #cf222e;
+  --v5-danger: #d1242f;
   --v5-danger-soft: #ffebe9;
   --v5-success: #1a7f37;
   --v5-success-soft: #dafbe1;
@@ -24,11 +24,11 @@
   --v5-inline-code-bg: #eff1f3;
   --v5-frontmatter-bg: #f6f8fa;
   --v5-menu-bg: #ffffff;
-  --v5-menu-border: #d0d7de;
+  --v5-menu-border: #d1d9e0;
   --v5-menu-fg: #1f2328;
   --v5-menu-hover: #f6f8fa;
   --v5-menu-shadow: 0 8px 24px rgb(140 149 159 / 20%);
-  --v5-handle: #8c959f;
+  --v5-handle: #818b98;
   --v5-tooltip-bg: #24292f;
   --v5-tooltip-fg: #ffffff;
   --v5-find-bg-top: #f6f8fa;
@@ -41,18 +41,20 @@
   --v5-field-inset: inset 0 1px 0 rgb(255 255 255 / 80%);
   --v5-action-shadow: 0 1px 0 rgb(31 35 40 / 4%);
   --v5-tablebar-bg: #f6f8fa;
-  --v5-tablebar-border: #d0d7de;
+  --v5-tablebar-border: #d1d9e0;
   --v5-tablebar-shadow: 0 8px 24px rgb(140 149 159 / 20%);
-  --v5-tablebar-pressed: #d0d7de;
-  --v5-check-border: #8c959f;
+  --v5-tablebar-pressed: #d1d9e0;
+  --v5-check-border: #818b98;
   --v5-check-bg: #ffffff;
   --v5-check-mark: #0969da;
-  --v5-blockquote-fg: #656d76;
-  --v5-marker: #8c959f;
+  --v5-heading-fg: #1f2328;
+  --v5-quote-border: #d1d9e0;
+  --v5-blockquote-fg: #59636e;
+  --v5-marker: #818b98;
   --v5-source-bg: #f6f8fa;
-  --v5-source-border: #d0d7de;
-  --v5-source-number: #8c959f;
-  --v5-source-number-hover: #656d76;
+  --v5-source-border: #d1d9e0;
+  --v5-source-number: #818b98;
+  --v5-source-number-hover: #59636e;
   --v5-source-heading: #1f2328;
   --v5-source-highlight: #fff8c5;
   --v5-source-inline-bg: #eff1f3;
@@ -61,21 +63,21 @@
   --v5-source-url: #0a3069;
   --v5-source-image: #953800;
   --v5-source-math: #8250df;
-  --v5-source-frontmatter: #656d76;
+  --v5-source-frontmatter: #59636e;
   --v5-source-html: #116329;
-  --v5-source-rule: #8c959f;
-  --v5-source-marker: #afb8c1;
+  --v5-source-rule: #818b98;
+  --v5-source-marker: #b7c0c8;
   --v5-hl-keyword: #cf222e;
   --v5-hl-string: #0a3069;
-  --v5-hl-comment: #6e7781;
+  --v5-hl-comment: #59636e;
   --v5-hl-number: #0550ae;
   --v5-hl-title: #8250df;
   --v5-hl-type: #953800;
   --v5-hl-name: #116329;
-  --v5-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC',
-    'Helvetica Neue', Arial, sans-serif;
-  --v5-font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC',
-    'Helvetica Neue', Arial, sans-serif;
+  --v5-font-body:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', 'Helvetica Neue', Arial, sans-serif;
+  --v5-font-heading:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', 'Helvetica Neue', Arial, sans-serif;
   --v5-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
   --v5-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 }

@@ -63,7 +63,7 @@ import {
 import { renderDocument } from './render.js'
 import { applyChrome, clearFindHighlight, domPointToOffset, offsetToDomPoint, paintFindHighlight } from './selection.js'
 import { copyRichText, toWechatHtml, type WechatHtmlOptions } from '../convert/wechat.js'
-import { DEFAULT_THEME, normalizeTheme, type ThemeId } from '../theme/theme.js'
+import { DEFAULT_THEME, resolveTheme, type ThemeName } from '../theme/theme.js'
 
 export interface FindRequest {
   kind: 'find' | 'replace'
@@ -77,9 +77,11 @@ export interface EditorOptions {
   locale?: LocaleCode | string
   /**
    * Visual theme id. Defaults to `paper`.
-   * Built-ins: `paper` | `github` | `nord` | `tokyo-night` | `catppuccin`.
+   * Built-ins: `paper` | `github` | `nord` | `tokyo-night` | `catppuccin` | `one-dark` |
+   * `dracula` | `solarized-light` | `solarized-dark`. Any other non-empty id is
+   * kept as a custom theme as long as matching CSS exists.
    */
-  theme?: ThemeId | string
+  theme?: ThemeName | string
   toolbar?: boolean
   outline?: boolean
   /** Pin the toolbar to the top while scrolling. Defaults to false. */
@@ -130,14 +132,14 @@ export class Editor {
   private destroyed = false
   private locale: LocaleCode = DEFAULT_LOCALE
   private messages: LocaleMessages = getMessages(DEFAULT_LOCALE)
-  private theme: ThemeId = DEFAULT_THEME
+  private theme: ThemeName = DEFAULT_THEME
 
   constructor(options: EditorOptions) {
     this.options = options
     this.element = options.element
     this.locale = resolveLocale(options.locale)
     this.messages = getMessages(this.locale)
-    this.theme = normalizeTheme(options.theme)
+    this.theme = resolveTheme(options.theme)
     if (options.placeholder === undefined) this.options.placeholder = this.messages.placeholder
     this.toolbarVisible = options.toolbar !== false
     this.outlineVisible = options.outline !== false
@@ -402,13 +404,13 @@ export class Editor {
     return this.locale
   }
 
-  getTheme(): ThemeId {
+  getTheme(): ThemeName {
     return this.theme
   }
 
   /** Switches the visual theme via `data-theme` on the editor root. */
-  setTheme(theme: ThemeId | string): void {
-    const next = normalizeTheme(theme)
+  setTheme(theme: ThemeName | string): void {
+    const next = resolveTheme(theme)
     if (next === this.theme) return
     this.theme = next
     this.options.theme = next

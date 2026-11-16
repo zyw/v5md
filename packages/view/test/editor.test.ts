@@ -333,6 +333,21 @@ describe('Editor', () => {
     editor.destroy()
   })
 
+  it('keeps custom theme ids and applies them to the editor root', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const editor = new Editor({ element, theme: 'sunset' })
+    expect(editor.getTheme()).toBe('sunset')
+    expect(element.dataset.theme).toBe('sunset')
+    editor.setTheme('my-theme')
+    expect(editor.getTheme()).toBe('my-theme')
+    expect(element.dataset.theme).toBe('my-theme')
+    editor.setTheme('')
+    expect(editor.getTheme()).toBe('paper')
+    expect(element.dataset.theme).toBe('paper')
+    editor.destroy()
+  })
+
   it('types through beforeinput and emits markdown', () => {
     const element = document.createElement('div')
     document.body.append(element)

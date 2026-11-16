@@ -46,7 +46,7 @@
   font-style: normal;
   line-height: 1.3;
   letter-spacing: normal;
-  color: var(--v5-fg-strong);
+  color: var(--v5-heading-fg, var(--v5-fg-strong));
 }
 
 .v5md .v5-doc h1 {
@@ -94,7 +94,7 @@
 .v5md .v5-doc blockquote {
   margin: 0.8em 0;
   padding-left: 1em;
-  border-left: 4px solid var(--v5-border);
+  border-left: 4px solid var(--v5-quote-border, var(--v5-border));
   color: var(--v5-blockquote-fg);
 }
 

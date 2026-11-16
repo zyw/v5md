@@ -1,0 +1,91 @@
+/*
+ * v5md 自定义主题示例：Sunset（暖色浅色主题）
+ *
+ * 用法：
+ *   import '@v5md/view/theme.css'
+ *   import './samples/theme-sunset.css'
+ *   new Editor({ element, theme: 'sunset' })
+ *
+ * 原理：主题就是 data-theme 作用域下的一组 CSS 变量。下面覆盖了全部变量，
+ * 实际项目中只需保留想改的部分，其余会自动继承默认的 paper 主题。
+ */
+.v5md[data-theme='sunset'] {
+  color-scheme: light;
+  --v5-bg: #fff7ed;
+  --v5-fg: #431407;
+  --v5-fg-strong: #1c0a02;
+  --v5-fg-muted: #7c4a2a;
+  --v5-fg-subtle: #a87a5c;
+  --v5-border: #fed7aa;
+  --v5-border-strong: #fdba74;
+  --v5-surface: #ffedd5;
+  --v5-surface-2: #ffedd5;
+  --v5-surface-hover: #fed7aa;
+  --v5-surface-active: #fdba74;
+  --v5-surface-raised: #fffbeb;
+  --v5-accent: #ea580c;
+  --v5-link: #c2410c;
+  --v5-danger: #b91c1c;
+  --v5-danger-soft: #fee2e2;
+  --v5-success: #15803d;
+  --v5-success-soft: #dcfce7;
+  --v5-mark: #fde68a;
+  --v5-code-bg: #ffedd5;
+  --v5-inline-code-bg: #fed7aa;
+  --v5-frontmatter-bg: #fffbf5;
+  --v5-menu-bg: #fffbf5;
+  --v5-menu-border: #fed7aa;
+  --v5-menu-fg: #7c2d12;
+  --v5-menu-hover: #ffedd5;
+  --v5-menu-shadow: 0 12px 30px rgb(124 45 18 / 14%);
+  --v5-handle: #c08457;
+  --v5-tooltip-bg: #431407;
+  --v5-tooltip-fg: #fff7ed;
+  --v5-find-bg-top: #fffbf5;
+  --v5-find-bg-bottom: #ffedd5;
+  --v5-find-focus: #ea580c;
+  --v5-find-focus-ring: rgb(234 88 12 / 18%);
+  --v5-find-on-bg: #ffedd5;
+  --v5-find-on-border: #fb923c;
+  --v5-find-on-fg: #c2410c;
+  --v5-field-inset: inset 0 1px 0 rgb(255 255 255 / 75%);
+  --v5-action-shadow: 0 1px 0 rgb(124 45 18 / 5%);
+  --v5-tablebar-bg: #fffbf5;
+  --v5-tablebar-border: #fed7aa;
+  --v5-tablebar-shadow: 0 8px 24px rgb(124 45 18 / 12%);
+  --v5-tablebar-pressed: #fdba74;
+  --v5-check-border: #c08457;
+  --v5-check-bg: #fffbf5;
+  --v5-check-mark: #ea580c;
+  --v5-heading-fg: #9a3412;
+  --v5-quote-border: #fb923c;
+  --v5-blockquote-fg: #7c4a2a;
+  --v5-marker: #c08457;
+  --v5-source-bg: #fffbf5;
+  --v5-source-border: #fed7aa;
+  --v5-source-number: #c9a189;
+  --v5-source-number-hover: #7c4a2a;
+  --v5-source-heading: #9a3412;
+  --v5-source-highlight: #fde68a;
+  --v5-source-inline-bg: #ffedd5;
+  --v5-source-inline-fg: #b45309;
+  --v5-source-link: #c2410c;
+  --v5-source-url: #b45309;
+  --v5-source-image: #9a3412;
+  --v5-source-math: #7e22ce;
+  --v5-source-frontmatter: #7c4a2a;
+  --v5-source-html: #15803d;
+  --v5-source-rule: #d6a887;
+  --v5-source-marker: #e7c3a4;
+  --v5-hl-keyword: #c2410c;
+  --v5-hl-string: #15803d;
+  --v5-hl-comment: #9a6a45;
+  --v5-hl-number: #7c2d12;
+  --v5-hl-title: #0369a1;
+  --v5-hl-type: #a16207;
+  --v5-hl-name: #166534;
+  --v5-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --v5-font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --v5-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+  --v5-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

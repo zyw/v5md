@@ -35,7 +35,7 @@ export function Page() {
 | `value` | Markdown 全文 |
 | `onChange` | 文档变化时收到新全文 |
 | `placeholder` | 空文档提示，变化时同步到编辑器 |
-| `theme` | 视觉主题，默认 `paper`；可选 `github` / `nord` / `tokyo-night` / `catppuccin`，变化时调用 `setTheme` |
+| `theme` | 视觉主题，默认 `paper`；内置可选 `github` / `nord` / `tokyo-night` / `catppuccin` / `one-dark` / `dracula` / `solarized-light` / `solarized-dark`，也可传任意自定义 id（需自行提供对应 CSS），变化时调用 `setTheme` |
 | `className` | 加在宿主元素上，宿主同时有 `v5md-host` |
 | `editable` | 是否可编辑，默认 `true`。传 `false` 进入只读预览，变化时调用 `setEditable`；预览下待办复选框仍可切换 |
 | `plugins` | 插件数组，挂载时传给 `Editor` |

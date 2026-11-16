@@ -2,7 +2,7 @@
 .v5md .v5-doc .v5-inlinecode {
   padding: 0.1em 0.35em;
   border-radius: 4px;
-  background: #f3f4f6;
+  background: var(--v5-inline-code-bg);
   font-size: 0.9em;
 }
 
@@ -10,7 +10,7 @@
 .v5md .v5-doc .v5-hr hr {
   margin: 1.4em 0;
   border: 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--v5-border);
 }
 
 .v5md .v5-doc .v5-image {
@@ -27,7 +27,7 @@
 
 .v5md .v5-doc .v5-image-caption {
   margin-top: 6px;
-  color: #6b7280;
+  color: var(--v5-fg-muted);
   font-size: 0.92em;
   line-height: 1.5;
   text-align: center;
@@ -54,9 +54,9 @@
   width: 14px;
   height: 14px;
   padding: 0;
-  border: 1px solid #fff;
+  border: 1px solid var(--v5-bg);
   border-radius: 3px;
-  background: #3d8666;
+  background: var(--v5-accent);
   cursor: nwse-resize;
 }
 
@@ -103,8 +103,8 @@
 .v5md .v5-doc .v5-math.v5-source-visible .v5-source,
 .v5md .v5-doc .v5-math.v5-active .v5-source {
   display: inline;
-  color: #6b7280;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--v5-fg-muted);
+  font-family: var(--v5-font-mono);
   font-size: 0.92em;
   white-space: pre-wrap;
 }

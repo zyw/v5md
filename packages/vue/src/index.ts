@@ -1,4 +1,4 @@
-import { Editor, type EditorOptions, type FindRequest, type LocaleCode } from '@v5md/view'
+import { Editor, type EditorOptions, type FindRequest, type LocaleCode, type ThemeId } from '@v5md/view'
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, watch, type PropType } from 'vue'
 
 export const V5Editor = defineComponent({
@@ -7,6 +7,7 @@ export const V5Editor = defineComponent({
     modelValue: { type: String, default: '' },
     placeholder: { type: String, default: undefined },
     locale: { type: String as PropType<LocaleCode | string>, default: undefined },
+    theme: { type: String as PropType<ThemeId | string>, default: undefined },
     onUploadImage: {
       type: Function as PropType<EditorOptions['onUploadImage']>,
       default: undefined,
@@ -41,6 +42,7 @@ export const V5Editor = defineComponent({
         value: props.modelValue,
         placeholder: props.placeholder,
         locale: props.locale,
+        theme: props.theme,
         onUploadImage: (file) => {
           const upload = props.onUploadImage
           return upload ? upload(file) : ''
@@ -86,6 +88,13 @@ export const V5Editor = defineComponent({
       () => props.locale,
       (locale) => {
         if (locale !== undefined) editor?.setLocale(locale)
+      },
+    )
+
+    watch(
+      () => props.theme,
+      (theme) => {
+        if (theme !== undefined) editor?.setTheme(theme)
       },
     )
 

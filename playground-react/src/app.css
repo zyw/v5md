@@ -48,6 +48,8 @@ body {
 }
 
 .topbar {
+  position: relative;
+  z-index: 20;
   display: grid;
   gap: 14px;
   margin-bottom: 18px;
@@ -149,7 +151,8 @@ body {
   gap: 6px;
   padding-top: 2px;
   border-top: 1px solid rgb(15 118 110 / 10%);
-  overflow: hidden;
+  /* Keep visible so the theme popover is not clipped. */
+  overflow: visible;
 }
 
 .control-group {
@@ -247,6 +250,60 @@ body {
   text-align: center;
 }
 
+.theme-menu {
+  position: relative;
+  z-index: 1;
+}
+
+.theme-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 2;
+  display: grid;
+  min-width: 168px;
+  padding: 6px;
+  border: 1px solid rgb(20 32 28 / 10%);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 90%) inset,
+    0 14px 36px rgb(20 32 28 / 14%);
+}
+
+.theme-option {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-option:hover,
+.theme-option.is-active {
+  background: rgb(15 118 110 / 8%);
+}
+
+.theme-check {
+  display: inline-grid;
+  place-items: center;
+  width: 1em;
+  color: var(--accent);
+  font-size: 13px;
+  line-height: 1;
+}
+
 .control-group-export .chip {
   color: var(--ink);
 }
@@ -257,6 +314,8 @@ body {
 }
 
 .workspace {
+  position: relative;
+  z-index: 0;
   min-width: 0;
 }
 

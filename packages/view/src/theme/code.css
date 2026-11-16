@@ -6,9 +6,9 @@
   overflow-x: auto;
   border: 0;
   border-radius: 8px;
-  background: #f6f8fa;
+  background: var(--v5-code-bg);
   color: inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--v5-font-mono);
   font-size: 0.9em;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -17,7 +17,7 @@
 
 .v5md .v5-doc code {
   color: inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--v5-font-mono);
   font-size: inherit;
   line-height: inherit;
 }

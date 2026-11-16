@@ -765,16 +765,18 @@ editor.destroy()        → 反序卸载全部插件
 
 ## 主题覆盖提示
 
-样式选择器一律从 \`.v5md\` 起写；建议只改颜色、字号、间距。不要改缩进、\`display\`、伪元素 \`content\`，否则光标容易跳位。
+内置主题：\`paper\`（默认）、\`github\`、\`nord\`、\`tokyo-night\`、\`catppuccin\`。创建时传 \`theme\`，或调用 \`editor.setTheme('nord')\`。
+
+样式选择器一律从 \`.v5md\` 起写；颜色优先改 CSS 变量（如 \`--v5-link\`）。建议只改颜色、字号、间距。不要改缩进、\`display\`、伪元素 \`content\`，否则光标容易跳位。
 
 \`\`\`css
+.v5md {
+  --v5-link: #0f766e;
+}
+
 .v5md .v5-doc {
   font-size: 16px;
   line-height: 1.8;
-}
-
-.v5md .v5-toolbar {
-  background: #fafafa;
 }
 \`\`\`
 

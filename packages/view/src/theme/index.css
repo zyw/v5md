@@ -3,6 +3,7 @@
  * the published package still ships a single dist/theme.css. Later files win
  * on cascade ties: keep the order when adding a file.
  */
+@import './tokens.css';
 @import './base.css';
 @import './typography.css';
 @import './source.css';
@@ -13,3 +14,7 @@
 @import './table-bar.css';
 @import './toolbar.css';
 @import './outline.css';
+@import './themes/github.css';
+@import './themes/nord.css';
+@import './themes/tokyo-night.css';
+@import './themes/catppuccin.css';

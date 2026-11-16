@@ -35,6 +35,7 @@ export function Page() {
 | `value` | Markdown 全文 |
 | `onChange` | 文档变化时收到新全文 |
 | `placeholder` | 空文档提示，变化时同步到编辑器 |
+| `theme` | 视觉主题，默认 `paper`；可选 `github` / `nord` / `tokyo-night` / `catppuccin`，变化时调用 `setTheme` |
 | `className` | 加在宿主元素上，宿主同时有 `v5md-host` |
 | `editable` | 是否可编辑，默认 `true`。传 `false` 进入只读预览，变化时调用 `setEditable`；预览下待办复选框仍可切换 |
 | `plugins` | 插件数组，挂载时传给 `Editor` |
@@ -43,7 +44,7 @@ export function Page() {
 | `onFindRequest` | `(request: { kind: 'find' \| 'replace' }) => void`。不传时按 Mod+F / Mod+H 打开内置查找栏 |
 | `onReady` | 挂载完成后拿到 `Editor` 实例 |
 
-编辑器只在挂载时创建一次。之后 `value` 与内部全文不同时，才调用 `setMarkdown`。`onChange`、`onUploadImage`、`onPickImage`、`onFindRequest`、`onReady` 的后续变化不会重建编辑器；`editable` 和 `placeholder` 会直接同步到实例。
+编辑器只在挂载时创建一次。之后 `value` 与内部全文不同时，才调用 `setMarkdown`。`onChange`、`onUploadImage`、`onPickImage`、`onFindRequest`、`onReady` 的后续变化不会重建编辑器；`editable`、`placeholder`、`locale` 和 `theme` 会直接同步到实例。
 
 `plugins` 只在挂载时读取。运行时安装插件可以通过 `onReady` 拿到实例后调用 `editor.use(plugin)`，卸载调用返回句柄的 `dispose()`。
 

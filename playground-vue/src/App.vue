@@ -7,7 +7,13 @@ import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
 import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 import { createTypographyPlugin, type TypographyApi } from '@v5md/plugin-typography'
-import { detectPlaygroundLocale, playgroundCopy, type PlaygroundLocale } from '@v5md/playground-ui'
+import {
+  detectPlaygroundLocale,
+  playgroundCopy,
+  PLAYGROUND_THEMES,
+  type PlaygroundLocale,
+  type PlaygroundThemeId,
+} from '@v5md/playground-ui'
 import '@v5md/view/theme.css'
 
 const SCROLL_TOP_THRESHOLD = 320
@@ -26,8 +32,12 @@ const toolbarSticky = ref(true)
 const outlineSticky = ref(true)
 const showLineNumbers = ref(true)
 const fontSize = ref(17)
+const theme = ref<PlaygroundThemeId>('paper')
+const themeMenuOpen = ref(false)
+const themeMenuEl = ref<HTMLElement | null>(null)
 const exportStatus = ref('')
 const showScrollTop = ref(false)
+const themes = PLAYGROUND_THEMES
 
 const plugins = computed(() => {
   const lang = locale.value
@@ -54,6 +64,7 @@ function onReady(instance: Editor) {
   editor.value = instance
   typography.value = instance.getPlugin<TypographyApi>('typography')?.api ?? null
   exporter.value = instance.getPlugin<ExportApi>('export')?.api ?? null
+  instance.setTheme(theme.value)
   instance.setToolbarSticky(toolbarSticky.value)
   instance.setOutlineSticky(outlineSticky.value)
 }
@@ -62,6 +73,21 @@ function changeFontSize(next: number) {
   const size = Math.min(28, Math.max(12, next))
   fontSize.value = size
   typography.value?.setFontSize(size)
+}
+
+function changeTheme(next: PlaygroundThemeId) {
+  theme.value = next
+  themeMenuOpen.value = false
+  editor.value?.setTheme(next)
+}
+
+function onThemeMenuPointerDown(event: MouseEvent) {
+  if (!themeMenuOpen.value) return
+  if (!themeMenuEl.value?.contains(event.target as Node)) themeMenuOpen.value = false
+}
+
+function onThemeMenuKeyDown(event: KeyboardEvent) {
+  if (event.key === 'Escape') themeMenuOpen.value = false
 }
 
 async function exportFile(kind: 'markdown' | 'html' | 'image' | 'pdf') {
@@ -136,10 +162,14 @@ function scrollToTop() {
 onMounted(() => {
   onWindowScroll()
   window.addEventListener('scroll', onWindowScroll, { passive: true })
+  window.addEventListener('mousedown', onThemeMenuPointerDown)
+  window.addEventListener('keydown', onThemeMenuKeyDown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onWindowScroll)
+  window.removeEventListener('mousedown', onThemeMenuPointerDown)
+  window.removeEventListener('keydown', onThemeMenuKeyDown)
 })
 </script>
 
@@ -171,7 +201,7 @@ onUnmounted(() => {
           </div>
           <p class="status">
             {{ preview ? copy.modePreview : sourceMode ? copy.modeSource : copy.modeWysiwyg }}
-            · {{ copy.fontSize(fontSize) }}
+            · {{ copy.fontSize(fontSize) }} · {{ copy.themeLabel(theme) }}
             <span v-if="exportStatus"> · {{ exportStatus }}</span>
           </p>
         </div>
@@ -234,6 +264,32 @@ onUnmounted(() => {
             A+
           </button>
         </div>
+        <div ref="themeMenuEl" class="control-group theme-menu" role="group" :aria-label="copy.themeGroup">
+          <button
+            type="button"
+            class="chip"
+            aria-haspopup="menu"
+            :aria-expanded="themeMenuOpen"
+            @click="themeMenuOpen = !themeMenuOpen"
+          >
+            {{ copy.themeGroup }}
+          </button>
+          <div v-if="themeMenuOpen" class="theme-popover" role="menu">
+            <button
+              v-for="item in themes"
+              :key="item.id"
+              type="button"
+              role="menuitemradio"
+              class="theme-option"
+              :class="{ 'is-active': theme === item.id }"
+              :aria-checked="theme === item.id"
+              @click="changeTheme(item.id)"
+            >
+              <span class="theme-check" aria-hidden="true">{{ theme === item.id ? '✓' : '' }}</span>
+              {{ copy.themeLabel(item.id) }}
+            </button>
+          </div>
+        </div>
         <div class="control-group control-group-export" role="group" :aria-label="copy.exportGroup">
           <button type="button" class="chip" @click="exportFile('markdown')">MD</button>
           <button type="button" class="chip" @click="exportFile('html')">HTML</button>
@@ -247,6 +303,7 @@ onUnmounted(() => {
         :key="locale"
         v-model="markdown"
         :locale="locale"
+        :theme="theme"
         :placeholder="copy.placeholder"
         :editable="!preview"
         :plugins="plugins"
@@ -320,6 +377,8 @@ body {
 }
 
 .topbar {
+  position: relative;
+  z-index: 20;
   display: grid;
   gap: 14px;
   margin-bottom: 18px;
@@ -421,7 +480,8 @@ body {
   gap: 6px;
   padding-top: 2px;
   border-top: 1px solid rgb(15 118 110 / 10%);
-  overflow: hidden;
+  /* Keep visible so the theme popover is not clipped. */
+  overflow: visible;
 }
 
 .control-group {
@@ -519,6 +579,60 @@ body {
   text-align: center;
 }
 
+.theme-menu {
+  position: relative;
+  z-index: 1;
+}
+
+.theme-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 2;
+  display: grid;
+  min-width: 168px;
+  padding: 6px;
+  border: 1px solid rgb(20 32 28 / 10%);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 90%) inset,
+    0 14px 36px rgb(20 32 28 / 14%);
+}
+
+.theme-option {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-option:hover,
+.theme-option.is-active {
+  background: rgb(15 118 110 / 8%);
+}
+
+.theme-check {
+  display: inline-grid;
+  place-items: center;
+  width: 1em;
+  color: var(--accent);
+  font-size: 13px;
+  line-height: 1;
+}
+
 .control-group-export .chip {
   color: var(--ink);
 }
@@ -529,6 +643,8 @@ body {
 }
 
 .workspace {
+  position: relative;
+  z-index: 0;
   min-width: 0;
 }
 

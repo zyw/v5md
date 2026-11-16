@@ -706,7 +706,27 @@ Conventions:
 
 ## Theme and styling
 
-Theme is a single CSS file: `@v5md/view/theme.css`. Import wholesale or fold into your build.
+Theme is a single CSS file: `@v5md/view/theme.css`. Import wholesale or fold into your build. Five built-in themes switch via `data-theme` on the root:
+
+| id | Look |
+| --- | --- |
+| `paper` (default) | Serif paper |
+| `github` | Clean sans light |
+| `nord` | Cool arctic dark |
+| `tokyo-night` | Blue-violet dark |
+| `catppuccin` | Soft pastel dark |
+
+```ts
+import { Editor } from '@v5md/view'
+import '@v5md/view/theme.css'
+
+const editor = new Editor({
+  element,
+  theme: 'nord', // or later editor.setTheme('github')
+})
+```
+
+Vue / React wrappers accept a `theme` prop. Colors and fonts use CSS variables (`--v5-bg`, `--v5-fg`, `--v5-font-body`, …); hosts can override variables on `.v5md`.
 
 Conventions:
 
@@ -716,17 +736,13 @@ Conventions:
 Override from `.v5md`:
 
 ```css
+.v5md {
+  --v5-link: #0f766e;
+}
+
 .v5md .v5-doc {
   font-size: 16px;
   line-height: 1.8;
-}
-
-.v5md .v5-doc h1 {
-  font-size: 28px;
-}
-
-.v5md .v5-toolbar {
-  background: #fafafa;
 }
 ```
 

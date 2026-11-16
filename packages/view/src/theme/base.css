@@ -6,15 +6,10 @@
  * global styles cannot hit the editor's generic class names.
  * The editor's outer edge (the top of the toolbar and so on) is square so it can
  * sit in any host container; buttons, menus and code blocks inside keep their radius.
- * The only exception is the ::highlight() pseudo element below, whose custom name
- * cannot be scoped by a selector.
+ * The only exception is the ::highlight() pseudo element in tokens.css, whose custom
+ * name cannot be scoped by a selector.
  * To override styles, start your selector at `.v5md`; content lives under `.v5md .v5-doc`.
  */
-
-::highlight(v5-find) {
-  background: #f3e3a2;
-  color: inherit;
-}
 
 .v5md {
   position: relative;
@@ -26,15 +21,15 @@
   width: 100%;
   min-width: 0;
   min-height: 1.7em;
-  color: #2c2c2c;
-  background: #fff;
-  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Songti SC', 'Source Han Serif SC', serif;
+  color: var(--v5-fg);
+  background: var(--v5-bg);
+  font-family: var(--v5-font-body);
   font-size: 17px;
   line-height: 1.75;
   outline: none;
   white-space: pre-wrap;
   overflow-wrap: break-word;
-  caret-color: #2c2c2c;
+  caret-color: var(--v5-fg);
 }
 
 .v5md .v5-slash-menu,
@@ -46,10 +41,10 @@
   max-height: 280px;
   overflow: auto;
   padding: 6px;
-  border: 1px solid #dce5dc;
+  border: 1px solid var(--v5-menu-border);
   border-radius: 9px;
-  background: #fffefa;
-  box-shadow: 0 12px 30px #253b2b25;
+  background: var(--v5-menu-bg);
+  box-shadow: var(--v5-menu-shadow);
 }
 
 .v5md .v5-slash-menu button,
@@ -59,14 +54,14 @@
   background: transparent;
   text-align: left;
   padding: 7px 10px;
-  color: #344b3a;
+  color: var(--v5-menu-fg);
   cursor: pointer;
 }
 
 .v5md .v5-slash-menu button:hover,
 .v5md .v5-slash-menu button.v5-selected,
 .v5md .v5-block-menu button:hover {
-  background: #e9f0e8;
+  background: var(--v5-menu-hover);
 }
 
 .v5md .v5-block-handle {
@@ -74,7 +69,7 @@
   z-index: 10;
   border: 0;
   background: transparent;
-  color: #8ca296;
+  color: var(--v5-handle);
   cursor: grab;
   font-size: 20px;
   line-height: 24px;
@@ -86,7 +81,7 @@
   left: 28px;
   right: 28px;
   height: 2px;
-  background: #3d8666;
+  background: var(--v5-accent);
   pointer-events: none;
 }
 
@@ -122,7 +117,7 @@
 .v5md .v5-doc[data-empty='true']::before {
   content: attr(data-placeholder);
   position: absolute;
-  color: #a3a3a3;
+  color: var(--v5-fg-subtle);
   pointer-events: none;
 }
 

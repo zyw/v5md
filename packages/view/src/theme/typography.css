@@ -41,12 +41,12 @@
 
 .v5md .v5-doc :is(h1, h2, h3, h4, h5, h6) {
   margin: 1.15em 0 0.45em;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  font-family: var(--v5-font-heading);
   font-weight: 650;
   font-style: normal;
   line-height: 1.3;
   letter-spacing: normal;
-  color: #1f1f1f;
+  color: var(--v5-fg-strong);
 }
 
 .v5md .v5-doc h1 {
@@ -59,7 +59,7 @@
 .v5md .v5-doc h1,
 .v5md .v5-doc h2 {
   padding-bottom: 0.3em;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--v5-border);
 }
 .v5md .v5-doc h3 {
   font-size: 1.25em;
@@ -80,7 +80,7 @@
 }
 
 .v5md .v5-doc a {
-  color: #1d4ed8;
+  color: var(--v5-link);
   font-family: inherit;
   text-decoration: none;
 }
@@ -94,8 +94,8 @@
 .v5md .v5-doc blockquote {
   margin: 0.8em 0;
   padding-left: 1em;
-  border-left: 4px solid #e5e7eb;
-  color: #4b5563;
+  border-left: 4px solid var(--v5-border);
+  color: var(--v5-blockquote-fg);
 }
 
 .v5md .v5-doc blockquote > p {
@@ -145,9 +145,9 @@
   min-height: 1em;
   margin: 0 0.45em 0 0;
   padding: 0;
-  border: 1.5px solid #9ca3af;
+  border: 1.5px solid var(--v5-check-border);
   border-radius: 3px;
-  background: #fff;
+  background: var(--v5-check-bg);
   line-height: 1;
   /*
    * Centre the box instead of aligning its bottom edge to the baseline: WebKit
@@ -167,7 +167,7 @@
   box-sizing: border-box;
   width: 0.3em;
   height: 0.55em;
-  border: solid #1d4ed8;
+  border: solid var(--v5-check-mark);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
@@ -182,22 +182,22 @@
 
 .v5md .v5-doc .v5-table th,
 .v5md .v5-doc .v5-table td {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--v5-border);
   padding: 0.4em 0.7em;
   vertical-align: top;
 }
 
 .v5md .v5-doc .v5-table th {
-  background: #fff;
+  background: var(--v5-surface-raised);
   font-weight: 650;
 }
 
 .v5md .v5-doc .v5-table tbody tr:nth-child(odd) td {
-  background: #f3f4f6;
+  background: var(--v5-surface-2);
 }
 
 .v5md .v5-doc .v5-table tbody tr:nth-child(even) td {
-  background: #fff;
+  background: var(--v5-surface-raised);
 }
 
 .v5md .v5-doc .v5-table .v5-marker,
@@ -206,11 +206,11 @@
 }
 
 .v5md .v5-doc del {
-  color: #6b7280;
+  color: var(--v5-fg-muted);
 }
 
 .v5md .v5-doc mark {
-  background: #fef3c7;
+  background: var(--v5-mark);
   color: inherit;
 }
 
@@ -218,9 +218,9 @@
   margin: 0 0 1.1em;
   padding: 0.7em 0.9em;
   border-radius: 8px;
-  background: #fafafa;
-  color: #6b7280;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--v5-frontmatter-bg);
+  color: var(--v5-fg-muted);
+  font-family: var(--v5-font-mono);
   font-size: 0.85em;
   white-space: pre-wrap;
 }

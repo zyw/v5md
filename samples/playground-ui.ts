@@ -3,6 +3,16 @@ import { sample as sampleEn } from './demo.en.ts'
 
 export type PlaygroundLocale = 'zh-CN' | 'en'
 
+export type PlaygroundThemeId = 'paper' | 'github' | 'nord' | 'tokyo-night' | 'catppuccin'
+
+export const PLAYGROUND_THEMES: { id: PlaygroundThemeId; labelZh: string; labelEn: string }[] = [
+  { id: 'paper', labelZh: 'Paper', labelEn: 'Paper' },
+  { id: 'github', labelZh: 'GitHub', labelEn: 'GitHub' },
+  { id: 'nord', labelZh: 'Nord', labelEn: 'Nord' },
+  { id: 'tokyo-night', labelZh: 'Tokyo Night', labelEn: 'Tokyo Night' },
+  { id: 'catppuccin', labelZh: 'Catppuccin', labelEn: 'Catppuccin' },
+]
+
 export interface PlaygroundCopy {
   tagline: string
   badge: (framework: 'Vue' | 'React') => string
@@ -10,6 +20,7 @@ export interface PlaygroundCopy {
   modeSource: string
   modePreview: string
   fontSize: (size: number) => string
+  themeLabel: (id: PlaygroundThemeId) => string
   view: string
   outline: string
   toolbar: string
@@ -25,6 +36,7 @@ export interface PlaygroundCopy {
   redo: string
   find: string
   fontGroup: string
+  themeGroup: string
   exportGroup: string
   image: string
   exporting: string
@@ -46,6 +58,7 @@ const zh: PlaygroundCopy = {
   modeSource: '源码模式',
   modePreview: '只读预览',
   fontSize: (size) => `字号 ${size}px`,
+  themeLabel: (id) => PLAYGROUND_THEMES.find((theme) => theme.id === id)?.labelZh ?? id,
   view: '视图',
   outline: '大纲',
   toolbar: '工具条',
@@ -61,6 +74,7 @@ const zh: PlaygroundCopy = {
   redo: '重做',
   find: '查找',
   fontGroup: '字号',
+  themeGroup: '主题',
   exportGroup: '导出',
   image: '图片',
   exporting: '导出中…',
@@ -82,6 +96,7 @@ const en: PlaygroundCopy = {
   modeSource: 'Source mode',
   modePreview: 'Read-only',
   fontSize: (size) => `Font ${size}px`,
+  themeLabel: (id) => PLAYGROUND_THEMES.find((theme) => theme.id === id)?.labelEn ?? id,
   view: 'View',
   outline: 'Outline',
   toolbar: 'Toolbar',
@@ -97,6 +112,7 @@ const en: PlaygroundCopy = {
   redo: 'Redo',
   find: 'Find',
   fontGroup: 'Font size',
+  themeGroup: 'Theme',
   exportGroup: 'Export',
   image: 'Image',
   exporting: 'Exporting…',

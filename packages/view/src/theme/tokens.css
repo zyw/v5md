@@ -1,0 +1,90 @@
+/*
+ * Default theme tokens (Paper). Structural rules consume these variables;
+ * alternate themes only reassign values under `.v5md[data-theme="…"]`.
+ */
+
+::highlight(v5-find) {
+  background: #f3e3a2;
+  color: inherit;
+}
+
+.v5md {
+  color-scheme: light;
+  --v5-bg: #ffffff;
+  --v5-fg: #2c2c2c;
+  --v5-fg-strong: #1f1f1f;
+  --v5-fg-muted: #6b7280;
+  --v5-fg-subtle: #a3a3a3;
+  --v5-border: #e5e7eb;
+  --v5-border-strong: #d4d4d8;
+  --v5-surface: #f7f7f8;
+  --v5-surface-2: #f3f4f6;
+  --v5-surface-hover: #ececef;
+  --v5-surface-active: #e4e4e7;
+  --v5-surface-raised: #ffffff;
+  --v5-accent: #3d8666;
+  --v5-link: #1d4ed8;
+  --v5-danger: #b91c1c;
+  --v5-danger-soft: #fef2f2;
+  --v5-success: #15803d;
+  --v5-success-soft: #ecfdf3;
+  --v5-mark: #fef3c7;
+  --v5-code-bg: #f6f8fa;
+  --v5-inline-code-bg: #f3f4f6;
+  --v5-frontmatter-bg: #fafafa;
+  --v5-menu-bg: #fffefa;
+  --v5-menu-border: #dce5dc;
+  --v5-menu-fg: #344b3a;
+  --v5-menu-hover: #e9f0e8;
+  --v5-menu-shadow: 0 12px 30px #253b2b25;
+  --v5-handle: #8ca296;
+  --v5-tooltip-bg: #3f3f46;
+  --v5-tooltip-fg: #ffffff;
+  --v5-find-bg-top: #fbfbfc;
+  --v5-find-bg-bottom: #f4f4f5;
+  --v5-find-focus: #0f766e;
+  --v5-find-focus-ring: rgb(15 118 110 / 14%);
+  --v5-find-on-bg: #ccfbf1;
+  --v5-find-on-border: #99f6e4;
+  --v5-find-on-fg: #0f766e;
+  --v5-field-inset: inset 0 1px 0 rgb(255 255 255 / 70%);
+  --v5-action-shadow: 0 1px 0 rgb(24 24 27 / 3%);
+  --v5-tablebar-bg: #f5f5f4;
+  --v5-tablebar-border: #e7e5e4;
+  --v5-tablebar-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+  --v5-tablebar-pressed: #d6d3d1;
+  --v5-check-border: #9ca3af;
+  --v5-check-bg: #ffffff;
+  --v5-check-mark: #1d4ed8;
+  --v5-blockquote-fg: #4b5563;
+  --v5-marker: #b4b4b4;
+  --v5-source-bg: #f8fafc;
+  --v5-source-border: #e9edf2;
+  --v5-source-number: #b3bcc9;
+  --v5-source-number-hover: #8a94a3;
+  --v5-source-heading: #1f2328;
+  --v5-source-highlight: #fff3bf;
+  --v5-source-inline-bg: #eef2f7;
+  --v5-source-inline-fg: #0a3069;
+  --v5-source-link: #0969da;
+  --v5-source-url: #0a3069;
+  --v5-source-image: #953800;
+  --v5-source-math: #8250df;
+  --v5-source-frontmatter: #6e7781;
+  --v5-source-html: #116329;
+  --v5-source-rule: #8c959f;
+  --v5-source-marker: #a8b1c2;
+  --v5-hl-keyword: #d73a49;
+  --v5-hl-string: #032f62;
+  --v5-hl-comment: #6a737d;
+  --v5-hl-number: #005cc5;
+  --v5-hl-title: #6f42c1;
+  --v5-hl-type: #e36209;
+  --v5-hl-name: #22863a;
+  --v5-font-body: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Songti SC',
+    'Source Han Serif SC', serif;
+  --v5-font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC',
+    sans-serif;
+  --v5-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --v5-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

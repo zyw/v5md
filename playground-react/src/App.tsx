@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Editor } from '@v5md/view'
 import { V5Editor } from '@v5md/react'
 import { createEchartsPlugin } from '@v5md/plugin-echarts'
@@ -6,7 +6,13 @@ import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
 import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 import { createTypographyPlugin, type TypographyApi } from '@v5md/plugin-typography'
-import { detectPlaygroundLocale, playgroundCopy, type PlaygroundLocale } from '@v5md/playground-ui'
+import {
+  detectPlaygroundLocale,
+  playgroundCopy,
+  PLAYGROUND_THEMES,
+  type PlaygroundLocale,
+  type PlaygroundThemeId,
+} from '@v5md/playground-ui'
 import '@v5md/view/theme.css'
 
 const SCROLL_TOP_THRESHOLD = 320
@@ -26,8 +32,11 @@ export function App() {
   const [outlineSticky, setOutlineSticky] = useState(true)
   const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [fontSize, setFontSize] = useState(17)
+  const [theme, setTheme] = useState<PlaygroundThemeId>('paper')
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const [exportStatus, setExportStatus] = useState('')
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const themeMenuRef = useRef<HTMLDivElement | null>(null)
 
   const plugins = useMemo(
     () => [
@@ -47,6 +56,22 @@ export function App() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    if (!themeMenuOpen) return
+    const onPointerDown = (event: MouseEvent) => {
+      if (!themeMenuRef.current?.contains(event.target as Node)) setThemeMenuOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setThemeMenuOpen(false)
+    }
+    window.addEventListener('mousedown', onPointerDown)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('mousedown', onPointerDown)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [themeMenuOpen])
+
   function changeLocale(next: PlaygroundLocale) {
     if (next === locale) return
     setLocale(next)
@@ -58,6 +83,12 @@ export function App() {
     const size = Math.min(28, Math.max(12, next))
     setFontSize(size)
     typography?.setFontSize(size)
+  }
+
+  function changeTheme(next: PlaygroundThemeId) {
+    setTheme(next)
+    setThemeMenuOpen(false)
+    editor?.setTheme(next)
   }
 
   async function exportFile(kind: 'markdown' | 'html' | 'image' | 'pdf') {
@@ -108,7 +139,7 @@ export function App() {
               </div>
             </div>
             <p className="status">
-              {modeLabel} · {copy.fontSize(fontSize)}
+              {modeLabel} · {copy.fontSize(fontSize)} · {copy.themeLabel(theme)}
               {exportStatus ? ` · ${exportStatus}` : ''}
             </p>
           </div>
@@ -239,6 +270,36 @@ export function App() {
               A+
             </button>
           </div>
+          <div className="control-group theme-menu" ref={themeMenuRef} role="group" aria-label={copy.themeGroup}>
+            <button
+              type="button"
+              className="chip"
+              aria-haspopup="menu"
+              aria-expanded={themeMenuOpen}
+              onClick={() => setThemeMenuOpen((open) => !open)}
+            >
+              {copy.themeGroup}
+            </button>
+            {themeMenuOpen ? (
+              <div className="theme-popover" role="menu">
+                {PLAYGROUND_THEMES.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={theme === item.id}
+                    className={`theme-option${theme === item.id ? ' is-active' : ''}`}
+                    onClick={() => changeTheme(item.id)}
+                  >
+                    <span className="theme-check" aria-hidden="true">
+                      {theme === item.id ? '✓' : ''}
+                    </span>
+                    {copy.themeLabel(item.id)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <div className="control-group control-group-export" role="group" aria-label={copy.exportGroup}>
             <button type="button" className="chip" onClick={() => exportFile('markdown')}>
               MD
@@ -261,6 +322,7 @@ export function App() {
           value={markdown}
           onChange={setMarkdown}
           locale={locale}
+          theme={theme}
           placeholder={copy.placeholder}
           editable={!preview}
           plugins={plugins}
@@ -268,6 +330,7 @@ export function App() {
             setEditor(instance)
             setTypography(instance.getPlugin<TypographyApi>('typography')?.api ?? null)
             setExporter(instance.getPlugin<ExportApi>('export')?.api ?? null)
+            instance.setTheme(theme)
             instance.setToolbarSticky(toolbarSticky)
             instance.setOutlineSticky(outlineSticky)
           }}

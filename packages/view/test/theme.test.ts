@@ -43,6 +43,14 @@ describe('theme isolation', () => {
     expect(unscoped).toEqual([])
   })
 
+  it('ships token defaults and alternate theme packs', () => {
+    expect(CSS).toContain('--v5-bg:')
+    expect(CSS).toContain('--v5-font-body:')
+    for (const theme of ['github', 'nord', 'tokyo-night', 'catppuccin']) {
+      expect(CSS).toContain(`.v5md[data-theme='${theme}']`)
+    }
+  })
+
   it('does not rely on generic class names that a host page could define', () => {
     expect(CSS).not.toMatch(/\.(?:is-(?:active|source|source-mode|preview|composing|selected)|md-marker)(?![\w-])/)
   })

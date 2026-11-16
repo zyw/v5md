@@ -5,7 +5,7 @@
   padding: 22px 8px 12px 20px;
   box-sizing: border-box;
   align-self: flex-start;
-  background: #fff;
+  background: var(--v5-bg);
   white-space: normal;
   user-select: none;
 }
@@ -27,8 +27,8 @@
 
 .v5md .v5-outline p {
   margin: 0 0 8px;
-  color: #6b7280;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+  color: var(--v5-fg-muted);
+  font-family: var(--v5-font-ui);
   font-size: 12px;
   letter-spacing: 0.08em;
 }
@@ -40,14 +40,14 @@
   padding: 4px 8px;
   border: 0;
   background: transparent;
-  color: #1f1f1f;
+  color: var(--v5-fg-strong);
   text-align: left;
   cursor: pointer;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+  font-family: var(--v5-font-ui);
   font-size: 14px;
   line-height: 1.5;
 }
 
 .v5md .v5-outline button:hover {
-  color: #1d4ed8;
+  color: var(--v5-link);
 }

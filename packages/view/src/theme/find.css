@@ -11,9 +11,9 @@
   box-sizing: border-box;
   margin: 0;
   padding: 8px 10px;
-  border-bottom: 1px solid #e4e4e7;
-  background: linear-gradient(180deg, #fbfbfc 0%, #f4f4f5 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+  border-bottom: 1px solid var(--v5-border-strong);
+  background: linear-gradient(180deg, var(--v5-find-bg-top) 0%, var(--v5-find-bg-bottom) 100%);
+  font-family: var(--v5-font-ui);
   white-space: normal;
 }
 
@@ -49,24 +49,24 @@
   max-width: 420px;
   box-sizing: border-box;
   padding: 3px 4px 3px 8px;
-  border: 1px solid #d4d4d8;
+  border: 1px solid var(--v5-border-strong);
   border-radius: 9px;
-  background: #fff;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
+  background: var(--v5-surface-raised);
+  box-shadow: var(--v5-field-inset);
   transition:
     border-color 0.12s ease,
     box-shadow 0.12s ease;
 }
 
 .v5md .v5md-find-field:hover {
-  border-color: #a1a1aa;
+  border-color: var(--v5-fg-muted);
 }
 
 .v5md .v5md-find-field:focus-within {
-  border-color: #0f766e;
+  border-color: var(--v5-find-focus);
   box-shadow:
-    0 0 0 3px rgb(15 118 110 / 14%),
-    inset 0 1px 0 rgb(255 255 255 / 70%);
+    0 0 0 3px var(--v5-find-focus-ring),
+    var(--v5-field-inset);
 }
 
 .v5md .v5md-find input {
@@ -78,7 +78,7 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #18181b;
+  color: var(--v5-fg-strong);
   font: inherit;
   font-size: 13px;
   line-height: 1.3;
@@ -99,7 +99,7 @@
   margin: 0;
   padding: 0 2px;
   overflow: hidden;
-  color: #71717a;
+  color: var(--v5-fg-muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -117,7 +117,7 @@
   align-items: center;
   gap: 2px;
   padding-left: 2px;
-  border-left: 1px solid #e4e4e7;
+  border-left: 1px solid var(--v5-border-strong);
 }
 
 .v5md .v5md-find-toggle {
@@ -130,13 +130,9 @@
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
-  color: #71717a;
+  color: var(--v5-fg-muted);
   font:
-    600 11px/1 -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    'PingFang SC',
-    sans-serif;
+    600 11px/1 var(--v5-font-ui);
   letter-spacing: 0.01em;
   cursor: pointer;
   transition:
@@ -146,15 +142,15 @@
 }
 
 .v5md .v5md-find-toggle:hover {
-  background: #f4f4f5;
-  border-color: #e4e4e7;
-  color: #3f3f46;
+  background: var(--v5-surface-2);
+  border-color: var(--v5-border-strong);
+  color: var(--v5-fg);
 }
 
 .v5md .v5md-find-toggle.is-on {
-  background: #ccfbf1;
-  border-color: #99f6e4;
-  color: #0f766e;
+  background: var(--v5-find-on-bg);
+  border-color: var(--v5-find-on-border);
+  color: var(--v5-find-on-fg);
 }
 
 .v5md .v5md-find-steps {
@@ -172,12 +168,12 @@
   height: 30px;
   margin: 0;
   padding: 0;
-  border: 1px solid #d4d4d8;
+  border: 1px solid var(--v5-border-strong);
   border-radius: 8px;
-  background: #fff;
-  color: #3f3f46;
+  background: var(--v5-surface-raised);
+  color: var(--v5-fg);
   cursor: pointer;
-  box-shadow: 0 1px 0 rgb(24 24 27 / 3%);
+  box-shadow: var(--v5-action-shadow);
   transition:
     background 0.12s ease,
     border-color 0.12s ease,
@@ -191,13 +187,13 @@
 }
 
 .v5md .v5md-find-action:hover {
-  background: #f4f4f5;
-  border-color: #a1a1aa;
-  color: #18181b;
+  background: var(--v5-surface-2);
+  border-color: var(--v5-fg-muted);
+  color: var(--v5-fg-strong);
 }
 
 .v5md .v5md-find-action:active {
-  background: #e4e4e7;
+  background: var(--v5-surface-active);
   box-shadow: none;
 }
 
@@ -212,7 +208,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #71717a;
+  color: var(--v5-fg-muted);
   cursor: pointer;
   transition:
     background 0.12s ease,
@@ -220,8 +216,8 @@
 }
 
 .v5md .v5md-find-close:hover {
-  background: #ececef;
-  color: #18181b;
+  background: var(--v5-surface-hover);
+  color: var(--v5-fg-strong);
 }
 
 .v5md .v5md-find-close svg {

@@ -706,7 +706,27 @@ export function createDemoBlockPlugin(): V5mdPlugin {
 
 ## 主题与样式
 
-主题是一个独立 CSS 文件：`@v5md/view/theme.css`。整体引入即可，也可以复制进自己的构建流程。
+主题是一个独立 CSS 文件：`@v5md/view/theme.css`。整体引入即可，也可以复制进自己的构建流程。内置五套主题，通过根元素 `data-theme` 切换：
+
+| id | 风格 |
+| --- | --- |
+| `paper`（默认） | 衬线纸质感 |
+| `github` | 无衬线浅色 |
+| `nord` | 北极冷色暗色 |
+| `tokyo-night` | 深蓝紫暗色 |
+| `catppuccin` | 柔和粉彩暗色 |
+
+```ts
+import { Editor } from '@v5md/view'
+import '@v5md/view/theme.css'
+
+const editor = new Editor({
+  element,
+  theme: 'nord', // 或之后 editor.setTheme('github')
+})
+```
+
+Vue / React 包装同样支持 `theme` prop。颜色与字体走 CSS 变量（`--v5-bg`、`--v5-fg`、`--v5-font-body` 等），宿主可在 `.v5md` 上覆盖变量做微调。
 
 样式约定：
 
@@ -716,17 +736,13 @@ export function createDemoBlockPlugin(): V5mdPlugin {
 覆盖样式时同样从 `.v5md` 开始写：
 
 ```css
+.v5md {
+  --v5-link: #0f766e;
+}
+
 .v5md .v5-doc {
   font-size: 16px;
   line-height: 1.8;
-}
-
-.v5md .v5-doc h1 {
-  font-size: 28px;
-}
-
-.v5md .v5-toolbar {
-  background: #fafafa;
 }
 ```
 

@@ -23,7 +23,8 @@ describe('@v5md/plugin-export', () => {
     expect(html).toContain('<title>测试文章</title>')
     expect(html).toContain('<h1')
     expect(html).toContain('<style>')
-    expect(html).toContain('class="v5md is-preview"')
+    expect(html).toContain('class="v5md v5-preview"')
+    expect(html).toContain('data-theme="paper"')
 
     editor.destroy()
     element.remove()

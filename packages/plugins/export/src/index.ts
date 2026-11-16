@@ -168,8 +168,8 @@ ${styles}
 ${PRINT_CSS}
 </style>
 </head>
-<body style="margin:0;padding:32px;background:#fff;">
-<div class="v5md is-preview">${clone.outerHTML}</div>
+<body style="margin:0;padding:0;">
+<div class="v5md v5-preview" data-theme="${escapeHtml(editor.getTheme())}" style="min-height:100vh;padding:32px;box-sizing:border-box;">${clone.outerHTML}</div>
 </body>
 </html>`
 }

@@ -12,9 +12,9 @@
   gap: 0;
   margin: 0;
   padding: 6px 8px;
-  border-bottom: 1px solid #e4e4e7;
+  border-bottom: 1px solid var(--v5-border-strong);
   border-radius: 0;
-  background: #f7f7f8;
+  background: var(--v5-surface);
   white-space: normal;
   user-select: none;
 }
@@ -33,7 +33,7 @@
 }
 
 .v5md .v5-toolbar-group + .v5-toolbar-group {
-  border-left: 1px solid #d4d4d8;
+  border-left: 1px solid var(--v5-border-strong);
 }
 
 .v5md .v5-toolbar[hidden],
@@ -53,7 +53,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #52525b;
+  color: var(--v5-fg-muted);
   cursor: pointer;
   transition:
     background 0.12s ease,
@@ -77,23 +77,23 @@
 }
 
 .v5md .v5-toolbar button:hover {
-  background: #ececef;
-  color: #18181b;
+  background: var(--v5-surface-hover);
+  color: var(--v5-fg-strong);
 }
 
 .v5md .v5-toolbar button[aria-pressed='true'] {
-  background: #e4e4e7;
-  color: #18181b;
+  background: var(--v5-surface-active);
+  color: var(--v5-fg-strong);
 }
 
 .v5md .v5-toolbar button[data-state='done'] {
-  background: #ecfdf3;
-  color: #15803d;
+  background: var(--v5-success-soft);
+  color: var(--v5-success);
 }
 
 .v5md .v5-toolbar button[data-state='error'] {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--v5-danger-soft);
+  color: var(--v5-danger);
 }
 
 .v5md .v5-toolbar button::after {
@@ -104,9 +104,9 @@
   z-index: 6;
   padding: 4px 8px;
   border-radius: 6px;
-  background: #3f3f46;
-  color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  background: var(--v5-tooltip-bg);
+  color: var(--v5-tooltip-fg);
+  font-family: var(--v5-font-ui);
   font-size: 12px;
   font-weight: 400;
   line-height: 1.4;
@@ -159,10 +159,10 @@
   max-height: 320px;
   overflow: auto;
   padding: 6px;
-  border: 1px solid #d4d4d8;
+  border: 1px solid var(--v5-border-strong);
   border-radius: 9px;
-  background: #fffefa;
-  box-shadow: 0 12px 30px #253b2b25;
+  background: var(--v5-menu-bg);
+  box-shadow: var(--v5-menu-shadow);
 }
 
 .v5md .v5-toolbar-menu[hidden] {
@@ -179,14 +179,14 @@
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: #344b3a;
+  color: var(--v5-menu-fg);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
 .v5md .v5-toolbar-menu button:hover {
-  background: #e9f0e8;
+  background: var(--v5-menu-hover);
 }
 
 .v5md .v5-toolbar-menu button::after {

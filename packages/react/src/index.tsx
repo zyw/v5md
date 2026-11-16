@@ -1,11 +1,12 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
-import { Editor, type EditorOptions, type LocaleCode } from '@v5md/view'
+import { Editor, type EditorOptions, type LocaleCode, type ThemeId } from '@v5md/view'
 
 export interface V5EditorProps {
   value: string
   onChange?: (markdown: string) => void
   placeholder?: string
   locale?: LocaleCode | string
+  theme?: ThemeId | string
   className?: string
   editable?: boolean
   plugins?: EditorOptions['plugins']
@@ -30,6 +31,7 @@ export function V5Editor({
   onChange,
   placeholder,
   locale,
+  theme,
   onUploadImage,
   onPickImage,
   onFindRequest,
@@ -62,6 +64,7 @@ export function V5Editor({
       value,
       placeholder,
       locale,
+      theme,
       editable,
       plugins,
       onChange(markdown) {
@@ -108,6 +111,10 @@ export function V5Editor({
   useEffect(() => {
     if (locale !== undefined) editorRef.current?.setLocale(locale)
   }, [locale])
+
+  useEffect(() => {
+    if (theme !== undefined) editorRef.current?.setTheme(theme)
+  }, [theme])
 
   return <Frame className={['v5md-host', className].filter(Boolean).join(' ')} hostRef={setHost} />
 }

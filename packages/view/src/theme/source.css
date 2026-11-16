@@ -1,5 +1,5 @@
 .v5md.v5-source-mode {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--v5-font-mono);
   font-size: 14px;
   line-height: 1.65;
 }
@@ -9,9 +9,9 @@
   --v5-source-gutter: 0px;
   margin: 0;
   padding: 12px 16px 14px;
-  border: 1px solid #e9edf2;
+  border: 1px solid var(--v5-source-border);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--v5-source-bg);
   white-space: pre-wrap;
   overflow: visible;
   overflow-wrap: break-word;
@@ -37,7 +37,7 @@
   left: 0;
   width: calc(var(--v5-source-gutter) - 0.85em);
   padding-right: 0.85em;
-  color: #b3bcc9;
+  color: var(--v5-source-number);
   font-variant-numeric: tabular-nums;
   text-align: right;
   user-select: none;
@@ -45,11 +45,11 @@
 }
 
 .v5md .v5-doc .v5-source-line:hover .v5-source-number {
-  color: #8a94a3;
+  color: var(--v5-source-number-hover);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-heading {
-  color: #1f2328;
+  color: var(--v5-source-heading);
   font-weight: 650;
 }
 
@@ -62,7 +62,7 @@
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-strike {
-  color: #6b7280;
+  color: var(--v5-fg-muted);
   text-decoration: line-through;
 }
 
@@ -73,44 +73,44 @@
 
 .v5md .v5-doc .v5-source-doc .v5-md-highlight {
   border-radius: 2px;
-  background: #fff3bf;
+  background: var(--v5-source-highlight);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-inline-code {
   padding: 0.05em 0.18em;
   border-radius: 3px;
-  background: #eef2f7;
-  color: #0a3069;
+  background: var(--v5-source-inline-bg);
+  color: var(--v5-source-inline-fg);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-link {
-  color: #0969da;
+  color: var(--v5-source-link);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-url {
-  color: #0a3069;
+  color: var(--v5-source-url);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-image {
-  color: #953800;
+  color: var(--v5-source-image);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-math {
-  color: #8250df;
+  color: var(--v5-source-math);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-frontmatter {
-  color: #6e7781;
+  color: var(--v5-source-frontmatter);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-html {
-  color: #116329;
+  color: var(--v5-source-html);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-rule {
-  color: #8c959f;
+  color: var(--v5-source-rule);
 }
 
 .v5md .v5-doc .v5-source-doc .v5-md-marker {
-  color: #a8b1c2;
+  color: var(--v5-source-marker);
 }

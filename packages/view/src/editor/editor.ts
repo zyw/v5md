@@ -63,6 +63,7 @@ import {
 import { renderDocument } from './render.js'
 import { applyChrome, clearFindHighlight, domPointToOffset, offsetToDomPoint, paintFindHighlight } from './selection.js'
 import { copyRichText, toWechatHtml, type WechatHtmlOptions } from '../convert/wechat.js'
+import { DEFAULT_THEME, normalizeTheme, type ThemeId } from '../theme/theme.js'
 
 export interface FindRequest {
   kind: 'find' | 'replace'
@@ -74,6 +75,11 @@ export interface EditorOptions {
   placeholder?: string
   /** UI language. Defaults to `zh-CN`. */
   locale?: LocaleCode | string
+  /**
+   * Visual theme id. Defaults to `paper`.
+   * Built-ins: `paper` | `github` | `nord` | `tokyo-night` | `catppuccin`.
+   */
+  theme?: ThemeId | string
   toolbar?: boolean
   outline?: boolean
   /** Pin the toolbar to the top while scrolling. Defaults to false. */
@@ -124,12 +130,14 @@ export class Editor {
   private destroyed = false
   private locale: LocaleCode = DEFAULT_LOCALE
   private messages: LocaleMessages = getMessages(DEFAULT_LOCALE)
+  private theme: ThemeId = DEFAULT_THEME
 
   constructor(options: EditorOptions) {
     this.options = options
     this.element = options.element
     this.locale = resolveLocale(options.locale)
     this.messages = getMessages(this.locale)
+    this.theme = normalizeTheme(options.theme)
     if (options.placeholder === undefined) this.options.placeholder = this.messages.placeholder
     this.toolbarVisible = options.toolbar !== false
     this.outlineVisible = options.outline !== false
@@ -392,6 +400,19 @@ export class Editor {
 
   getLocale(): LocaleCode {
     return this.locale
+  }
+
+  getTheme(): ThemeId {
+    return this.theme
+  }
+
+  /** Switches the visual theme via `data-theme` on the editor root. */
+  setTheme(theme: ThemeId | string): void {
+    const next = normalizeTheme(theme)
+    if (next === this.theme) return
+    this.theme = next
+    this.options.theme = next
+    this.applyTheme()
   }
 
   /** Switches built-in chrome strings. Plugin labels keep whatever they registered with. */
@@ -659,6 +680,7 @@ export class Editor {
   private prepare(): void {
     this.element.classList.add('v5md')
     this.element.lang = this.locale
+    this.applyTheme()
     this.element.classList.toggle('v5-preview', !this.editable)
     // The shell is a row flexbox (toolbar, document, outline). A contenteditable
     // flex container turns IME composition into sibling flex items, so the
@@ -667,6 +689,10 @@ export class Editor {
     this.element.translate = false
     this.syncStickyChrome()
     this.syncSurface()
+  }
+
+  private applyTheme(): void {
+    this.element.dataset.theme = this.theme
   }
 
   private syncStickyChrome(): void {

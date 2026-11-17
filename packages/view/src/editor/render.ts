@@ -101,7 +101,7 @@ function renderNode(node: MdNode): Node {
     case 'thematicBreak':
       return renderVoid(node, 'hr', 'v5-hr')
     case 'html':
-      return block('pre', node, node.children.map(renderNode), 'v5-html')
+      return renderHtml(node)
     case 'strong':
       return inline('strong', node)
     case 'emphasis':
@@ -259,9 +259,18 @@ function renderRow(node: MdNode, tag: 'th' | 'td', align: MdNode['align']): HTML
     const cell = block(tag, child, visible.map(renderNode))
     const placement = align?.[column]
     if (placement) cell.style.textAlign = placement
+    const lastChild = cell.lastElementChild as HTMLElement | null
+    const endsWithBreak = lastChild?.tagName === 'BR' && lastChild.hasAttribute('data-void')
     if (cell.querySelector('[data-leaf]') == null) {
+      // An empty cell gets a <br> leaf so it stands as tall as a cell with text.
       const spot = visible[0]?.start ?? (child.end > child.start ? child.start + 1 : child.start)
       cell.append(leaf('span', { type: 'text', start: spot, end: spot, text: '', children: [] }, 'v5-text', ''))
+    } else if (endsWithBreak) {
+      // A cell ending on a line break needs a caret leaf with real content so the
+      // browser opens a new line box right away; the caret then lands on it.
+      const last = visible.at(-1)
+      const spot = last ? last.end : child.end
+      cell.append(caretLeaf({ type: 'text', start: spot, end: spot, text: '', children: [] }))
     }
     row.append(cell)
     column += 1
@@ -401,6 +410,16 @@ function renderBreak(node: MdNode): HTMLElement {
   line.setAttribute('data-void', 'break')
   line.className = 'v5-br'
   return line
+}
+
+/**
+ * Inline HTML: a lone <br> becomes a real line break so table cells can hold a
+ * soft break; anything else keeps the raw source block it has always shown.
+ */
+function renderHtml(node: MdNode): HTMLElement {
+  const raw = node.children.map((child) => child.text ?? '').join('')
+  if (/^<br\s*\/?>$/i.test(raw.trim())) return renderBreak(node)
+  return block('pre', node, node.children.map(renderNode), 'v5-html')
 }
 
 function renderText(node: MdNode, breakOnEmpty = true): HTMLElement {

@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   createState,
   deleteBackward,
+  deleteForward,
   editTable,
   findMatch,
   formatBlock,
+  insertSoftBreak,
   insertText,
   moveTableCaret,
   parse,
@@ -278,24 +280,63 @@ describe('edit', () => {
     expect(state.doc).toContain('==')
   })
 
-  it('adds a table row when enter is pressed in the last cell', () => {
+  it('leaves the table when enter is pressed in the last cell', () => {
     const doc = '| a | b |\n| --- | --- |\n| c | d |'
     const table = parse(doc).children.find((node) => node.type === 'table')
     const last = table?.children.filter((node) => node.type === 'tableRow').at(-1)
     const cell = last?.children.filter((node) => node.type === 'tableCell').at(-1)
-    let state = createState(doc)
     const offset = cell?.children.find((node) => node.type === 'text')?.end ?? cell?.end ?? 0
-    state = { ...state, selection: { anchor: offset, head: offset } }
-    state = splitBlock(state)
-    const rows = parse(state.doc)
-      .children.find((node) => node.type === 'table')
-      ?.children.filter((node) => node.type === 'tableRow')
-    expect(rows).toHaveLength(3)
+    const at = { ...createState(doc), selection: { anchor: offset, head: offset } }
+    const state = splitBlock(at)
+    // Enter keeps every row and opens a blank paragraph below the table.
+    expect(state.doc).toBe('| a | b |\n| --- | --- |\n| c | d |\n\n')
+    const children = parse(state.doc).children
+    expect(children.map((node) => node.type)).toEqual(['table', 'paragraph'])
+    const blank = children[1]
+    expect(blank?.start).toBe(blank?.end)
+    expect(state.selection.head).toBe(blank?.start)
+    // Tab on the very last cell still appends a row.
+    const tabbed = moveTableCaret(at, 1)
+    expect(
+      parse(tabbed?.doc ?? '')
+        .children.find((node) => node.type === 'table')
+        ?.children.filter((node) => node.type === 'tableRow'),
+    ).toHaveLength(3)
+  })
+
+  it('writes a soft break inside a table cell as <br>', () => {
+    const doc = '| a | b |\n| --- | --- |\n| c | d |'
+    const table = parse(doc).children.find((node) => node.type === 'table')
+    const last = table?.children.filter((node) => node.type === 'tableRow').at(-1)
+    const cell = last?.children.filter((node) => node.type === 'tableCell').at(-1)
+    const offset = cell?.children.find((node) => node.type === 'text')?.end ?? cell?.end ?? 0
+    const at = { ...createState(doc), selection: { anchor: offset, head: offset } }
+    const state = insertSoftBreak(at)
+    expect(state.doc).toBe('| a | b |\n| --- | --- |\n| c | d<br> |')
+    expect(state.selection.head).toBe(offset + '<br>'.length)
+    expect(
+      parse(state.doc)
+        .children.find((node) => node.type === 'table')
+        ?.children.filter((node) => node.type === 'tableRow'),
+    ).toHaveLength(2)
+  })
+
+  it('removes a whole <br> with one backspace or delete', () => {
+    for (const tag of ['<br>', '<br/>', '<br />']) {
+      const doc = '| a | b |\n| --- | --- |\n| c | d' + tag + ' |'
+      const at = doc.indexOf(tag) + tag.length
+      const back = deleteBackward({ ...createState(doc), selection: { anchor: at, head: at } })
+      expect(back.doc).toBe('| a | b |\n| --- | --- |\n| c | d |')
+      const start = doc.indexOf(tag)
+      const forward = deleteForward({ ...createState(doc), selection: { anchor: start, head: start } })
+      expect(forward.doc).toBe('| a | b |\n| --- | --- |\n| c | d |')
+    }
+  })
+
+  it('finds and replaces text', () => {
     expect(findMatch('abc abc', 'abc', 1)).toEqual({ from: 4, to: 7 })
     const replaced = replaceAllText(createState('a a'), 'a', 'b')
     expect(replaced.doc).toBe('b b')
-    const moved = moveTableCaret(createState(doc), 1)
-    expect(moved?.selection.head).not.toBe(0)
   })
 
   it('edits the focused table from the toolbar commands', () => {

@@ -183,7 +183,8 @@
 .v5md .v5-doc .v5-table th,
 .v5md .v5-doc .v5-table td {
   border: 1px solid var(--v5-border);
-  padding: 0.4em 0.7em;
+  padding: 0.35em 0.7em;
+  line-height: 1.6;
   vertical-align: top;
 }
 

@@ -31,7 +31,7 @@ const showToolbar = ref(true)
 const toolbarSticky = ref(true)
 const outlineSticky = ref(true)
 const showLineNumbers = ref(true)
-const fontSize = ref(17)
+const fontSize = ref(15)
 const theme = ref<PlaygroundThemeId>('paper')
 const themeMenuOpen = ref(false)
 const themeMenuEl = ref<HTMLElement | null>(null)
@@ -42,7 +42,7 @@ const themes = PLAYGROUND_THEMES
 const plugins = computed(() => {
   const lang = locale.value
   return [
-    createTypographyPlugin({ defaultSize: 17 }),
+    createTypographyPlugin({ defaultSize: 15 }),
     createExportPlugin({ title: copy.value.exportTitle, locale: lang }),
     createMermaidPlugin({ locale: lang }),
     createMindmapPlugin({ locale: lang }),

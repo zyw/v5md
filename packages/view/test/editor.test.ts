@@ -1039,3 +1039,92 @@ describe('style isolation', () => {
     editor.destroy()
   })
 })
+
+describe('table cell editing', () => {
+  function cellTextEnd(doc: string, needle: string): number {
+    const table = parse(doc).children.find((node) => node.type === 'table')
+    for (const row of table?.children ?? []) {
+      if (row.type !== 'tableRow') continue
+      for (const cell of row.children) {
+        if (cell.type !== 'tableCell') continue
+        const text = cell.children.find((child) => child.type === 'text' && child.text === needle)
+        if (text) return text.end
+      }
+    }
+    return doc.length
+  }
+
+  it('renders a <br> inside a table cell as a real line break', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '| a | b<br>c |\n| --- | --- |\n| d | e |\n'
+    const editor = new Editor({ element, value: doc })
+    const cell = element.querySelectorAll('thead th')[1] as HTMLElement
+    expect(cell.querySelector('br.v5-br')).not.toBeNull()
+    expect(cell.querySelector('pre')).toBeNull()
+    editor.destroy()
+  })
+
+  it('gives empty table cells a <br> placeholder so rows match text rows', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '|  |  |  |\n| --- | --- | --- |\n|  |  |  |\n'
+    const editor = new Editor({ element, value: doc })
+    const cells = [...element.querySelectorAll<HTMLElement>('thead th, tbody td')]
+    expect(cells.length).toBe(6)
+    for (const cell of cells) expect(cell.querySelector('br')).not.toBeNull()
+    editor.destroy()
+  })
+
+  it('inserts a <br> on shift+enter inside a cell without breaking the row', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '| a | b |\n| --- | --- |\n| c | d |\n'
+    const editor = new Editor({ element, value: doc })
+    editor.focusAt(cellTextEnd(doc, 'd'))
+    const surface = element.querySelector('.v5-doc') as HTMLElement
+    surface.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true, cancelable: true }),
+    )
+    expect(editor.getMarkdown()).toBe('| a | b |\n| --- | --- |\n| c | d<br> |\n')
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(1)
+    // The caret sits after the break on a zero-width placeholder, so a new line
+    // exists immediately rather than only after the next character is typed.
+    expect(element.querySelector('tbody td .v5-text[data-caret]')?.textContent).toBe('\u200b')
+    editor.insertText('Z')
+    expect(editor.getMarkdown()).toBe('| a | b |\n| --- | --- |\n| c | d<br>Z |\n')
+    editor.destroy()
+  })
+
+  it('deletes a whole <br> with one backspace', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '| a | b |\n| --- | --- |\n| c | d |\n'
+    const editor = new Editor({ element, value: doc })
+    editor.focusAt(cellTextEnd(doc, 'd'))
+    const surface = element.querySelector('.v5-doc') as HTMLElement
+    surface.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true, cancelable: true }),
+    )
+    expect(editor.getMarkdown()).toBe('| a | b |\n| --- | --- |\n| c | d<br> |\n')
+    surface.dispatchEvent(
+      new InputEvent('beforeinput', { inputType: 'deleteContentBackward', bubbles: true, cancelable: true }),
+    )
+    expect(editor.getMarkdown()).toBe('| a | b |\n| --- | --- |\n| c | d |\n')
+    editor.destroy()
+  })
+
+  it('leaves the table on enter in the last cell', () => {
+    const element = document.createElement('div')
+    document.body.append(element)
+    const doc = '| a | b |\n| --- | --- |\n| c | d |\n'
+    const editor = new Editor({ element, value: doc })
+    editor.focusAt(cellTextEnd(doc, 'd'))
+    const surface = element.querySelector('.v5-doc') as HTMLElement
+    surface.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(editor.getMarkdown()).toBe('| a | b |\n| --- | --- |\n| c | d |\n\n')
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(1)
+    expect(element.querySelector('.v5-doc .v5-active')?.getAttribute('data-block')).toBe('paragraph')
+    editor.destroy()
+  })
+})

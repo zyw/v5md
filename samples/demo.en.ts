@@ -1,7 +1,7 @@
 export const sample = `---
 title: v5md handbook and plugin guide
 author: playground
-version: 0.0.5
+version: 0.0.6
 tags: [markdown, editor, handbook, plugin]
 ---
 

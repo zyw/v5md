@@ -1,5 +1,43 @@
 # 更新日志
 
+## 0.0.6 — 2026-11-17
+
+### 中文
+
+九个包统一升至 `0.0.6`。本次更新聚焦表格编辑体验与默认排版。
+
+**修复**
+
+- 修复表格内按 `Shift + 回车` 会把一行拆成两行、破坏表格结构的问题：现在改为以标准 `<br>` 写入单元格并在渲染时显示为真实换行，表格结构保持不变。
+- 修复表格单元格内 `Shift + 回车` 后光标没有立即换行、连按两次行数错位的问题。
+- 修复退格 / Delete 逐字符删除 `<br>`、露出 `<br` / `<br/>` 残片的问题：现在把 `<br>`（含 `<br/>`、`<br />`）作为一个整体一次删除。
+- 修复新建空表格时单元格行高过矮的问题：空单元格改用与有内容单元格一致的 `<br>` 占位。
+
+**新增与变更**
+
+- 默认正文字号由 `17px` 调整为 `15px`（库默认样式与 Vue / React playground 同步）。
+- 表格行高略微调小（下调纵向内边距与行高），更紧凑。
+- 表格单元格支持 `Shift + 回车` 软换行。
+- 调整表格内回车行为：在单元格间移动，在右下角最后一个单元格按回车会跳出表格、在表格下方新建空文本行（与正文回车一致）；`Tab` 在末格仍按惯例新增一行。
+
+### English
+
+All nine packages are now on `0.0.6`. This release focuses on table editing and default typography.
+
+**Fixes**
+
+- Fixed `Shift + Enter` inside a table cell splitting the row in two and breaking the table structure: the break is now written as a standard `<br>` and rendered as a real line break while the table stays intact.
+- Fixed the caret not moving to a new line immediately after `Shift + Enter` in a cell, and the wrong line count when pressing it twice.
+- Fixed Backspace / Delete removing `<br>` character by character and leaving `<br` / `<br/>` fragments: a `<br>` (including `<br/>` and `<br />`) is now removed as one atomic unit.
+- Fixed the too-short cell height of a freshly inserted empty table: empty cells now use a `<br>` placeholder that matches the height of cells with content.
+
+**Features & Changes**
+
+- Lowered the default body font size from `17px` to `15px` (library default styles plus both the Vue and React playgrounds).
+- Slightly tightened table row height (reduced vertical padding and line height) for a more compact layout.
+- Table cells now support soft line breaks with `Shift + Enter`.
+- Adjusted Enter inside tables: it moves between cells, and on the bottom-right last cell it leaves the table and opens a new empty text line below (the same as pressing Enter after body text); `Tab` on the last cell still appends a row as before.
+
 ## 0.0.5 — 2026-11-16
 
 ### 中文

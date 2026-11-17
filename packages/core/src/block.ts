@@ -154,7 +154,21 @@ export function splitBlock(state: EditorState): EditorState {
     return applyEdit(base, { from: offset, to: offset, insert: '\n' }, caret(offset + 1))
   }
   const tableTarget = tableLocation(tree, offset, base.doc.length)
-  if (tableTarget) return moveInTable(base, tableTarget, 1)
+  if (tableTarget) {
+    // Enter moves along the cells. On the last cell it leaves the table and opens
+    // a paragraph below (Tab keeps its behaviour of appending a row).
+    const rows = tableTarget.table.children.filter((node) => node.type === 'tableRow')
+    const rowIndex = rows.indexOf(tableTarget.row)
+    const cells = tableTarget.row.children.filter((node) => node.type === 'tableCell')
+    const cellIndex = cells.indexOf(tableTarget.cell)
+    if (rowIndex === rows.length - 1 && cellIndex === cells.length - 1) {
+      const end = tableTarget.table.end
+      const insert = enterInsert(base.doc, end, tree)
+      const next = applyEdit(base, { from: end, to: end, insert }, caret(end + insert.length))
+      return { ...next, selection: caret(snapCaretToBlank(next.doc, next.selection.head)) }
+    }
+    return moveInTable(base, tableTarget, 1)
+  }
   const listItem = [...path].reverse().find((node) => node.type === 'listItem') ?? listItemEndingAt(tree, offset)
   if (listItem && listItemPlain(listItem).trim() === '') {
     const marker = listItem.children.find((node) => node.type === 'marker' && node.marker === 'block')
@@ -176,7 +190,13 @@ export function insertSoftBreak(state: EditorState): EditorState {
   const base = from === to ? state : applyEdit(state, { from, to, insert: '' }, caret(from))
   const offset = sortedRange(base.selection).from
   const path = pathAt(parse(base.doc), offset, base.doc.length)
-  const insert = path.some((node) => node.type === 'code') ? '\n' : '  \n'
+  // A markdown table cell cannot contain a raw newline, so a soft break inside a
+  // cell is written as <br>, which keeps the row on one source line.
+  const insert = path.some((node) => node.type === 'tableCell')
+    ? '<br>'
+    : path.some((node) => node.type === 'code')
+      ? '\n'
+      : '  \n'
   return applyEdit(base, { from: offset, to: offset, insert }, caret(offset + insert.length))
 }
 
@@ -259,7 +279,8 @@ function blockEndsAt(tree: MdNode, offset: number): boolean {
         node.type === 'heading' ||
         node.type === 'blockquote' ||
         node.type === 'list' ||
-        node.type === 'code') &&
+        node.type === 'code' ||
+        node.type === 'table') &&
       node.end === offset
     ) {
       found = true

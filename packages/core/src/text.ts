@@ -89,13 +89,24 @@ function atomicTouch(tree: MdNode, from: number, to: number): MdNode | null {
       node.children.forEach(visit)
       return
     }
-    if ((node.type === 'thematicBreak' || node.type === 'hardBreak') && from < node.end && to > node.start) {
+    if (
+      (node.type === 'thematicBreak' || node.type === 'hardBreak' || isLineBreakHtml(node)) &&
+      from < node.end &&
+      to > node.start
+    ) {
       found = node
     }
     node.children.forEach(visit)
   }
   visit(tree)
   return found
+}
+
+/** An inline <br> tag is one atomic unit for deletion, like a hard break. */
+function isLineBreakHtml(node: MdNode): boolean {
+  if (node.type !== 'html') return false
+  const raw = node.children.map((child) => child.text ?? '').join('')
+  return /^<br\s*\/?>$/i.test(raw.trim())
 }
 
 function blockMarkerEndingAt(tree: MdNode, offset: number): MdNode | null {

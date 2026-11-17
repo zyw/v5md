@@ -31,7 +31,7 @@ export function App() {
   const [toolbarSticky, setToolbarSticky] = useState(true)
   const [outlineSticky, setOutlineSticky] = useState(true)
   const [showLineNumbers, setShowLineNumbers] = useState(true)
-  const [fontSize, setFontSize] = useState(17)
+  const [fontSize, setFontSize] = useState(15)
   const [theme, setTheme] = useState<PlaygroundThemeId>('paper')
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
   const [exportStatus, setExportStatus] = useState('')
@@ -40,7 +40,7 @@ export function App() {
 
   const plugins = useMemo(
     () => [
-      createTypographyPlugin({ defaultSize: 17 }),
+      createTypographyPlugin({ defaultSize: 15 }),
       createExportPlugin({ title: copy.exportTitle, locale }),
       createMermaidPlugin({ locale }),
       createMindmapPlugin({ locale }),

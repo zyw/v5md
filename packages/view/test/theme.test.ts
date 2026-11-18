@@ -74,6 +74,15 @@ describe('theme isolation', () => {
     expect(rule).toContain('vertical-align: middle')
   })
 
+  it('pulls task checkboxes into the marker gutter so tasks align with other lists', () => {
+    // Without the marker slot the task content box starts one marker gap further
+    // right than a bullet or ordered item and the tasks look indented deeper.
+    const clean = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
+    const rule = /\.v5md \.v5-doc \.v5-check\s*\{([^}]*)\}/.exec(clean)?.[1] ?? ''
+    expect(rule).toMatch(/margin:[^;]*-1\.25em/)
+    expect(clean).toMatch(/\.v5md \.v5-doc li\.v5-task::marker\s*\{[^}]*visibility: hidden/)
+  })
+
   it('keeps the editor shell square for embedding', () => {
     const clean = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
     const shell = /\.v5md \.v5-toolbar\s*\{([^}]*)\}/.exec(clean)?.[1] ?? ''

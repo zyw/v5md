@@ -1,5 +1,35 @@
 # 更新日志
 
+## 0.0.7 — 2026-11-18
+
+### 中文
+
+九个包统一升至 `0.0.7`。本次更新聚焦列表 / 引用的批量行操作与任务列表对齐。
+
+**新增**
+
+- 列表与引用命令支持多行选区：选中多行后执行有序列表、无序列表、任务列表或引用，选区覆盖的每一行都会被一次性转换，合并为单次编辑，撤销一步即可还原。
+- 部分选中的行（选区起点或终点落在行中间）同样按整行处理，符合「选中几段就转换几段」的直觉。
+
+**修复**
+
+- 修复选中多行后执行列表 / 引用命令只作用于光标所在行、其余行没有变化的问题。
+- 修复任务列表项的复选框比相邻的无序列表、有序列表缩进更深、三种列表左边缘对不齐的问题：复选框现在放入列表标记槽位，三种列表的文字起点一致。
+
+### English
+
+All nine packages are now on `0.0.7`. This release focuses on multi-line list / quote commands and task-list alignment.
+
+**Features**
+
+- List and quote commands now handle multi-line selections: with several lines selected, the ordered list, bullet list, task list and quote commands convert every touched line in a single edit, so one undo restores the original document.
+- Partially selected lines (a selection starting or ending mid-line) are treated as whole lines, matching the "convert whatever you selected" expectation.
+
+**Fixes**
+
+- Fixed list / quote commands applying only to the caret line when multiple lines were selected, leaving the rest of the selection untouched.
+- Fixed task-list checkboxes being indented deeper than neighbouring bullet and ordered lists, so the three list kinds did not line up: the checkbox now sits in the list-marker slot and all three start their text at the same offset.
+
 ## 0.0.6 — 2026-11-17
 
 ### 中文

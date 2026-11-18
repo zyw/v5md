@@ -401,6 +401,24 @@ describe('edit', () => {
     expect(toggleUnderline(underlined).doc).toBe('你好')
   })
 
+  it('applies list and quote commands to every line in a multi-line selection', () => {
+    const doc = '的\n阿爸\n独挡'
+    const all = { ...createState(doc), selection: { anchor: 0, head: doc.length } }
+    expect(formatBlock(all, 'orderedList').doc).toBe('1. 的\n1. 阿爸\n1. 独挡')
+    expect(formatBlock(all, 'bulletList').doc).toBe('- 的\n- 阿爸\n- 独挡')
+    expect(formatBlock(all, 'taskList').doc).toBe('- [ ] 的\n- [ ] 阿爸\n- [ ] 独挡')
+    expect(formatBlock(all, 'quote').doc).toBe('> 的\n> 阿爸\n> 独挡')
+    for (const command of ['orderedList', 'bulletList', 'taskList', 'quote'] as const) {
+      const changed = formatBlock(all, command)
+      expect(changed.history.undos).toHaveLength(1)
+      expect(undo(changed).doc).toBe(doc)
+      const restored = formatBlock({ ...changed, selection: { anchor: 0, head: changed.doc.length } }, command)
+      expect(restored.doc).toBe(doc)
+    }
+    const partial = { ...createState('aa\nbb'), selection: { anchor: 1, head: 4 } }
+    expect(formatBlock(partial, 'bulletList').doc).toBe('- aa\n- bb')
+  })
+
   it('restores a coalesced word with redo', () => {
     const typed = type('', 0, 'ab')
     const undone = undo(typed)

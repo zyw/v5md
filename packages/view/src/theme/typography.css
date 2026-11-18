@@ -131,8 +131,19 @@
   vertical-align: baseline;
 }
 
+/*
+ * A task keeps the list-marker slot of its siblings, hidden, and the checkbox is
+ * pulled into it. With list-style: none the content box starts one marker gap
+ * further right, which indented tasks deeper than the bullet and ordered lists
+ * around them.
+ */
 .v5md .v5-doc li.v5-task {
   list-style: none;
+}
+
+.v5md .v5-doc li.v5-task::marker {
+  content: '';
+  visibility: hidden;
 }
 
 .v5md .v5-doc .v5-check {
@@ -143,7 +154,11 @@
   height: 1em;
   min-width: 1em;
   min-height: 1em;
-  margin: 0 0.45em 0 0;
+  /*
+   * The checkbox sits in the marker gutter, with its right edge where the item
+   * text starts on bullet and ordered lists, so all three list kinds line up.
+   */
+  margin: 0 0.25em 0 -1.25em;
   padding: 0;
   border: 1.5px solid var(--v5-check-border);
   border-radius: 3px;

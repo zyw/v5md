@@ -2,7 +2,7 @@
 import { applyEdit, pushHistory } from './history.js'
 import { parse, pathAt, withImageSize } from './parse.js'
 import { lineAt } from './text.js'
-import { caret, clamp, sortedRange, type Change, type EditorState, type MdNode } from './types.js'
+import { caret, clamp, sortedRange, type Change, type EditorState, type MdNode, type TextSelection } from './types.js'
 
 export function toggleMark(state: EditorState, marker: '**' | '*' | '`' | '~~' | '=='): EditorState {
   const { from, to } = sortedRange(state.selection)
@@ -85,6 +85,7 @@ export function formatBlock(state: EditorState, command: FormatCommand): EditorS
     case 'bulletList':
     case 'taskList':
     case 'quote':
+      return formatBlocks(state, command)
     case 'heading1':
     case 'heading2':
     case 'heading3':
@@ -132,6 +133,60 @@ function insertAfterLine(state: EditorState, block: string, caretOffset: number)
   return applyEdit(state, { from: at, to: at, insert: `\n\n${block}` }, caret(at + 2 + caretOffset))
 }
 
+type BlockCommand = 'orderedList' | 'bulletList' | 'taskList' | 'quote'
+
+// A list or quote command applies to every block the selection touches, not just
+// the line holding the caret. All touched lines are rewritten in one edit, so the
+// conversion is a single undo step.
+function formatBlocks(state: EditorState, command: BlockCommand): EditorState {
+  const { from, to } = sortedRange(state.selection)
+  const blocks = parse(state.doc).children.filter((node) => node.end > node.start && node.start < to && node.end > from)
+  if (blocks.length === 0) return replaceCurrentLine(state, command)
+  if (from === to && blocks.length === 1 && blocks[0].start === lineAt(state.doc, from).from) {
+    return replaceCurrentLine(state, command)
+  }
+  const lines = blocks.flatMap((node) => lineRanges(state.doc, node.start, node.end))
+  const before = lines.map((line) => state.doc.slice(line.from, line.to))
+  const after = before.map((text) => transformLine(text, command))
+  if (after.every((text, index) => text === before[index])) return state
+  // Un-leading a list instead re-leads it; the lines are cleared from the bottom
+  // up once so removing a middle line cannot pull the lower ones into the list
+  // above it before they are cleared themselves.
+  const removing = before.every((text, index) => !hasPrefix(text, command) && linePrefixLength(after[index]) === 0)
+  const edits = lines.map((line, index) => ({
+    from: line.from,
+    to: removing ? line.from + linePrefixLength(before[index]) : line.to,
+    insert: removing ? '' : after[index],
+  }))
+  const insert = edits.map((edit) => edit.insert).join('\n')
+  return applyEdit(state, { from: edits[0].from, to: edits.at(-1)!.to, insert }, mapSelection(state.selection, edits))
+}
+
+function mapSelection(selection: TextSelection, edits: Change[]): TextSelection {
+  const map = (offset: number) => {
+    let next = offset
+    for (const edit of edits) {
+      const removed = edit.to - edit.from
+      if (offset >= edit.to) next += edit.insert.length - removed
+      else if (offset > edit.from) next += Math.max(0, edit.insert.length - (edit.to - offset))
+    }
+    return next
+  }
+  return { anchor: map(selection.anchor), head: map(selection.head) }
+}
+
+function lineRanges(doc: string, from: number, to: number): Array<{ from: number; to: number }> {
+  const ranges: Array<{ from: number; to: number }> = []
+  let start = from
+  while (start <= to) {
+    const line = lineAt(doc, start)
+    ranges.push({ from: line.from, to: line.to })
+    if (line.to >= to) break
+    start = line.to + 1
+  }
+  return ranges
+}
+
 function replaceCurrentLine(state: EditorState, command: FormatCommand): EditorState {
   const line = lineAt(state.doc, state.selection.head)
   const next = transformLine(line.text, command)
@@ -172,6 +227,14 @@ function transformLine(text: string, command: FormatCommand): string {
     return `1. ${body}`
   }
   return text
+}
+
+function hasPrefix(text: string, command: BlockCommand): boolean {
+  const bare = text.replace(/^[ \t]+/, '')
+  if (command === 'quote') return /^>/.test(bare)
+  if (command === 'taskList') return /^[-*+]\s+\[[ xX]\]/.test(bare)
+  if (command === 'bulletList') return /^[-*+]\s+/.test(bare) && !/^[-*+]\s+\[[ xX]\]/.test(bare)
+  return /^\d+[.)]\s+/.test(bare)
 }
 
 function linePrefixLength(text: string): number {

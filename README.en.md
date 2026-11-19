@@ -14,7 +14,7 @@ A WYSIWYG Markdown editor. **The Markdown string is the single source of truth**
 
 The same editor embeds in Vue 3 and React, or mounts on any DOM element. No framework lock-in, no takeover of your data layer, no proprietary format—what you save is standard Markdown. Built-in UI supports Simplified Chinese and English; Mermaid, mind maps, and ECharts charts come from official plugins on demand.
 
-Current version `0.0.7` (ten packages: `core` / `view` / `vue` / `react` plus six official plugins). See [@v5md/view](https://www.npmjs.com/package/@v5md/view) on npm; the latest capabilities in this repo (localization, chart plugins, export improvements, and more) are documented here and in [`CHANGELOG.md`](CHANGELOG.md). All packages are ESM (`"type": "module"`).
+Current version `0.0.8` (ten packages: `core` / `view` / `vue` / `react` plus six official plugins). See [@v5md/view](https://www.npmjs.com/package/@v5md/view) on npm; the latest capabilities in this repo (localization, chart plugins, export improvements, and more) are documented here and in [`CHANGELOG.md`](CHANGELOG.md). All packages are ESM (`"type": "module"`).
 
 ## Table of contents
 
@@ -708,7 +708,7 @@ Conventions:
 
 ## Theme and styling
 
-Theme is a single CSS file: `@v5md/view/theme.css`. Import wholesale or fold into your build. Nine built-in themes switch via `data-theme` on the root:
+Theme is a single CSS file: `@v5md/view/theme.css`. Import wholesale or fold into your build. Eleven built-in themes switch via `data-theme` on the root:
 
 | id | Look |
 | --- | --- |
@@ -721,6 +721,8 @@ Theme is a single CSS file: `@v5md/view/theme.css`. Import wholesale or fold int
 | `dracula` | Dracula purple night |
 | `solarized-light` | Solarized light |
 | `solarized-dark` | Solarized dark |
+| `catppuccin-latte` | Catppuccin light (Latte) |
+| `rose-pine-dawn` | Rosé Pine light (Dawn) |
 
 ```ts
 import { Editor } from '@v5md/view'

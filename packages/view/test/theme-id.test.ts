@@ -13,6 +13,8 @@ describe('theme ids', () => {
       'dracula',
       'solarized-light',
       'solarized-dark',
+      'catppuccin-latte',
+      'rose-pine-dawn',
     ])
     expect(DEFAULT_THEME).toBe('paper')
   })

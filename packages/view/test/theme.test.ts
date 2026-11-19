@@ -57,6 +57,8 @@ describe('theme isolation', () => {
       'dracula',
       'solarized-light',
       'solarized-dark',
+      'catppuccin-latte',
+      'rose-pine-dawn',
     ]) {
       expect(CSS).toContain(`.v5md[data-theme='${theme}']`)
     }

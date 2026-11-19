@@ -8,6 +8,8 @@ export const THEME_IDS = [
   'dracula',
   'solarized-light',
   'solarized-dark',
+  'catppuccin-latte',
+  'rose-pine-dawn',
 ] as const
 
 export type ThemeId = (typeof THEME_IDS)[number]

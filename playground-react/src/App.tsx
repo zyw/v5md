@@ -10,7 +10,7 @@ import { createVideoPlugin } from '@v5md/plugin-video'
 import {
   detectPlaygroundLocale,
   playgroundCopy,
-  PLAYGROUND_THEMES,
+  PLAYGROUND_THEME_GROUPS,
   type PlaygroundLocale,
   type PlaygroundThemeId,
 } from '@v5md/playground-ui'
@@ -284,20 +284,33 @@ export function App() {
             </button>
             {themeMenuOpen ? (
               <div className="theme-popover" role="menu">
-                {PLAYGROUND_THEMES.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={theme === item.id}
-                    className={`theme-option${theme === item.id ? ' is-active' : ''}`}
-                    onClick={() => changeTheme(item.id)}
+                {PLAYGROUND_THEME_GROUPS.map((group) => (
+                  <div
+                    key={group.scheme}
+                    className="theme-group"
+                    role="group"
+                    aria-label={group.scheme === 'light' ? copy.themeLight : copy.themeDark}
                   >
-                    <span className="theme-check" aria-hidden="true">
-                      {theme === item.id ? '✓' : ''}
-                    </span>
-                    {copy.themeLabel(item.id)}
-                  </button>
+                    <div className="theme-group-label" aria-hidden="true">
+                      {group.scheme === 'light' ? copy.themeLight : copy.themeDark}
+                    </div>
+                    {group.themes.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={theme === item.id}
+                        className={`theme-option${theme === item.id ? ' is-active' : ''}`}
+                        onClick={() => changeTheme(item.id)}
+                      >
+                        <span className="theme-check" aria-hidden="true">
+                          {theme === item.id ? '✓' : ''}
+                        </span>
+                        <span className="theme-swatch" data-scheme={item.scheme} aria-hidden="true" />
+                        {copy.themeLabel(item.id)}
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
             ) : null}

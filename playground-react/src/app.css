@@ -261,7 +261,7 @@ body {
   left: 0;
   z-index: 2;
   display: grid;
-  min-width: 168px;
+  min-width: 196px;
   max-height: min(70vh, 420px);
   overflow-y: auto;
   padding: 6px;
@@ -288,6 +288,7 @@ body {
   font: inherit;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   text-align: left;
   cursor: pointer;
 }
@@ -304,6 +305,37 @@ body {
   color: var(--accent);
   font-size: 13px;
   line-height: 1;
+}
+
+.theme-group + .theme-group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgb(20 32 28 / 8%);
+}
+
+.theme-group-label {
+  padding: 6px 10px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.theme-swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgb(20 32 28 / 14%);
+  border-radius: 50%;
+}
+
+.theme-swatch[data-scheme='light'] {
+  background: #fff;
+}
+
+.theme-swatch[data-scheme='dark'] {
+  border-color: transparent;
+  background: #2f3336;
 }
 
 .control-group-export .chip {

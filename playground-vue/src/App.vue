@@ -11,7 +11,7 @@ import { createVideoPlugin } from '@v5md/plugin-video'
 import {
   detectPlaygroundLocale,
   playgroundCopy,
-  PLAYGROUND_THEMES,
+  PLAYGROUND_THEME_GROUPS,
   type PlaygroundLocale,
   type PlaygroundThemeId,
 } from '@v5md/playground-ui'
@@ -38,7 +38,7 @@ const themeMenuOpen = ref(false)
 const themeMenuEl = ref<HTMLElement | null>(null)
 const exportStatus = ref('')
 const showScrollTop = ref(false)
-const themes = PLAYGROUND_THEMES
+const themeGroups = PLAYGROUND_THEME_GROUPS
 
 const plugins = computed(() => {
   const lang = locale.value
@@ -277,19 +277,31 @@ onUnmounted(() => {
             {{ copy.themeGroup }}
           </button>
           <div v-if="themeMenuOpen" class="theme-popover" role="menu">
-            <button
-              v-for="item in themes"
-              :key="item.id"
-              type="button"
-              role="menuitemradio"
-              class="theme-option"
-              :class="{ 'is-active': theme === item.id }"
-              :aria-checked="theme === item.id"
-              @click="changeTheme(item.id)"
+            <div
+              v-for="group in themeGroups"
+              :key="group.scheme"
+              class="theme-group"
+              role="group"
+              :aria-label="group.scheme === 'light' ? copy.themeLight : copy.themeDark"
             >
-              <span class="theme-check" aria-hidden="true">{{ theme === item.id ? '✓' : '' }}</span>
-              {{ copy.themeLabel(item.id) }}
-            </button>
+              <div class="theme-group-label" aria-hidden="true">
+                {{ group.scheme === 'light' ? copy.themeLight : copy.themeDark }}
+              </div>
+              <button
+                v-for="item in group.themes"
+                :key="item.id"
+                type="button"
+                role="menuitemradio"
+                class="theme-option"
+                :class="{ 'is-active': theme === item.id }"
+                :aria-checked="theme === item.id"
+                @click="changeTheme(item.id)"
+              >
+                <span class="theme-check" aria-hidden="true">{{ theme === item.id ? '✓' : '' }}</span>
+                <span class="theme-swatch" :data-scheme="item.scheme" aria-hidden="true"></span>
+                {{ copy.themeLabel(item.id) }}
+              </button>
+            </div>
           </div>
         </div>
         <div class="control-group control-group-export" role="group" :aria-label="copy.exportGroup">
@@ -592,7 +604,7 @@ body {
   left: 0;
   z-index: 2;
   display: grid;
-  min-width: 168px;
+  min-width: 196px;
   max-height: min(70vh, 420px);
   overflow-y: auto;
   padding: 6px;
@@ -619,6 +631,7 @@ body {
   font: inherit;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   text-align: left;
   cursor: pointer;
 }
@@ -626,6 +639,37 @@ body {
 .theme-option:hover,
 .theme-option.is-active {
   background: rgb(15 118 110 / 8%);
+}
+
+.theme-group + .theme-group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgb(20 32 28 / 8%);
+}
+
+.theme-group-label {
+  padding: 6px 10px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.theme-swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgb(20 32 28 / 14%);
+  border-radius: 50%;
+}
+
+.theme-swatch[data-scheme='light'] {
+  background: #fff;
+}
+
+.theme-swatch[data-scheme='dark'] {
+  border-color: transparent;
+  background: #2f3336;
 }
 
 .theme-check {

@@ -78,7 +78,8 @@ export interface EditorOptions {
   /**
    * Visual theme id. Defaults to `paper`.
    * Built-ins: `paper` | `github` | `nord` | `tokyo-night` | `catppuccin` | `one-dark` |
-   * `dracula` | `solarized-light` | `solarized-dark`. Any other non-empty id is
+   * `dracula` | `solarized-light` | `solarized-dark` | `catppuccin-latte` |
+   * `rose-pine-dawn`. Any other non-empty id is
    * kept as a custom theme as long as matching CSS exists.
    */
   theme?: ThemeName | string

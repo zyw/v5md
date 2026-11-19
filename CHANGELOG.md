@@ -1,30 +1,36 @@
 # 更新日志
 
-## 0.0.8 — 待发布
+## 0.0.8 — 2026-11-19
 
 ### 中文
 
-新增第十个包 `@v5md/plugin-video`。其余包版本号未变，本次只有插件与浏览调色板更新。
+十个包统一升至 `0.0.8`。本次更新聚焦主题与示例，并首发视频插件。
 
 **新增**
 
+- 新增 Catppuccin Latte 与 Rosé Pine Dawn 两套内置浅色主题，内置主题增至十一套。两套主题覆盖全部 `--v5-*` 变量，浅色主题由此前的三套增加到五套。
+- 两个 playground 的主题菜单按「浅色 / 深色」分组，每个选项前的圆点直接标出主题明暗。
+- 英文示例文档补齐到与中文示例逐节对应：表格、任务列表、公式、代码块、Mermaid 流程图与时序图、视频、思维导图与全部 ECharts 图表都已加入，两份示例的章节、代码块与表格一一对齐。
 - `@v5md/plugin-video`：把 ` ``video ` / ` ``audio ` 围栏块渲染成浏览器原生播放器，不引入任何第三方依赖。围栏正文支持直接写地址、Markdown 链接、`src=... poster=... title=... start=42s` 参数行或 JSON。
 - 标题随播放器显示并作为 `aria-label`；`start` 在播放器上以 `0:42` 角标出现，点一下从该处播放；播放中只改周边文字不会重新加载视频。
 - 不能内嵌的地址（B 站 / YouTube 等分享页）和浏览器不支持的格式显示成带封面的块：说明原因、保留地址，播放按钮直接打开源地址。播放中途解码失败同样回退到封面。
 - 工具条「视频」「音频」、斜杠菜单与命令 `video.insert`、API `insert(src, options)`；两个 playground 与示例文档已接入。
-- `packages/view/src/theme/` 增加 `video.css`，随 `theme.css` 一起下发，九套主题自动跟随。
+- `packages/view/src/theme/` 增加 `video.css`，随 `theme.css` 一起下发，各内置主题自动跟随。
 
 ### English
 
-Adds a tenth package, `@v5md/plugin-video`. No other package changes version; this release is the plugin plus the playground palette.
+All ten packages are now on `0.0.8`. This release focuses on themes and samples, and ships the video plugin.
 
 **Features**
 
+- Added two built-in light themes, Catppuccin Latte and Rosé Pine Dawn, bringing the built-in count to eleven. Both cover every `--v5-*` variable, taking the light set from three themes to five.
+- The theme menu in both playgrounds is grouped into Light and Dark, with a swatch that shows each theme's scheme at a glance.
+- The English sample document now mirrors the Chinese one section by section: tables, task lists, math, code blocks, Mermaid flowcharts and sequence diagrams, video, mindmap and every ECharts chart are included, with headings, code fences and tables matching one to one.
 - `@v5md/plugin-video` renders ` ``video ` / ` ``audio ` fences as native players with no third-party dependency. A fence body can be a bare URL, a Markdown link, a `src=... poster=... title=... start=42s` option line, or JSON.
 - The title renders under the player and doubles as its `aria-label`; `start` shows as a `0:42` chip that seeks and plays; editing nearby text never reloads the video.
 - Sources that cannot be embedded (Bilibili / YouTube share pages) and unsupported formats render as a cover that states why, keeps the URL, and links the play button to the source. A decode failure mid-playback falls back to the same cover.
 - “Video” / “Audio” toolbar items, slash entries, the `video.insert` command and the `insert(src, options)` API; both playgrounds and the sample documents are wired up.
-- New `packages/view/src/theme/video.css` ships inside `theme.css` and follows all nine themes.
+- New `packages/view/src/theme/video.css` ships inside `theme.css` and follows every built-in theme.
 
 ## 0.0.7 — 2026-11-18
 

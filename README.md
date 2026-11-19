@@ -14,7 +14,7 @@
 
 同一套编辑器可以嵌进 Vue 3 和 React，也可以直接挂到任意 DOM 元素上。不依赖框架、不接管你的数据流、不生成私有格式——存下来的就是标准 Markdown。内置界面支持简体中文与英文；流程图、思维导图、ECharts 图表通过官方插件按需接入。
 
-当前版本 `0.0.7`（十个包：`core` / `view` / `vue` / `react` 与六个官方插件）。npm 上见 [@v5md/view](https://www.npmjs.com/package/@v5md/view)；仓库最新能力（国际化、图表插件、导出增强等）以本 README 与 [`CHANGELOG.md`](CHANGELOG.md) 为准。所有包均为 ESM（`"type": "module"`）。
+当前版本 `0.0.8`（十个包：`core` / `view` / `vue` / `react` 与六个官方插件）。npm 上见 [@v5md/view](https://www.npmjs.com/package/@v5md/view)；仓库最新能力（国际化、图表插件、导出增强等）以本 README 与 [`CHANGELOG.md`](CHANGELOG.md) 为准。所有包均为 ESM（`"type": "module"`）。
 
 ## 目录
 
@@ -707,7 +707,7 @@ export function createDemoBlockPlugin(): V5mdPlugin {
 
 ## 主题与样式
 
-主题是一个独立 CSS 文件：`@v5md/view/theme.css`。整体引入即可，也可以复制进自己的构建流程。内置九套主题，通过根元素 `data-theme` 切换：
+主题是一个独立 CSS 文件：`@v5md/view/theme.css`。整体引入即可，也可以复制进自己的构建流程。内置十一套主题，通过根元素 `data-theme` 切换：
 
 | id | 风格 |
 | --- | --- |
@@ -720,6 +720,8 @@ export function createDemoBlockPlugin(): V5mdPlugin {
 | `dracula` | Dracula 紫夜暗色 |
 | `solarized-light` | Solarized 浅色 |
 | `solarized-dark` | Solarized 深色 |
+| `catppuccin-latte` | Catppuccin 浅色（Latte） |
+| `rose-pine-dawn` | Rosé Pine 浅色（Dawn） |
 
 ```ts
 import { Editor } from '@v5md/view'

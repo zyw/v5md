@@ -13,17 +13,39 @@ export type PlaygroundThemeId =
   | 'dracula'
   | 'solarized-light'
   | 'solarized-dark'
+  | 'catppuccin-latte'
+  | 'rose-pine-dawn'
 
-export const PLAYGROUND_THEMES: { id: PlaygroundThemeId; labelZh: string; labelEn: string }[] = [
-  { id: 'paper', labelZh: 'Paper', labelEn: 'Paper' },
-  { id: 'github', labelZh: 'GitHub', labelEn: 'GitHub' },
-  { id: 'nord', labelZh: 'Nord', labelEn: 'Nord' },
-  { id: 'tokyo-night', labelZh: 'Tokyo Night', labelEn: 'Tokyo Night' },
-  { id: 'catppuccin', labelZh: 'Catppuccin', labelEn: 'Catppuccin' },
-  { id: 'one-dark', labelZh: 'One Dark', labelEn: 'One Dark' },
-  { id: 'dracula', labelZh: 'Dracula', labelEn: 'Dracula' },
-  { id: 'solarized-light', labelZh: 'Solarized Light', labelEn: 'Solarized Light' },
-  { id: 'solarized-dark', labelZh: 'Solarized Dark', labelEn: 'Solarized Dark' },
+export interface PlaygroundTheme {
+  id: PlaygroundThemeId
+  labelZh: string
+  labelEn: string
+  /** Groups the theme menu; mirrors the `color-scheme` of the matching theme CSS. */
+  scheme: 'light' | 'dark'
+}
+
+export interface PlaygroundThemeGroup {
+  scheme: PlaygroundTheme['scheme']
+  themes: PlaygroundTheme[]
+}
+
+export const PLAYGROUND_THEMES: PlaygroundTheme[] = [
+  { id: 'paper', labelZh: 'Paper', labelEn: 'Paper', scheme: 'light' },
+  { id: 'github', labelZh: 'GitHub', labelEn: 'GitHub', scheme: 'light' },
+  { id: 'solarized-light', labelZh: 'Solarized Light', labelEn: 'Solarized Light', scheme: 'light' },
+  { id: 'catppuccin-latte', labelZh: 'Catppuccin Latte', labelEn: 'Catppuccin Latte', scheme: 'light' },
+  { id: 'rose-pine-dawn', labelZh: 'Rosé Pine Dawn', labelEn: 'Rosé Pine Dawn', scheme: 'light' },
+  { id: 'nord', labelZh: 'Nord', labelEn: 'Nord', scheme: 'dark' },
+  { id: 'tokyo-night', labelZh: 'Tokyo Night', labelEn: 'Tokyo Night', scheme: 'dark' },
+  { id: 'catppuccin', labelZh: 'Catppuccin', labelEn: 'Catppuccin', scheme: 'dark' },
+  { id: 'one-dark', labelZh: 'One Dark', labelEn: 'One Dark', scheme: 'dark' },
+  { id: 'dracula', labelZh: 'Dracula', labelEn: 'Dracula', scheme: 'dark' },
+  { id: 'solarized-dark', labelZh: 'Solarized Dark', labelEn: 'Solarized Dark', scheme: 'dark' },
+]
+
+export const PLAYGROUND_THEME_GROUPS: PlaygroundThemeGroup[] = [
+  { scheme: 'light', themes: PLAYGROUND_THEMES.filter((theme) => theme.scheme === 'light') },
+  { scheme: 'dark', themes: PLAYGROUND_THEMES.filter((theme) => theme.scheme === 'dark') },
 ]
 
 export interface PlaygroundCopy {
@@ -50,6 +72,8 @@ export interface PlaygroundCopy {
   find: string
   fontGroup: string
   themeGroup: string
+  themeLight: string
+  themeDark: string
   exportGroup: string
   image: string
   exporting: string
@@ -88,6 +112,8 @@ const zh: PlaygroundCopy = {
   find: '查找',
   fontGroup: '字号',
   themeGroup: '主题',
+  themeLight: '浅色',
+  themeDark: '深色',
   exportGroup: '导出',
   image: '图片',
   exporting: '导出中…',
@@ -126,6 +152,8 @@ const en: PlaygroundCopy = {
   find: 'Find',
   fontGroup: 'Font size',
   themeGroup: 'Theme',
+  themeLight: 'Light',
+  themeDark: 'Dark',
   exportGroup: 'Export',
   image: 'Image',
   exporting: 'Exporting…',

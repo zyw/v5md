@@ -49,17 +49,17 @@ src/
 src/
 ├── index.ts              公共出口
 ├── plugin.ts             插件契约与注册表
-├── theme/                主题，按组件拆成 10 个文件，构建时内联为 dist/theme.css
+├── theme/                主题，按组件拆成 11 个文件，构建时内联为 dist/theme.css
 ├── editor/               文档引擎
 │   ├── editor.ts           Editor：状态、渲染循环、输入分发、公共 API
 │   ├── keymap.ts           快捷键表与派发
+│   ├── blocks.ts           块渲染器注册与实例复用
 │   ├── plugins.ts          插件激活、句柄与销毁
 │   ├── render.ts           AST → DOM
 │   ├── source.ts           源码模式的分词与行
 │   ├── selection.ts        模型偏移 ↔ DOM 位置、选区装饰、查找高亮
 │   ├── highlight.ts        代码高亮
 │   ├── clipboard.ts        富文本复制
-│   ├── diagram.ts          mermaid 渲染与缓存
 │   └── images.ts           图片拖拽缩放
 ├── chrome/               编辑器外壳
 │   ├── toolbar.ts          工具条与溢出菜单

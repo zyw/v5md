@@ -7,6 +7,7 @@ import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
 import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 import { createTypographyPlugin, type TypographyApi } from '@v5md/plugin-typography'
+import { createVideoPlugin } from '@v5md/plugin-video'
 import {
   detectPlaygroundLocale,
   playgroundCopy,
@@ -47,6 +48,7 @@ const plugins = computed(() => {
     createMermaidPlugin({ locale: lang }),
     createMindmapPlugin({ locale: lang }),
     createEchartsPlugin({ locale: lang }),
+    createVideoPlugin({ locale: lang }),
   ]
 })
 

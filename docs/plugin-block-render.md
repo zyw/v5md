@@ -4,7 +4,7 @@
 > 日期：2026-11-12
 > 范围：在现有 `@v5md/view` 插件系统上增加 Block Renderer；不改 `@v5md/core` AST
 > 前置：[`docs/plugin-design.md`](./plugin-design.md)（工具条 / 命令 / API 已落地）
-> 实现：`packages/view/src/editor/blocks.ts`、`render.ts`（`createFencedWidgetShell`）、`editor.ts`、`plugin.ts`（`slash`）；官方插件 `@v5md/plugin-echarts` / `@v5md/plugin-mermaid` / `@v5md/plugin-mindmap`；测试见 `packages/view/test/blocks.test.ts`、`packages/plugins/*/test`
+> 实现：`packages/view/src/editor/blocks.ts`、`render.ts`（`createFencedWidgetShell`）、`editor.ts`、`plugin.ts`（`slash`）；官方插件 `@v5md/plugin-echarts` / `@v5md/plugin-mermaid` / `@v5md/plugin-mindmap` / `@v5md/plugin-video`；测试见 `packages/view/test/blocks.test.ts`、`packages/plugins/*/test`
 
 ---
 
@@ -300,6 +300,16 @@ Markdown ──parse──► MdNode(code, lang=…)
 - 基于 `@markmap/parse` + `@markmap/view`；动态 import；`destroy` 释放实例
 - `commands` / `slash` / 工具条：`mindmap.insert`；`api.insertTemplate()`
 - 预览交互（缩放等）限于 void 区内；正文编辑仍走激活态源码
+
+### `@v5md/plugin-video`
+
+- 包路径：`packages/plugins/video`
+- `id: 'video'`，`lang: ['video', 'audio']`
+- `source`：地址、Markdown 链接、`key=value` 参数行或 JSON；解析结果不进 AST，仍以围栏正文为准
+- 渲染原生 `<video>` / `<audio>`，无第三方依赖；`update` 时源地址不变就复用播放器，不重新加载
+- 平台分享页（B 站 / YouTube 等）与不可播格式显示封面块并保留地址，播放按钮链接到源地址；v5md 不嵌 iframe
+- `commands` / `slash` / 工具条：`video.insert`；`api.insert(src, { poster, title, start, audio })`
+- 样式在 `packages/view/src/theme/video.css`，随 `theme.css` 下发，换主题自动跟随
 
 ## 11. 落地路线
 

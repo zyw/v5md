@@ -1,5 +1,31 @@
 # 更新日志
 
+## 0.0.8 — 待发布
+
+### 中文
+
+新增第十个包 `@v5md/plugin-video`。其余包版本号未变，本次只有插件与浏览调色板更新。
+
+**新增**
+
+- `@v5md/plugin-video`：把 ` ``video ` / ` ``audio ` 围栏块渲染成浏览器原生播放器，不引入任何第三方依赖。围栏正文支持直接写地址、Markdown 链接、`src=... poster=... title=... start=42s` 参数行或 JSON。
+- 标题随播放器显示并作为 `aria-label`；`start` 在播放器上以 `0:42` 角标出现，点一下从该处播放；播放中只改周边文字不会重新加载视频。
+- 不能内嵌的地址（B 站 / YouTube 等分享页）和浏览器不支持的格式显示成带封面的块：说明原因、保留地址，播放按钮直接打开源地址。播放中途解码失败同样回退到封面。
+- 工具条「视频」「音频」、斜杠菜单与命令 `video.insert`、API `insert(src, options)`；两个 playground 与示例文档已接入。
+- `packages/view/src/theme/` 增加 `video.css`，随 `theme.css` 一起下发，九套主题自动跟随。
+
+### English
+
+Adds a tenth package, `@v5md/plugin-video`. No other package changes version; this release is the plugin plus the playground palette.
+
+**Features**
+
+- `@v5md/plugin-video` renders ` ``video ` / ` ``audio ` fences as native players with no third-party dependency. A fence body can be a bare URL, a Markdown link, a `src=... poster=... title=... start=42s` option line, or JSON.
+- The title renders under the player and doubles as its `aria-label`; `start` shows as a `0:42` chip that seeks and plays; editing nearby text never reloads the video.
+- Sources that cannot be embedded (Bilibili / YouTube share pages) and unsupported formats render as a cover that states why, keeps the URL, and links the play button to the source. A decode failure mid-playback falls back to the same cover.
+- “Video” / “Audio” toolbar items, slash entries, the `video.insert` command and the `insert(src, options)` API; both playgrounds and the sample documents are wired up.
+- New `packages/view/src/theme/video.css` ships inside `theme.css` and follows all nine themes.
+
 ## 0.0.7 — 2026-11-18
 
 ### 中文

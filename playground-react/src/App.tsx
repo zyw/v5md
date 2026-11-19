@@ -6,6 +6,7 @@ import { createExportPlugin, type ExportApi } from '@v5md/plugin-export'
 import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 import { createTypographyPlugin, type TypographyApi } from '@v5md/plugin-typography'
+import { createVideoPlugin } from '@v5md/plugin-video'
 import {
   detectPlaygroundLocale,
   playgroundCopy,
@@ -45,6 +46,7 @@ export function App() {
       createMermaidPlugin({ locale }),
       createMindmapPlugin({ locale }),
       createEchartsPlugin({ locale }),
+      createVideoPlugin({ locale }),
     ],
     [copy.exportTitle, locale],
   )

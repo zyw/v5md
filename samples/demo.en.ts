@@ -95,6 +95,10 @@ graph LR
 ## Branch B
 \`\`\`
 
+\`\`\`video
+src=/brand/hero-readme-zh.png title="Cover shown when no video is reachable"
+\`\`\`
+
 \`\`\`echarts
 {
   "title": { "text": "Quarterly revenue", "left": "center" },
@@ -129,7 +133,7 @@ Import the theme once: \`import '@v5md/view/theme.css'\`.
 
 # Official plugins
 
-Install separately: \`@v5md/plugin-typography\`, \`@v5md/plugin-export\`, \`@v5md/plugin-mermaid\`, \`@v5md/plugin-mindmap\`, \`@v5md/plugin-echarts\`.
+Install separately: \`@v5md/plugin-typography\`, \`@v5md/plugin-export\`, \`@v5md/plugin-mermaid\`, \`@v5md/plugin-mindmap\`, \`@v5md/plugin-echarts\`, \`@v5md/plugin-video\`.
 
 ---
 

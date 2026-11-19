@@ -27,6 +27,7 @@ export default defineConfig({
         find: '@v5md/plugin-mindmap',
         replacement: path.resolve(__dirname, '../packages/plugins/mindmap/src/index.ts'),
       },
+      { find: '@v5md/plugin-video', replacement: path.resolve(__dirname, '../packages/plugins/video/src/index.ts') },
       { find: '@v5md/sample', replacement: path.resolve(__dirname, '../samples/demo.ts') },
       { find: '@v5md/playground-ui', replacement: path.resolve(__dirname, '../samples/playground-ui.ts') },
     ],

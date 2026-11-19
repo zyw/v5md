@@ -14,7 +14,7 @@
 
 同一套编辑器可以嵌进 Vue 3 和 React，也可以直接挂到任意 DOM 元素上。不依赖框架、不接管你的数据流、不生成私有格式——存下来的就是标准 Markdown。内置界面支持简体中文与英文；流程图、思维导图、ECharts 图表通过官方插件按需接入。
 
-当前版本 `0.0.7`（九个包：`core` / `view` / `vue` / `react` 与五个官方插件）。npm 上见 [@v5md/view](https://www.npmjs.com/package/@v5md/view)；仓库最新能力（国际化、图表插件、导出增强等）以本 README 与 [`CHANGELOG.md`](CHANGELOG.md) 为准。所有包均为 ESM（`"type": "module"`）。
+当前版本 `0.0.7`（十个包：`core` / `view` / `vue` / `react` 与六个官方插件）。npm 上见 [@v5md/view](https://www.npmjs.com/package/@v5md/view)；仓库最新能力（国际化、图表插件、导出增强等）以本 README 与 [`CHANGELOG.md`](CHANGELOG.md) 为准。所有包均为 ESM（`"type": "module"`）。
 
 ## 目录
 
@@ -40,10 +40,10 @@
 | **中文输入法友好** | 组合输入期间不重绘 DOM，不会出现候选框错位、拼音上屏丢字。 |
 | **粘贴即转换** | 从网页、Word、飞书复制的富文本，先转成 Markdown 再写入文档。 |
 | **不锁死框架** | `@v5md/vue`、`@v5md/react` 只是薄壳，核心是 `@v5md/view` 里的 `Editor` 类。 |
-| **可插拔** | 工具条、斜杠菜单、命令、对外 API、块渲染都能由插件提供；官方插件覆盖字号、导出、Mermaid、Mindmap 和 ECharts。 |
+| **可插拔** | 工具条、斜杠菜单、命令、对外 API、块渲染都能由插件提供；官方插件覆盖字号、导出、Mermaid、Mindmap、ECharts 和视频。 |
 | **中英界面** | `locale: 'zh-CN' \| 'en'` 切换工具条、斜杠菜单、查找栏、大纲等内置文案；官方插件也可传同一 `locale`。 |
 
-支持的内容：段落与一到六级标题、粗体/斜体/下划线/删除线/`==高亮==`/行内代码/链接、有序列表/无序列表/任务列表/引用、围栏代码块（语法高亮）、表格（含对齐）、分割线、图片（可拖拽缩放）、行内公式与公式块（KaTeX）、文首 YAML frontmatter；` ```mermaid ` / ` ```mindmap ` / ` ```echarts ` 由对应官方插件按需渲染。
+支持的内容：段落与一到六级标题、粗体/斜体/下划线/删除线/`==高亮==`/行内代码/链接、有序列表/无序列表/任务列表/引用、围栏代码块（语法高亮）、表格（含对齐）、分割线、图片（可拖拽缩放）、行内公式与公式块（KaTeX）、文首 YAML frontmatter；` ```mermaid ` / ` ```mindmap ` / ` ```echarts ` / ` ```video ` 由对应官方插件按需渲染。
 
 编辑能力：撤销重做、查找替换（支持正则与全词）、带语法高亮和行号的整篇源码模式、大纲跳转、工具条/大纲钉顶、块级拖拽与块菜单、表格行列编辑、图片上传与缩放、一键复制为公众号富文本、插件扩展。
 
@@ -83,8 +83,8 @@ npm install @v5md/view
 # 只解析 Markdown，不画页面
 npm install @v5md/core
 
-# 可选。字号、导出、Mermaid、Mindmap、ECharts 都要单独装，编辑器不会自带
-npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts
+# 可选。字号、导出、Mermaid、Mindmap、ECharts、视频都要单独装，编辑器不会自带
+npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts @v5md/plugin-video
 ```
 
 | 包 | 什么时候装 |
@@ -98,6 +98,7 @@ npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5
 | [`@v5md/plugin-mermaid`](https://www.npmjs.com/package/@v5md/plugin-mermaid) | 要渲染 `mermaid` 流程图 |
 | [`@v5md/plugin-mindmap`](https://www.npmjs.com/package/@v5md/plugin-mindmap) | 要渲染 `mindmap` 思维导图 |
 | [`@v5md/plugin-echarts`](https://www.npmjs.com/package/@v5md/plugin-echarts) | 要渲染 `echarts` 围栏图表 |
+| [`@v5md/plugin-video`](https://www.npmjs.com/package/@v5md/plugin-video) | 要播放 `video` / `audio` 围栏块 |
 
 主题要在业务代码里引入一次，否则只有结构没有排版：
 
@@ -387,7 +388,7 @@ outline.update(editor.getOutline())
 官方插件都要单独安装，编辑器不会自带：
 
 ```bash
-npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts
+npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts @v5md/plugin-video
 ```
 
 | 包 | 作用 | 工具条 / 斜杠 |
@@ -1002,6 +1003,8 @@ const state = createState('# 标题\n')       // 编辑状态 + 撤销历史
 
 **图表怎么用？** 分别安装 `@v5md/plugin-mermaid` / `mindmap` / `echarts`，放进 `plugins`。围栏 lang 对应 `mermaid`、`mindmap`、`echarts`；也可用斜杠菜单或工具条插入。
 
+**视频怎么用？** 装 `@v5md/plugin-video`，围栏 ` ``video ` 里写视频直链即可在块内播放；标题、封面、起播点写在同一行（`src=a.mp4 poster=cover.jpg title="回放" start=42s`），或写成 JSON。B 站 / YouTube 的分享页面无法内嵌，会显示成带链接的封面；换成 mp4 直链才能播放。
+
 **内容会被编辑器改坏吗？** 只重写你实际编辑到的那一段，没碰过的内容原样保留。不放心的话可以先用 `parse()` 校验一遍再写入。
 
 ## 项目与贡献
@@ -1017,6 +1020,7 @@ const state = createState('# 标题\n')       // 编辑状态 + 撤销历史
 | [`@v5md/plugin-mermaid`](packages/plugins/mermaid/README.md) | Mermaid 流程图插件 |
 | [`@v5md/plugin-mindmap`](packages/plugins/mindmap/README.md) | Markmap 思维导图插件 |
 | [`@v5md/plugin-echarts`](packages/plugins/echarts/README.md) | ECharts 图表插件 |
+| [`@v5md/plugin-video`](packages/plugins/video/README.md) | 视频 / 音频插件 |
 
 依赖方向：`core ← view ← {vue, react, plugin-*}`。
 

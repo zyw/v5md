@@ -212,6 +212,17 @@ sequenceDiagram
   E-->>U: 编辑围栏正文
 \`\`\`
 
+
+## 视频与音频（Video）
+
+围栏语言为 \`video\` / \`audio\`，正文写地址即可播放；标题、封面、起播点用同一行参数补充。
+
+\`\`\`video
+src=/brand/hero-readme-zh.png title="封面占位演示"
+\`\`\`
+
+> 示例用的是图片地址，用来展示 mp4 缺失时的封面态；换成真实视频直链即可在块内播放。
+
 ## 思维导图（Mindmap）
 
 围栏语言为 \`mindmap\`，正文是 Markdown 标题树。
@@ -399,7 +410,7 @@ npm install @v5md/core
 
 # 官方插件按需安装（编辑器不会自带）
 npm install @v5md/plugin-typography @v5md/plugin-export \\
-  @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts
+  @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts @v5md/plugin-video
 \`\`\`
 
 | 包 | 什么时候装 |
@@ -596,11 +607,13 @@ exporter.api.print() // 浏览器打印 / 另存 PDF
 | \`@v5md/plugin-mermaid\` | \`mermaid\` | 默认开启，可 \`toolbar: false\` 关掉 |
 | \`@v5md/plugin-mindmap\` | \`mindmap\` | 同上 |
 | \`@v5md/plugin-echarts\` | \`echarts\` | 同上；正文为 JSON option |
+| \`@v5md/plugin-video\` | \`video\` / \`audio\` | 同上；正文为地址或 \`src=\` 参数行 |
 
 \`\`\`ts
 import { createMermaidPlugin } from '@v5md/plugin-mermaid'
 import { createMindmapPlugin } from '@v5md/plugin-mindmap'
 import { createEchartsPlugin } from '@v5md/plugin-echarts'
+import { createVideoPlugin } from '@v5md/plugin-video'
 
 const editor = new Editor({
   element,
@@ -608,12 +621,14 @@ const editor = new Editor({
     createMermaidPlugin(),
     createMindmapPlugin(),
     createEchartsPlugin({ height: 360 }),
+    createVideoPlugin(),
   ],
 })
 
 await editor.runCommand('mermaid.insert')
 await editor.runCommand('mindmap.insert')
 await editor.runCommand('echarts.insert')
+await editor.runCommand('video.insert', 'https://cdn.example.com/clip.mp4')
 \`\`\`
 
 点击预览块可进入源码编辑；再次失焦或切出激活态后回到预览。

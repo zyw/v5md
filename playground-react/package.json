@@ -12,6 +12,7 @@
     "@v5md/plugin-mermaid": "0.0.7",
     "@v5md/plugin-mindmap": "0.0.7",
     "@v5md/plugin-typography": "0.0.7",
+    "@v5md/plugin-video": "0.0.7",
     "@v5md/react": "0.0.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

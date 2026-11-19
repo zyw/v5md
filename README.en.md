@@ -14,7 +14,7 @@ A WYSIWYG Markdown editor. **The Markdown string is the single source of truth**
 
 The same editor embeds in Vue 3 and React, or mounts on any DOM element. No framework lock-in, no takeover of your data layer, no proprietary format—what you save is standard Markdown. Built-in UI supports Simplified Chinese and English; Mermaid, mind maps, and ECharts charts come from official plugins on demand.
 
-Current version `0.0.7` (nine packages: `core` / `view` / `vue` / `react` plus five official plugins). See [@v5md/view](https://www.npmjs.com/package/@v5md/view) on npm; the latest capabilities in this repo (localization, chart plugins, export improvements, and more) are documented here and in [`CHANGELOG.md`](CHANGELOG.md). All packages are ESM (`"type": "module"`).
+Current version `0.0.7` (ten packages: `core` / `view` / `vue` / `react` plus six official plugins). See [@v5md/view](https://www.npmjs.com/package/@v5md/view) on npm; the latest capabilities in this repo (localization, chart plugins, export improvements, and more) are documented here and in [`CHANGELOG.md`](CHANGELOG.md). All packages are ESM (`"type": "module"`).
 
 ## Table of contents
 
@@ -40,10 +40,10 @@ Current version `0.0.7` (nine packages: `core` / `view` / `vue` / `react` plus f
 | **IME-friendly** | No DOM redraw during composition, so the candidate window stays aligned and IME input does not drop characters. |
 | **Paste converts** | Rich text from the web, Word, or Lark is turned into Markdown before it enters the document. |
 | **Framework-agnostic** | `@v5md/vue` and `@v5md/react` are thin wrappers; the core is the `Editor` class in `@v5md/view`. |
-| **Pluggable** | Toolbars, slash menu, commands, external APIs, and block renderers can all come from plugins; official plugins cover typography, export, Mermaid, Mindmap, and ECharts. |
+| **Pluggable** | Toolbars, slash menu, commands, external APIs, and block renderers can all come from plugins; official plugins cover typography, export, Mermaid, Mindmap, ECharts, and video. |
 | **zh-CN / en UI** | `locale: 'zh-CN' \| 'en'` switches built-in chrome (toolbar, slash menu, find bar, outline, …); official plugins accept the same `locale`. |
 
-Supported content: paragraphs and headings 1–6, bold / italic / underline / strikethrough / `==highlight==` / inline code / links, ordered / bullet / task lists and blockquotes, fenced code blocks (syntax highlighting), tables (including alignment), horizontal rules, images (drag-to-resize), inline and block math (KaTeX), YAML front matter; ` ```mermaid ` / ` ```mindmap ` / ` ```echarts ` are rendered by the matching official plugins.
+Supported content: paragraphs and headings 1–6, bold / italic / underline / strikethrough / `==highlight==` / inline code / links, ordered / bullet / task lists and blockquotes, fenced code blocks (syntax highlighting), tables (including alignment), horizontal rules, images (drag-to-resize), inline and block math (KaTeX), YAML front matter; ` ```mermaid ` / ` ```mindmap ` / ` ```echarts ` / ` ```video ` are rendered by the matching official plugins.
 
 Editing features: undo/redo, find & replace (regex and whole word), full-document source mode with highlighting and line numbers, outline navigation, sticky toolbar/outline, block drag handle and block menu, table row/column editing, image upload and resize, one-click copy as WeChat rich text, and plugin extensions.
 
@@ -84,7 +84,7 @@ npm install @v5md/view
 npm install @v5md/core
 
 # Optional — typography, export, Mermaid, Mindmap, ECharts are separate installs
-npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts
+npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts @v5md/plugin-video
 ```
 
 | Package | When to install |
@@ -98,6 +98,7 @@ npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5
 | [`@v5md/plugin-mermaid`](https://www.npmjs.com/package/@v5md/plugin-mermaid) | Render `mermaid` diagrams |
 | [`@v5md/plugin-mindmap`](https://www.npmjs.com/package/@v5md/plugin-mindmap) | Render `mindmap` diagrams |
 | [`@v5md/plugin-echarts`](https://www.npmjs.com/package/@v5md/plugin-echarts) | Render `echarts` fenced charts |
+| [`@v5md/plugin-video`](https://www.npmjs.com/package/@v5md/plugin-video) | Play `video` / `audio` fenced blocks |
 
 Import the theme once in app code or you get structure without typography:
 
@@ -387,7 +388,7 @@ Plugins can contribute toolbar buttons, slash menu items, externally callable co
 Official plugins are separate installs; the editor does not bundle them:
 
 ```bash
-npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts
+npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5md/plugin-mindmap @v5md/plugin-echarts @v5md/plugin-video
 ```
 
 | Package | Role | Toolbar / slash |
@@ -397,6 +398,7 @@ npm install @v5md/plugin-typography @v5md/plugin-export @v5md/plugin-mermaid @v5
 | [`@v5md/plugin-mermaid`](packages/plugins/mermaid/README.md) | ` ```mermaid ` diagrams | Optional “Flowchart” toolbar / slash item |
 | [`@v5md/plugin-mindmap`](packages/plugins/mindmap/README.md) | ` ```mindmap ` outline diagrams | Optional “Mind map” toolbar / slash item |
 | [`@v5md/plugin-echarts`](packages/plugins/echarts/README.md) | ` ```echarts ` JSON charts | Optional “Chart” toolbar / slash item |
+| [`@v5md/plugin-video`](packages/plugins/video/README.md) | ` ```video ` / ` ```audio ` players | Optional “Video” / “Audio” toolbar / slash items |
 
 Typography and export are API-only; Mermaid / Mindmap / ECharts include insert UI by default—set `toolbar: false` to hide toolbar buttons. Every plugin accepts `locale` to match the editor language. The Vue / React playgrounds wire chart plugins and zh-CN/en switching; see [`playground-vue/src/App.vue`](playground-vue/src/App.vue).
 
@@ -1002,6 +1004,8 @@ Edit helpers are pure: state in, new state out (document, selection, history). F
 
 **Charts?** Install `@v5md/plugin-mermaid` / `mindmap` / `echarts` and put them in `plugins`. Fence langs are `mermaid`, `mindmap`, and `echarts`; you can also insert via slash menu or toolbar.
 
+**Video?** Install `@v5md/plugin-video` and put a direct video URL in a ` ``video ` fence to play it in place; title, poster and start time go on the same line (`src=a.mp4 poster=cover.jpg title="Replay" start=42s`) or as JSON. Bilibili / YouTube share pages cannot be embedded, so they render as a cover that links out; use a direct mp4 URL to actually play.
+
 **Will the editor corrupt content?** Only edited regions are rewritten; untouched spans stay as-is. You can `parse()` before write if you want a sanity check.
 
 ## Project and contributing
@@ -1017,6 +1021,7 @@ Edit helpers are pure: state in, new state out (document, selection, history). F
 | [`@v5md/plugin-mermaid`](packages/plugins/mermaid/README.md) | Mermaid plugin |
 | [`@v5md/plugin-mindmap`](packages/plugins/mindmap/README.md) | Mindmap plugin |
 | [`@v5md/plugin-echarts`](packages/plugins/echarts/README.md) | ECharts plugin |
+| [`@v5md/plugin-video`](packages/plugins/video/README.md) | Video / audio plugin |
 
 Dependency graph: `core ← view ← {vue, react, plugin-*}`.
 

@@ -218,10 +218,10 @@ sequenceDiagram
 围栏语言为 \`video\` / \`audio\`，正文写地址即可播放；标题、封面、起播点用同一行参数补充。
 
 \`\`\`video
-src=/brand/hero-readme-zh.png title="封面占位演示"
+src=/samples/v5md-simple.mp4 poster=/samples/v5md-simple.poster.jpg title="v5md 使用手册 · 功能演示"
 \`\`\`
 
-> 示例用的是图片地址，用来展示 mp4 缺失时的封面态；换成真实视频直链即可在块内播放。
+> \`poster\` 只决定播放前显示的那一帧；点播放就换成真实 mp4。地址写直链，围栏语法不用改。
 
 ## 思维导图（Mindmap）
 
